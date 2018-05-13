@@ -1,0 +1,34 @@
+{
+    "Name": "PunchinOut",
+
+    "Version": "0.1.0",
+    "Description": "Adds non-PC ejection chance each time that a mech is attacked.",
+    "Author": "mpstark",
+    "Website": "www.github.com/mpstark/PunchinOut",
+
+    "DLL": "PunchinOut.dll",
+    
+    "Settings": {
+        "PlayerCharacterAlwaysResists": true,
+        "GutsTenAlwaysResists": true,
+        "KnockedDownCannotEject": true,
+
+        "MaxEjectChance": 25,
+
+        "BaseEjectionResist": 10,
+        "GutsEjectionResistPerPoint": 3,
+
+        "UnsteadyModifier": 3,
+        "PilotHealthMaxModifier": 5,
+
+        "HeadDamageMaxModifier": 5,
+        "CTDamageMaxModifier": 10,
+        "SideTorsoInternalDamageMaxModifier": 5,
+        "LeggedMaxModifier": 10,
+
+        "NextShotLikeThatCouldKill": 10,
+        
+        "WeaponlessModifier": 15,
+        "AloneModifier": 5
+    }
+}

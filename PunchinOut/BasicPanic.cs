@@ -294,8 +294,10 @@ namespace BasicPanic
             {
                 panicModifiers += BasicPanic.Settings.AloneModifier;
             }
-            //reduce modifiers by five to account change to D20 roll instead of D100 roll, then min it t0 20 or modified floor
+            //straight up add guts and tactics to this as negative values
+            panicModifiers -= total;
 
+            //reduce modifiers by 5 to account change to D20 roll instead of D100 roll, then min it t0 20 or modified floor
             panicModifiers /= 5;
 
             PanicRoll = PanicRoll + (int)panicModifiers;

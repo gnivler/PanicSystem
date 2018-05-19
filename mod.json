@@ -1,5 +1,5 @@
 {
-    "Name": "BasicPanic",
+    "Name": "BasicPanicSystem",
 
     "Version": "0.1.0",
     "Description": "Adds basic panic system, based on mpstark's Punchin' Out.",
@@ -28,12 +28,12 @@
         "GutsEjectionResistPerPoint": 2,
         "TacticsEjectionResistPerPoint": 1,
 
-        
+
         "UnsteadyModifier": 3,
         "PilotHealthMaxModifier": 5,
 
-        "HeadDamageMaxModifier": 5,
-        "CTDamageMaxModifier": 10,
+        "HeadDamageMaxModifier": 10,
+        "CTDamageMaxModifier": 5,
         "SideTorsoInternalDamageMaxModifier": 5,
         "LeggedMaxModifier": 10,
 

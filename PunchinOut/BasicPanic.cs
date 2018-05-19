@@ -96,7 +96,7 @@ namespace BasicPanic
             {
                 Holder.TrackedPilots[index].ChangedRecently = false;
             }
-            else
+            else if(Holder.TrackedPilots[index].pilotStatus != PanicStatus.Normal)
             {
 
                 __instance.StatCollection.ModifyStat<float>("Panic Turn Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f, -1, true);
@@ -160,7 +160,15 @@ namespace BasicPanic
                 }
             }
 
-            
+            if(pilot.Health - pilot.Injuries <= BasicPanic.Settings.MinimumHealthToAlwaysEjectRoll && !pilot.LethalInjuries)
+            {
+                return true;
+            }
+
+            if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m == mech))
+            {
+                return true;
+            }
 
             return false;
         }
@@ -188,10 +196,10 @@ namespace BasicPanic
             if (mech == null || mech.IsDead || (mech.IsFlaggedForDeath && mech.HasHandledDeath))
                     return false;
 
-            int PanicRoll = UnityEngine.Random.Range(0, 20); // initial roll
-
             if (!attackSequence.attackDidDamage) //no point in panicking over nothing
                 return false;
+
+            int PanicRoll = 0;
 
             var pilot = mech.GetPilot();
             var weapons = mech.Weapons;
@@ -294,19 +302,25 @@ namespace BasicPanic
             {
                 panicModifiers += BasicPanic.Settings.AloneModifier;
             }
-            //straight up add guts and tactics to this as negative values
+            //straight up add guts, tactics, and morale to this as negative values
             panicModifiers -= total;
+            if(mech.team == mech.Combat.LocalPlayerTeam)
+            {
+                MoraleConstantsDef moraleDef = mech.Combat.Constants.GetActiveMoraleDef(mech.Combat);
+                panicModifiers -= Math.Max(mech.Combat.LocalPlayerTeam.Morale - moraleDef.CanUseInspireLevel, 0);
+            }
 
             //reduce modifiers by 5 to account change to D20 roll instead of D100 roll, then min it t0 20 or modified floor
             panicModifiers /= 5;
-
+            
             PanicRoll = PanicRoll + (int)panicModifiers;
+
+            if ((total >= 20 || PanicRoll <= 0) && !BasicPanic.Settings.AtLeastOneChanceToPanic)
+                return false;
 
             PanicRoll = Math.Min(PanicRoll, 20);
 
-            if (total >= 20 && !BasicPanic.Settings.AtLeastOneChanceToPanic)
-                return false;
-
+            PanicRoll = UnityEngine.Random.Range(PanicRoll, 20); // actual roll
             //we get this far, we reduce total to under the max panic chance
             total = Math.Min(total, 20 - 1);
 
@@ -315,37 +329,37 @@ namespace BasicPanic
             if(rngRoll < PanicRoll)
             {
 
-                if (Holder.TrackedPilots[index].trackedPilot == pilot.GUID && Holder.TrackedPilots[index].pilotStatus == PanicStatus.Normal)
+                if (Holder.TrackedPilots[index].trackedPilot == pilot.GUID && Holder.TrackedPilots[index].pilotStatus == PanicStatus.Fatigued)
                 {
                     mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Fatigued!", FloatieMessage.MessageNature.Debuff, true)));
                     Holder.TrackedPilots[index].pilotStatus = PanicStatus.Fatigued;
-                    Holder.TrackedPilots[index].ChangedRecently = true;
+  
 
                     mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f, -1, true);
                     mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f, -1, true);
                     mech.StatCollection.ModifyStat<float>("Panic Attack: Fatigued Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, BasicPanic.Settings.FatiguedAimModifier, -1, true);
 
                 }
-                else if (Holder.TrackedPilots[index].trackedPilot == pilot.GUID && Holder.TrackedPilots[index].pilotStatus == PanicStatus.Fatigued)
+                else if (Holder.TrackedPilots[index].trackedPilot == pilot.GUID && Holder.TrackedPilots[index].pilotStatus == PanicStatus.Stressed)
                 {
                     mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Stressed!", FloatieMessage.MessageNature.Debuff, true)));
                     Holder.TrackedPilots[index].pilotStatus = PanicStatus.Stressed;
-                    Holder.TrackedPilots[index].ChangedRecently = true;
                     mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f, -1, true);
                     mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f, -1, true);
                     mech.StatCollection.ModifyStat<float>("Panic Attack: Stressed Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, BasicPanic.Settings.StressedAimModifier, -1, true);
                     mech.StatCollection.ModifyStat<float>("Panic Attack: Stressed Defence", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, BasicPanic.Settings.StressedToHitModifier, -1, true);
                 }
-                else if (Holder.TrackedPilots[index].trackedPilot == pilot.GUID && Holder.TrackedPilots[index].pilotStatus == PanicStatus.Stressed)
+                else if (Holder.TrackedPilots[index].trackedPilot == pilot.GUID && Holder.TrackedPilots[index].pilotStatus == PanicStatus.Panicked)
                 {
                     mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Panicked!", FloatieMessage.MessageNature.Debuff, true)));
                     Holder.TrackedPilots[index].pilotStatus = PanicStatus.Panicked;
-                    Holder.TrackedPilots[index].ChangedRecently = true;
+                    
                     mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f, -1, true);
                     mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f, -1, true);
                     mech.StatCollection.ModifyStat<float>("Panic Attack: Panicking Aim!", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, BasicPanic.Settings.PanickedAimModifier, -1, true);
                     mech.StatCollection.ModifyStat<float>("Panic Attack: Panicking Defence!", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, BasicPanic.Settings.PanickedToHitModifier, -1, true);
                 }
+                Holder.TrackedPilots[index].ChangedRecently = true;
                 return true;
             }
             mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Resisted Panic Check!", FloatieMessage.MessageNature.Buff, true)));
@@ -382,7 +396,7 @@ namespace BasicPanic
         public bool GutsTenAlwaysResists = true;
         public bool ComboTenAlwaysResists = false;
         public bool TacticsTenAlwaysResists = true;
-
+        public int MinimumHealthToAlwaysEjectRoll = 1;
         public bool KnockedDownCannotEject = true;
 
         public float MaxEjectChance = 50;
@@ -552,6 +566,12 @@ namespace BasicPanic
             }
 
             var modifiers = (ejectModifiers - Settings.BaseEjectionResist - (Settings.GutsEjectionResistPerPoint * guts) - (Settings.TacticsEjectionResistPerPoint * tactics) ) * 5;
+
+            if (mech.team == mech.Combat.LocalPlayerTeam)
+            {
+                MoraleConstantsDef moraleDef = mech.Combat.Constants.GetActiveMoraleDef(mech.Combat);
+               modifiers -= Math.Max(mech.Combat.LocalPlayerTeam.Morale - moraleDef.CanUseInspireLevel, 0);
+            }
 
             if (modifiers < 0)
                 return false;

@@ -5,15 +5,19 @@ ModTek mod that adds a basic panic system for MechWarriors, both playable and no
 
 Install [BTML](https://github.com/Mpstark/BattleTechModLoader) and [ModTek](https://github.com/Mpstark/ModTek). Extract files to `BATTLETECH\Mods\BasicPanicSystem\`.
 
-## Basic Details
+## General Details
 
 There are four states for a pilot to be in: Normal, Fatigued, Stressed, and Panicked.
 
-Every time a pilot takes an attack in a mech, they roll for panic. This roll is increased in strength by how powerful the attack was, where it hit, how damanged the pilot's mech is, is the rest of their lance dead or gone, etc. It is decreased by a pilot's tactics and guts scores.
+Every time a pilot has their mech take an attack, they roll for panic. This roll is increased in strength by how powerful the attack was, where it hit, how damaged the pilot's mech is in terms of armour and structure, is the rest of their lance dead or gone, etc. It is decreased by a pilot's tactics and guts scores
 
 If this roll succeeds, they are then knocked down to the next lower state. Once they hit Panicked, they then start rolling for ejection chances.
 
-By default, pilots can only change panic states once per turn, to prevent runaway panic attacks from alpha strikes.
+By default, pilots can only get worse in panic states once per turn, to prevent runaway panic attacks from alpha strikes. 
+
+For panic recovery, as long as a pilot avoids failing another roll while they're under a panic state, they recover one state up (ie Panicked -> Stressed, or Fatigued -> Normal)
+
+A typical chain of events under this system is thus something like Normal at start -> Turn 1 during enemy action: takes hit, downgrades to Fatigued -> Turn 2: manages to avoid failing a panic roll -> Turn 3 on pilot's movement: hits Normal again
 
 ## Panic Effects
 
@@ -25,7 +29,9 @@ Panicked Pilots by default, experience -15 to their hit chances, and are 5% more
 
 ## Special Cases
 
-Pilot injuries are a special exception: any time a pilot gets hurt, they get knocked down to the next state automatically. 
+When your lance is inspired, pilots are guaranteed to recover a panic state.
+
+Pilots with one point of HP left or are the last survivor in their lance will always roll for ejection when they receive an attack, no matter what.
 
 ## Configuration
 

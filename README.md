@@ -9,7 +9,7 @@ Install [BTML](https://github.com/Mpstark/BattleTechModLoader) and [ModTek](http
 
 There are four states for a pilot to be in: Normal, Fatigued, Stressed, and Panicked.
 
-Every time a pilot has their mech take an attack, they roll for panic. This roll is increased in strength by how powerful the attack was, where it hit, how damaged the pilot's mech is in terms of armour and structure, is the rest of their lance dead or gone, etc. It is decreased by a pilot's tactics and guts scores.
+Every time a pilot has their mech take an attack, they roll for panic. This roll is increased in strength by how powerful the attack was, where it hit, how damaged the pilot's mech is in terms of armour and structure, is the rest of their lance dead or gone, etc. It is decreased by a pilot's tactics and guts scores, and whether their Morale is inspired.
 
 If this roll succeeds, they are then knocked down to the next lower state. Once they hit Panicked, they then start rolling for ejection chances. This is affected by the same things as mentioned above.
 
@@ -28,8 +28,6 @@ Stressed Pilots by default, experience -10 to their hit chances, and are 5% more
 Panicked Pilots by default, experience -15 to their hit chances, and are 5% more likelier to be hit due to improper piloting. They roll for ejection every time they're hit while in this state.
 
 ## Special Cases
-When your lance is inspired, pilots are guaranteed to recover a panic state.
-
 Pilots with one point of HP left or are the last survivor in their lance will always roll for ejection when they receive an attack, no matter what.
 
 ## Configuration

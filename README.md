@@ -15,6 +15,14 @@ If this roll succeeds, they are then knocked down to the next lower state. Once 
 
 By default, pilots can only change panic states once per turn, to prevent runaway panic attacks from alpha strikes.
 
+## Panic Effects
+
+Fatigued pilots by default, experience -5 to their hit chances.
+
+Stressed Pilots by default, experience -10 to their hit chances, and are 5% more likelier to be hit due to improper piloting.
+
+Panicked Pilots by default, experience -15 to their hit chances, and are 5% more likelier to be hit due to improper piloting. They roll for ejection every time they're hit while in this state.
+
 ## Special Cases
 
 Pilot injuries are a special exception: any time a pilot gets hurt, they get knocked down to the next state automatically. 

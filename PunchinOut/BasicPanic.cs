@@ -38,7 +38,7 @@ namespace BasicPanic
     }
 
     [HarmonyPatch(typeof(AbstractActor), "OnNewRound")]
-    public static class TurnDirector_BeginNewRound_Patch
+    public static class AbstractActor_BeginNewRound_Patch
     {
         public static void Prefix(AbstractActor __instance)
         {
@@ -127,6 +127,15 @@ namespace BasicPanic
         }
     }
 
+    [HarmonyPatch(typeof(BattleTech.GameInstance), "LaunchContract", new Type[] { typeof(Contract), typeof(string) })]
+    public static class BattleTech_GameInstance_LaunchContract_Patch
+    {
+        static void Postfix()
+        {
+            // reset on new contracts
+            Holder.Reset();
+        }
+    }
 
     public static class PanicHelpers
     {
@@ -366,18 +375,19 @@ namespace BasicPanic
         //ejection
         //-15 to aim
         //+5 to being hit
-        public bool GutsTenAlwaysResists = true;
-        public bool ComboTenAlwaysResists = true;
-        public bool TacticsTenAlwaysResists = true;
         public float PanickedAimModifier = -15;
         public float PanickedToHitModifier = 5;
+        public bool GutsTenAlwaysResists = true;
+        public bool ComboTenAlwaysResists = false;
+        public bool TacticsTenAlwaysResists = true;
+
         public bool KnockedDownCannotEject = true;
 
         public float MaxEjectChance = 50;
 
         public float BaseEjectionResist = 10;
         public float GutsEjectionResistPerPoint = 2;
-
+        public float TacticsEjectionResistPerPoint = 1;
         public float UnsteadyModifier = 3;
         public float PilotHealthMaxModifier = 5;
 
@@ -539,7 +549,7 @@ namespace BasicPanic
                 ejectModifiers += Settings.AloneModifier;
             }
 
-            var modifiers = (ejectModifiers - Settings.BaseEjectionResist - Settings.GutsEjectionResistPerPoint * guts) * 5;
+            var modifiers = (ejectModifiers - Settings.BaseEjectionResist - (Settings.GutsEjectionResistPerPoint * guts) - (Settings.TacticsEjectionResistPerPoint * tactics) ) * 5;
 
             if (modifiers < 0)
                 return false;

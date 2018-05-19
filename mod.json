@@ -1,23 +1,34 @@
 {
-    "Name": "PunchinOut",
+    "Name": "BasicPanic",
 
     "Version": "0.1.0",
-    "Description": "Adds non-PC ejection chance each time that a mech is attacked.",
-    "Author": "mpstark",
-    "Website": "www.github.com/mpstark/PunchinOut",
+    "Description": "Adds basic panic system, based on mpstark's Punchin' Out.",
+    "Author": "RealityMachina, forked from mpstark's work",
+    "Website": "https://github.com/RealityMachina/PunchinOut",
 
     "DLL": "PunchinOut.dll",
     
     "Settings": {
         "PlayerCharacterAlwaysResists": true,
-        "GutsTenAlwaysResists": true,
-        "KnockedDownCannotEject": true,
+
+        "AtLeastOneChanceToPanic": true,
+        "AlwaysGatedChanges": true,
+        "FatiguedAimModifier": -5,
+        "StressedAimModifier": -10,
+        "StressedToHitModifier": 5,
+        "PanickedAimModifier": -15,
+        "PanickedToHitModifier": 5,
 
         "MaxEjectChance": 25,
-
+        "GutsTenAlwaysResists": true,
+        "ComboTenAlwaysResists": false,
+        "TacticsTenAlwaysResists": true,
+        "KnockedDownCannotEject": true,
         "BaseEjectionResist": 10,
-        "GutsEjectionResistPerPoint": 3,
+        "GutsEjectionResistPerPoint": 2,
+        "TacticsEjectionResistPerPoint": 1,
 
+        
         "UnsteadyModifier": 3,
         "PilotHealthMaxModifier": 5,
 

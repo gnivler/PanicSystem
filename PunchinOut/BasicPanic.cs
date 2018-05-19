@@ -6,7 +6,7 @@ using Harmony;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
 using System.Collections.Generic;
-using UnityEngine;
+using PunchinOut;
 
 namespace BasicPanic
 {
@@ -17,28 +17,161 @@ namespace BasicPanic
     {
         public static void Prefix(AttackStackSequence __instance, MessageCenterMessage message)
         {
-            var attackCompleteMessage = message as AttackCompleteMessage;
+            AttackCompleteMessage attackCompleteMessage = message as AttackCompleteMessage;
             bool ShouldPanic = false;
             Mech mech = null;
             if (attackCompleteMessage  == null || attackCompleteMessage.stackItemUID != __instance.SequenceGUID)
                 return;
 
-            if(__instance.directorSequences[0].target is Mech)
+            if (__instance.directorSequences[0].target is Mech)
             {
                 ShouldPanic = RollHelpers.ShouldPanic(__instance.directorSequences[0].target as Mech, attackCompleteMessage.attackSequence);
-                if(ShouldPanic)
-                {
-                    mech = __instance.directorSequences[0].target as Mech;
-                }
+                mech = __instance.directorSequences[0].target as Mech;
+                
             }
 
-
-            if (ShouldPanic && BasicPanic.RollForEjectionResult(mech, attackCompleteMessage.attackSequence))
+            if (PanicHelpers.IsPanicking(mech) && BasicPanic.RollForEjectionResult(mech, attackCompleteMessage.attackSequence))
             {
                 mech.EjectPilot(mech.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
             }
         }
     }
+
+    [HarmonyPatch(typeof(AbstractActor), "OnNewRound")]
+    public static class TurnDirector_BeginNewRound_Patch
+    {
+        public static void Prefix(AbstractActor __instance)
+        {
+
+            if (!(__instance is Mech mech) || mech.IsDead || (mech.IsFlaggedForDeath && mech.HasHandledDeath))
+                return;
+
+            bool FoundPilot = false;
+            Pilot pilot = mech.GetPilot();
+            int index = 0;
+
+            if (pilot == null)
+                return;
+
+            index = PanicHelpers.GetTrackedPilotIndex(pilot);
+            if (index > 0)
+            {
+                FoundPilot = true;
+            }
+
+
+            if (!FoundPilot)
+            {
+                Holder.TrackedPilots.Add(new PanicTracker(pilot)); //add a new tracker to tracked pilot, then we run it all over again;
+
+                index = PanicHelpers.GetTrackedPilotIndex(pilot);
+                if(index > 0)
+                {
+                    FoundPilot = true;
+                }
+            }
+
+            if(FoundPilot && !Holder.TrackedPilots[index].ChangedRecently)
+            {
+                if(Holder.TrackedPilots[index].pilotStatus == PanicStatus.Fatigued)
+                {
+                    
+                    Holder.TrackedPilots[index].pilotStatus = PanicStatus.Normal;
+                }
+
+                if (Holder.TrackedPilots[index].pilotStatus == PanicStatus.Stressed)
+                {
+                    Holder.TrackedPilots[index].pilotStatus = PanicStatus.Fatigued;
+                }
+
+                if (Holder.TrackedPilots[index].pilotStatus == PanicStatus.Panicked)
+                {
+                    Holder.TrackedPilots[index].pilotStatus = PanicStatus.Stressed;
+                }
+
+            }
+            //reset panic values to account for panic level changes if we get this far, and we recovered.
+
+            if (Holder.TrackedPilots[index].ChangedRecently)
+            {
+                Holder.TrackedPilots[index].ChangedRecently = false;
+            }
+            else
+            {
+
+                __instance.StatCollection.ModifyStat<float>("Panic Turn Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f, -1, true);
+                __instance.StatCollection.ModifyStat<float>("Panic Turn Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f, -1, true);
+
+
+                if (Holder.TrackedPilots[index].pilotStatus == PanicStatus.Fatigued)
+                {
+                    __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Recovered To Fatigued!", FloatieMessage.MessageNature.Buff, true)));
+                    __instance.StatCollection.ModifyStat<float>("Panic Turn: Fatigued Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, BasicPanic.Settings.FatiguedAimModifier, -1, true);
+                }
+
+
+                else if (Holder.TrackedPilots[index].pilotStatus == PanicStatus.Stressed)
+                {
+                    __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Recovered To Stressed!", FloatieMessage.MessageNature.Buff, true)));
+                    __instance.StatCollection.ModifyStat<float>("Panic Turn: Stressed Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, BasicPanic.Settings.StressedAimModifier, -1, true);
+                    __instance.StatCollection.ModifyStat<float>("Panic Turn: Stressed Defence", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, BasicPanic.Settings.StressedToHitModifier, -1, true);
+                }
+
+                else //now normal
+                {
+                    __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Recovered To Normal!", FloatieMessage.MessageNature.Buff, true)));
+                    __instance.StatCollection.ModifyStat<float>("Panic Turn: Panicking Aim!", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, BasicPanic.Settings.PanickedAimModifier, -1, true);
+                    __instance.StatCollection.ModifyStat<float>("Panic Turn: Panicking Defence!", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, BasicPanic.Settings.PanickedToHitModifier, -1, true);
+                }
+            }
+        }
+    }
+
+
+    public static class PanicHelpers
+    {
+        public static bool IsPanicking(Mech mech)
+        {
+            if (mech == null || mech.IsDead || (mech.IsFlaggedForDeath && mech.HasHandledDeath))
+                return false;
+
+            var pilot = mech.GetPilot();
+
+            if (pilot == null)
+                return false;
+
+            int i = GetTrackedPilotIndex(pilot);
+
+            if(i > 0)
+            {
+                if (Holder.TrackedPilots[i].trackedPilot == pilot.GUID &&
+                    Holder.TrackedPilots[i].pilotStatus == PanicStatus.Panicked)
+                {
+                    return true;
+                }
+            }
+
+            
+
+            return false;
+        }
+
+        public static int GetTrackedPilotIndex(Pilot pilot)
+        {
+            for (int i = 0; i < Holder.TrackedPilots.Count; i++)
+            {
+
+                if (Holder.TrackedPilots[i].trackedPilot == pilot.GUID)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+    }
+
     public static class RollHelpers
     {
         public static bool ShouldPanic(Mech mech, AttackDirector.AttackSequence attackSequence)
@@ -56,11 +189,15 @@ namespace BasicPanic
             var guts = mech.SkillGuts;
             var tactics = mech.SkillTactics;
             var total = guts + tactics;
-
+            var index = PanicHelpers.GetTrackedPilotIndex(pilot);
             float lowestRemaining = mech.CenterTorsoStructure + mech.CenterTorsoFrontArmor;
             float panicModifiers = 0;
 
-            if(Holder.JustChangedPilots.Contains(pilot) && BasicPanic.Settings.AlwaysGatedChanges)
+            if (Holder.TrackedPilots[index].trackedPilot != pilot.GUID)
+                return false;
+
+            if(Holder.TrackedPilots[index].trackedPilot == pilot.GUID && 
+                Holder.TrackedPilots[index].ChangedRecently && BasicPanic.Settings.AlwaysGatedChanges)
             {
                 return false;
             }
@@ -166,20 +303,38 @@ namespace BasicPanic
 
             if(rngRoll < PanicRoll)
             {
-                if(!Holder.FatiguedPilots.Contains(pilot))
+
+                if (Holder.TrackedPilots[index].trackedPilot == pilot.GUID && Holder.TrackedPilots[index].pilotStatus == PanicStatus.Normal)
                 {
                     mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Fatigued!", FloatieMessage.MessageNature.Debuff, true)));
-                    Holder.FatiguedPilots.Add(pilot);
+                    Holder.TrackedPilots[index].pilotStatus = PanicStatus.Fatigued;
+                    Holder.TrackedPilots[index].ChangedRecently = true;
+
+                    mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f, -1, true);
+                    mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f, -1, true);
+                    mech.StatCollection.ModifyStat<float>("Panic Attack: Fatigued Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, BasicPanic.Settings.FatiguedAimModifier, -1, true);
+
                 }
-                else if (!Holder.StressedPilots.Contains(pilot))
+                else if (Holder.TrackedPilots[index].trackedPilot == pilot.GUID && Holder.TrackedPilots[index].pilotStatus == PanicStatus.Fatigued)
                 {
-
+                    mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Stressed!", FloatieMessage.MessageNature.Debuff, true)));
+                    Holder.TrackedPilots[index].pilotStatus = PanicStatus.Stressed;
+                    Holder.TrackedPilots[index].ChangedRecently = true;
+                    mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f, -1, true);
+                    mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f, -1, true);
+                    mech.StatCollection.ModifyStat<float>("Panic Attack: Stressed Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, BasicPanic.Settings.StressedAimModifier, -1, true);
+                    mech.StatCollection.ModifyStat<float>("Panic Attack: Stressed Defence", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, BasicPanic.Settings.StressedToHitModifier, -1, true);
                 }
-                else if (!Holder.PanickedPilots.Contains(pilot))
+                else if (Holder.TrackedPilots[index].trackedPilot == pilot.GUID && Holder.TrackedPilots[index].pilotStatus == PanicStatus.Stressed)
                 {
-
+                    mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Panicked!", FloatieMessage.MessageNature.Debuff, true)));
+                    Holder.TrackedPilots[index].pilotStatus = PanicStatus.Panicked;
+                    Holder.TrackedPilots[index].ChangedRecently = true;
+                    mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f, -1, true);
+                    mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f, -1, true);
+                    mech.StatCollection.ModifyStat<float>("Panic Attack: Panicking Aim!", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, BasicPanic.Settings.PanickedAimModifier, -1, true);
+                    mech.StatCollection.ModifyStat<float>("Panic Attack: Panicking Defence!", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, BasicPanic.Settings.PanickedToHitModifier, -1, true);
                 }
-
                 return true;
             }
             mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Resisted Panic Check!", FloatieMessage.MessageNature.Buff, true)));
@@ -196,7 +351,7 @@ namespace BasicPanic
         //rolls out of 20
         //max guts and tactics almost prevents any panicking (or being the player character, by default)
         public bool AtLeastOneChanceToPanic = true;
-        public bool AlwaysGatedChanges = false;
+        public bool AlwaysGatedChanges = true;
 
         //fatigued debuffs
         //-5 to aim
@@ -238,11 +393,13 @@ namespace BasicPanic
     }
     public static class Holder
     {
-        public static HashSet<Pilot> FatiguedPilots; //experiences minor accuracy debuffs
-        public static HashSet<Pilot> StressedPilots; //experiences more major accuracy debuffs
-        public static HashSet<Pilot> PanickedPilots; //is ready to eject
-        public static HashSet<Pilot> JustChangedPilots; //pilots that just changed: unless their mech is badly damaged, they won't be able to change levels again
-        //if a pilot is in none of the top three lists, assume they're "normal" 
+        public static List<PanicTracker> TrackedPilots;
+
+        public static void Reset()
+        {
+            TrackedPilots = new List<PanicTracker>();
+        }
+        
     }
 
     public static class BasicPanic
@@ -251,7 +408,7 @@ namespace BasicPanic
 
         public static void Init(string modDir, string modSettings)
         {
-            var harmony = HarmonyInstance.Create("io.github.mpstark.PunchinOut");
+            var harmony = HarmonyInstance.Create("io.github.RealityMachina.BasicPanic");
             harmony.PatchAll(Assembly.GetExecutingAssembly());
 
             try

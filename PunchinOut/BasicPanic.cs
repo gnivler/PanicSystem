@@ -20,6 +20,7 @@ namespace BasicPanic
             AttackCompleteMessage attackCompleteMessage = message as AttackCompleteMessage;
             bool ShouldPanic = false;
             Mech mech = null;
+
             if (attackCompleteMessage  == null || attackCompleteMessage.stackItemUID != __instance.SequenceGUID)
                 return;
 
@@ -146,26 +147,25 @@ namespace BasicPanic
 
             var pilot = mech.GetPilot();
 
-            if (pilot == null)
-                return false;
-
-            int i = GetTrackedPilotIndex(pilot);
-
-            if(i > 0)
+            if (pilot != null)
             {
-                if (Holder.TrackedPilots[i].trackedPilot == pilot.GUID &&
-                    Holder.TrackedPilots[i].pilotStatus == PanicStatus.Panicked)
+                int i = GetTrackedPilotIndex(pilot);
+
+                if (i > 0)
+                {
+                    if (Holder.TrackedPilots[i].trackedPilot == pilot.GUID &&
+                        Holder.TrackedPilots[i].pilotStatus == PanicStatus.Panicked)
+                    {
+                        return true;
+                    }
+                }
+
+                if (pilot.Health - pilot.Injuries <= BasicPanic.Settings.MinimumHealthToAlwaysEjectRoll && !pilot.LethalInjuries)
                 {
                     return true;
                 }
             }
-
-            if(pilot.Health - pilot.Injuries <= BasicPanic.Settings.MinimumHealthToAlwaysEjectRoll && !pilot.LethalInjuries)
-            {
-                return true;
-            }
-
-            if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m == mech))
+            if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m == mech as AbstractActor))
             {
                 return true;
             }
@@ -209,6 +209,12 @@ namespace BasicPanic
             var index = PanicHelpers.GetTrackedPilotIndex(pilot);
             float lowestRemaining = mech.CenterTorsoStructure + mech.CenterTorsoFrontArmor;
             float panicModifiers = 0;
+
+            if(index < 0)
+            {
+                Holder.TrackedPilots.Add(new PanicTracker(pilot)); //add a new tracker to tracked pilot, then we run it all over again;
+                index = PanicHelpers.GetTrackedPilotIndex(pilot);
+            }
 
             if (Holder.TrackedPilots[index].trackedPilot != pilot.GUID)
                 return false;
@@ -298,7 +304,7 @@ namespace BasicPanic
             }
 
             // alone
-            if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m == mech))
+            if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m == mech as AbstractActor))
             {
                 panicModifiers += BasicPanic.Settings.AloneModifier;
             }
@@ -320,6 +326,10 @@ namespace BasicPanic
 
             PanicRoll = Math.Min(PanicRoll, 20);
 
+            if(PanicRoll < 0)
+            {
+                PanicRoll = 0; //make this have some kind of chance to happen
+            }
             PanicRoll = UnityEngine.Random.Range(PanicRoll, 20); // actual roll
             //we get this far, we reduce total to under the max panic chance
             total = Math.Min(total, 20 - 1);
@@ -395,7 +405,7 @@ namespace BasicPanic
         public float PanickedToHitModifier = 5;
         public bool GutsTenAlwaysResists = true;
         public bool ComboTenAlwaysResists = false;
-        public bool TacticsTenAlwaysResists = true;
+        public bool TacticsTenAlwaysResists = false;
         public int MinimumHealthToAlwaysEjectRoll = 1;
         public bool KnockedDownCannotEject = true;
 
@@ -404,18 +414,18 @@ namespace BasicPanic
         public float BaseEjectionResist = 10;
         public float GutsEjectionResistPerPoint = 2;
         public float TacticsEjectionResistPerPoint = 1;
-        public float UnsteadyModifier = 3;
-        public float PilotHealthMaxModifier = 5;
+        public float UnsteadyModifier = 5;
+        public float PilotHealthMaxModifier = 10;
 
-        public float HeadDamageMaxModifier = 5;
+        public float HeadDamageMaxModifier = 10;
         public float CTDamageMaxModifier = 10;
-        public float SideTorsoInternalDamageMaxModifier = 5;
+        public float SideTorsoInternalDamageMaxModifier = 10;
         public float LeggedMaxModifier = 10;
 
-        public float NextShotLikeThatCouldKill = 10;
+        public float NextShotLikeThatCouldKill = 15;
         
-        public float WeaponlessModifier = 10;
-        public float AloneModifier = 10;
+        public float WeaponlessModifier = 15;
+        public float AloneModifier = 20;
     }
     public static class Holder
     {
@@ -560,7 +570,7 @@ namespace BasicPanic
             }
 
             // alone
-            if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m == mech))
+            if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m == mech as AbstractActor))
             {
                 ejectModifiers += Settings.AloneModifier;
             }

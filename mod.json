@@ -19,27 +19,27 @@
         "PanickedAimModifier": -15,
         "PanickedToHitModifier": 5,
 
-        "MaxEjectChance": 25,
+        "MinimumHealthToAlwaysEjectRoll": 1,
+        "MaxEjectChance": 50,
         "GutsTenAlwaysResists": true,
         "ComboTenAlwaysResists": false,
-        "TacticsTenAlwaysResists": true,
+        "TacticsTenAlwaysResists": false,
         "KnockedDownCannotEject": true,
+
         "BaseEjectionResist": 10,
         "GutsEjectionResistPerPoint": 2,
         "TacticsEjectionResistPerPoint": 1,
-
-
-        "UnsteadyModifier": 3,
-        "PilotHealthMaxModifier": 5,
+        "UnsteadyModifier": 5,
+        "PilotHealthMaxModifier": 10,
 
         "HeadDamageMaxModifier": 10,
-        "CTDamageMaxModifier": 5,
-        "SideTorsoInternalDamageMaxModifier": 5,
+        "CTDamageMaxModifier": 10,
+        "SideTorsoInternalDamageMaxModifier": 10,
         "LeggedMaxModifier": 10,
 
-        "NextShotLikeThatCouldKill": 10,
+        "NextShotLikeThatCouldKill": 15,
         
         "WeaponlessModifier": 15,
-        "AloneModifier": 5
+        "AloneModifier": 20
     }
 }

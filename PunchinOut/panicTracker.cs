@@ -21,7 +21,8 @@ namespace PunchinOut
 
         public PanicTracker(Pilot pilot)
         {
-            trackedPilot = pilot.GUID;
+
+             trackedPilot = pilot.GUID;
             pilotStatus = PanicStatus.Normal;
             ChangedRecently = false;
         }

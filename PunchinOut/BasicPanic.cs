@@ -145,7 +145,7 @@ namespace BasicPanic
             if (mech == null || mech.IsDead || (mech.IsFlaggedForDeath && mech.HasHandledDeath))
                 return false;
 
-            var pilot = mech.GetPilot();
+            Pilot pilot = mech.GetPilot();
 
             if (pilot != null)
             {
@@ -175,6 +175,11 @@ namespace BasicPanic
 
         public static int GetTrackedPilotIndex(Pilot pilot)
         {
+            if (pilot == null)
+            {
+                return -1;
+            }
+
             for (int i = 0; i < Holder.TrackedPilots.Count; i++)
             {
 
@@ -194,25 +199,38 @@ namespace BasicPanic
         public static bool ShouldPanic(Mech mech, AttackDirector.AttackSequence attackSequence)
         {
             if (mech == null || mech.IsDead || (mech.IsFlaggedForDeath && mech.HasHandledDeath))
-                    return false;
+            {
+                return false;
+            }
 
             if (!attackSequence.attackDidDamage) //no point in panicking over nothing
+            {
                 return false;
+            }
 
             int PanicRoll = 0;
 
-            var pilot = mech.GetPilot();
+            Pilot pilot = mech.GetPilot();
             var weapons = mech.Weapons;
             var guts = mech.SkillGuts;
             var tactics = mech.SkillTactics;
             var total = guts + tactics;
-            var index = PanicHelpers.GetTrackedPilotIndex(pilot);
+            int index; 
+            if (pilot != null)
+            {
+                index = PanicHelpers.GetTrackedPilotIndex(pilot);
+            }
+            else
+            {
+                return false;
+            }
             float lowestRemaining = mech.CenterTorsoStructure + mech.CenterTorsoFrontArmor;
             float panicModifiers = 0;
 
             if(index < 0)
             {
                 Holder.TrackedPilots.Add(new PanicTracker(pilot)); //add a new tracker to tracked pilot, then we run it all over again;
+
                 index = PanicHelpers.GetTrackedPilotIndex(pilot);
             }
 
@@ -470,7 +488,7 @@ namespace BasicPanic
             if (!attackSequence.attackDidDamage)
                 return false;
 
-            var pilot = mech.GetPilot();
+            Pilot pilot = mech.GetPilot();
             var weapons = mech.Weapons;
             var guts = mech.SkillGuts;
             var tactics = mech.SkillTactics;

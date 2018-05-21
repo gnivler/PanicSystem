@@ -55,7 +55,7 @@ namespace BasicPanic
                 return;
 
             index = PanicHelpers.GetTrackedPilotIndex(pilot);
-            if (index > 0)
+            if (index > -1)
             {
                 FoundPilot = true;
             }
@@ -66,9 +66,13 @@ namespace BasicPanic
                 Holder.TrackedPilots.Add(new PanicTracker(pilot)); //add a new tracker to tracked pilot, then we run it all over again;
 
                 index = PanicHelpers.GetTrackedPilotIndex(pilot);
-                if(index > 0)
+                if(index > -1)
                 {
                     FoundPilot = true;
+                }
+                else
+                {
+                    return;
                 }
             }
 
@@ -76,7 +80,6 @@ namespace BasicPanic
             {
                 if(Holder.TrackedPilots[index].pilotStatus == PanicStatus.Fatigued)
                 {
-                    
                     Holder.TrackedPilots[index].pilotStatus = PanicStatus.Normal;
                 }
 
@@ -151,7 +154,7 @@ namespace BasicPanic
             {
                 int i = GetTrackedPilotIndex(pilot);
 
-                if (i > 0)
+                if (i > -1)
                 {
                     if (Holder.TrackedPilots[i].trackedPilot == pilot.GUID &&
                         Holder.TrackedPilots[i].pilotStatus == PanicStatus.Panicked)
@@ -232,6 +235,10 @@ namespace BasicPanic
                 Holder.TrackedPilots.Add(new PanicTracker(pilot)); //add a new tracker to tracked pilot, then we run it all over again;
 
                 index = PanicHelpers.GetTrackedPilotIndex(pilot);
+                if(index < 0)
+                {
+                    return false;
+                }
             }
 
             if (Holder.TrackedPilots[index].trackedPilot != pilot.GUID)
@@ -411,20 +418,20 @@ namespace BasicPanic
         public bool AlwaysGatedChanges = true;
         public float MaxPanicResistTotal = 15; //at least 20% chance to panic if you can't nullify the whole thing
         //fatigued debuffs
-        //-5 to aim
-        public float FatiguedAimModifier = -5;
+        //+1 difficulty to attacks
+        public float FatiguedAimModifier = 1;
 
         //stressed debuffs
-        //-10 to aim
-        //+5 to being hit
+        //+2 difficulty to attacks
+        //-1 difficulty to being hit
 
-        public float StressedAimModifier = -10;
-        public float StressedToHitModifier = 5;
+        public float StressedAimModifier = 2;
+        public float StressedToHitModifier = -1;
         //ejection
-        //-15 to aim
-        //+5 to being hit
-        public float PanickedAimModifier = -15;
-        public float PanickedToHitModifier = 5;
+        //+4 difficulty to attacks
+        //-2 difficulty to being hit
+        public float PanickedAimModifier = 4;
+        public float PanickedToHitModifier = -2;
         public bool GutsTenAlwaysResists = false;
         public bool ComboTenAlwaysResists = false;
         public bool TacticsTenAlwaysResists = false;

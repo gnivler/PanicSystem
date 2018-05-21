@@ -165,7 +165,7 @@ namespace BasicPanic
                     return true;
                 }
             }
-            if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m == mech as AbstractActor))
+            if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m.GUID == mech.GUID))
             {
                 return true;
             }
@@ -331,7 +331,7 @@ namespace BasicPanic
             if(mech.team == mech.Combat.LocalPlayerTeam)
             {
                 MoraleConstantsDef moraleDef = mech.Combat.Constants.GetActiveMoraleDef(mech.Combat);
-                panicModifiers -= Math.Max(mech.Combat.LocalPlayerTeam.Morale - moraleDef.CanUseInspireLevel, 0);
+                panicModifiers -= Math.Max(mech.Combat.LocalPlayerTeam.Morale - moraleDef.CanUseInspireLevel, 0) / 2;
             }
 
             //reduce modifiers by 5 to account change to D20 roll instead of D100 roll, then min it t0 20 or modified floor
@@ -350,11 +350,11 @@ namespace BasicPanic
             }
             PanicRoll = UnityEngine.Random.Range(PanicRoll, 20); // actual roll
             //we get this far, we reduce total to under the max panic chance
-            total = Math.Min(total, 20 - 1);
+            total = Math.Min(total, (int)BasicPanic.Settings.MaxPanicResistTotal);
 
             int rngRoll = UnityEngine.Random.Range(total, 20);
 
-            if(rngRoll < PanicRoll)
+            if(rngRoll <= PanicRoll)
             {
 
                 if (Holder.TrackedPilots[index].trackedPilot == pilot.GUID && Holder.TrackedPilots[index].pilotStatus == PanicStatus.Fatigued)
@@ -405,7 +405,7 @@ namespace BasicPanic
         //max guts and tactics almost prevents any panicking (or being the player character, by default)
         public bool AtLeastOneChanceToPanic = true;
         public bool AlwaysGatedChanges = true;
-
+        public float MaxPanicResistTotal = 15; //at least 20% chance to panic if you can't nullify the whole thing
         //fatigued debuffs
         //-5 to aim
         public float FatiguedAimModifier = -5;
@@ -421,7 +421,7 @@ namespace BasicPanic
         //+5 to being hit
         public float PanickedAimModifier = -15;
         public float PanickedToHitModifier = 5;
-        public bool GutsTenAlwaysResists = true;
+        public bool GutsTenAlwaysResists = false;
         public bool ComboTenAlwaysResists = false;
         public bool TacticsTenAlwaysResists = false;
         public int MinimumHealthToAlwaysEjectRoll = 1;

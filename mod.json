@@ -13,6 +13,7 @@
 
         "AtLeastOneChanceToPanic": true,
         "AlwaysGatedChanges": true,
+        "MaxPanicResistTotal": 15,
         "FatiguedAimModifier": -5,
         "StressedAimModifier": -10,
         "StressedToHitModifier": 5,
@@ -21,7 +22,7 @@
 
         "MinimumHealthToAlwaysEjectRoll": 1,
         "MaxEjectChance": 50,
-        "GutsTenAlwaysResists": true,
+        "GutsTenAlwaysResists": false,
         "ComboTenAlwaysResists": false,
         "TacticsTenAlwaysResists": false,
         "KnockedDownCannotEject": true,

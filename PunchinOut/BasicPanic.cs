@@ -357,7 +357,7 @@ namespace BasicPanic
             if(rngRoll <= PanicRoll)
             {
 
-                if (Holder.TrackedPilots[index].trackedPilot == pilot.GUID && Holder.TrackedPilots[index].pilotStatus == PanicStatus.Fatigued)
+                if (Holder.TrackedPilots[index].trackedPilot == pilot.GUID && Holder.TrackedPilots[index].pilotStatus == PanicStatus.Normal)
                 {
                     mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Fatigued!", FloatieMessage.MessageNature.Debuff, true)));
                     Holder.TrackedPilots[index].pilotStatus = PanicStatus.Fatigued;
@@ -368,7 +368,7 @@ namespace BasicPanic
                     mech.StatCollection.ModifyStat<float>("Panic Attack: Fatigued Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, BasicPanic.Settings.FatiguedAimModifier, -1, true);
 
                 }
-                else if (Holder.TrackedPilots[index].trackedPilot == pilot.GUID && Holder.TrackedPilots[index].pilotStatus == PanicStatus.Stressed)
+                else if (Holder.TrackedPilots[index].trackedPilot == pilot.GUID && Holder.TrackedPilots[index].pilotStatus == PanicStatus.Fatigued)
                 {
                     mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Stressed!", FloatieMessage.MessageNature.Debuff, true)));
                     Holder.TrackedPilots[index].pilotStatus = PanicStatus.Stressed;
@@ -377,7 +377,7 @@ namespace BasicPanic
                     mech.StatCollection.ModifyStat<float>("Panic Attack: Stressed Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, BasicPanic.Settings.StressedAimModifier, -1, true);
                     mech.StatCollection.ModifyStat<float>("Panic Attack: Stressed Defence", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, BasicPanic.Settings.StressedToHitModifier, -1, true);
                 }
-                else if (Holder.TrackedPilots[index].trackedPilot == pilot.GUID && Holder.TrackedPilots[index].pilotStatus == PanicStatus.Panicked)
+                else if (Holder.TrackedPilots[index].trackedPilot == pilot.GUID && Holder.TrackedPilots[index].pilotStatus == PanicStatus.Stressed)
                 {
                     mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Panicked!", FloatieMessage.MessageNature.Debuff, true)));
                     Holder.TrackedPilots[index].pilotStatus = PanicStatus.Panicked;
@@ -386,6 +386,10 @@ namespace BasicPanic
                     mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f, -1, true);
                     mech.StatCollection.ModifyStat<float>("Panic Attack: Panicking Aim!", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, BasicPanic.Settings.PanickedAimModifier, -1, true);
                     mech.StatCollection.ModifyStat<float>("Panic Attack: Panicking Defence!", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, BasicPanic.Settings.PanickedToHitModifier, -1, true);
+                }
+                else
+                {
+                    mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Still Panicking!", FloatieMessage.MessageNature.Debuff, true)));
                 }
                 Holder.TrackedPilots[index].ChangedRecently = true;
                 return true;

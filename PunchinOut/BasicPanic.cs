@@ -7,6 +7,7 @@ using JetBrains.Annotations;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using PunchinOut;
+using BattleTech.Serialization;
 
 namespace BasicPanic
 {
@@ -464,8 +465,10 @@ namespace BasicPanic
         public float WeaponlessModifier = 15;
         public float AloneModifier = 20;
     }
+    [SerializableContract("Holder")]
     public static class Holder
     {
+        [SerializableMember(SerializationTarget.SaveGame)]
         public static List<PanicTracker> TrackedPilots;
 
         public static void Reset()

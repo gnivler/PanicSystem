@@ -16,13 +16,13 @@ namespace PunchinOut
     public class PanicTracker
     {
         public PanicStatus pilotStatus;
-        public string trackedPilot;
+        public string trackedMech;
         public bool ChangedRecently;
 
-        public PanicTracker(Pilot pilot)
+        public PanicTracker(Mech mech)
         {
 
-            trackedPilot = pilot.GUID;
+            trackedMech = mech.GUID;
             pilotStatus = PanicStatus.Normal;
             ChangedRecently = false;
         }

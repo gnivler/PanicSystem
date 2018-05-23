@@ -27,8 +27,9 @@ namespace BasicPanic
 
             if (__instance.directorSequences[0].target is Mech)
             {
-                ShouldPanic = RollHelpers.ShouldPanic(__instance.directorSequences[0].target as Mech, attackCompleteMessage.attackSequence);
                 mech = __instance.directorSequences[0].target as Mech;
+                ShouldPanic = RollHelpers.ShouldPanic(mech, attackCompleteMessage.attackSequence);
+                
                 
             }
 
@@ -194,6 +195,11 @@ namespace BasicPanic
                 return -1;
             }
 
+            if(Holder.TrackedPilots == null)
+            {
+                Holder.TrackedPilots = new List<PanicTracker>();
+            }
+
             for (int i = 0; i < Holder.TrackedPilots.Count; i++)
             {
 
@@ -213,6 +219,11 @@ namespace BasicPanic
         public static bool ShouldPanic(Mech mech, AttackDirector.AttackSequence attackSequence)
         {
             if (mech == null || mech.IsDead || (mech.IsFlaggedForDeath && mech.HasHandledDeath))
+            {
+                return false;
+            }
+
+            if(attackSequence == null)
             {
                 return false;
             }

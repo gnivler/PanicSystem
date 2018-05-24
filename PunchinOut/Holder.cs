@@ -47,7 +47,7 @@ namespace BasicPanic
             return -1;
         }
 
-        public static void SerializeStorageJson() //fired when a save game is made
+        public static void SerializeStorageJson(string GUID) //fired when a save game is made
         {
             if(metaTrackers == null)
             {
@@ -61,7 +61,17 @@ namespace BasicPanic
                 {
                     metaTrackers[index].SetTrackedPilots(TrackedPilots); //have our meta tracker get the latest data
                 }
+
+                if (GUID != null) //set GUID if it's applicable
+                {
+                    if(metaTrackers[index].SimGameGUID != GUID)
+                    {
+                        metaTrackers[index].SetGameGUID(GUID);
+                    }
+                    
+                }
             }
+
 
             try
             {

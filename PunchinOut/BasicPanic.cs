@@ -5,7 +5,6 @@ using BattleTech;
 using Harmony;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
-using System.Collections.Generic;
 using PunchinOut;
 using System.IO;
 
@@ -34,7 +33,7 @@ namespace BasicPanic
                 
             }
 
-            Holder.Serialize();
+            Holder.SerializeActiveJson();
 
             if (PanicHelpers.IsPanicking(mech) && BasicPanic.RollForEjectionResult(mech, attackCompleteMessage.attackSequence))
             {
@@ -144,7 +143,7 @@ namespace BasicPanic
                 }
             }
 
-            Holder.Serialize();
+            Holder.SerializeActiveJson();
         }
     }
 
@@ -202,7 +201,7 @@ namespace BasicPanic
 
             if(Holder.TrackedPilots == null)
             {
-                  Holder.Deserialize();
+                  Holder.DeserializeActiveJson();
             }
 
             for (int i = 0; i < Holder.TrackedPilots.Count; i++)
@@ -484,48 +483,6 @@ namespace BasicPanic
         public float AloneModifier = 20;
     }
 
-    public static class Holder
-    {
-        public static List<PanicTracker> TrackedPilots;
-        public static string JsonPath;
-        public static string ModDirectory;
-        public static void Reset()
-        {
-            TrackedPilots = new List<PanicTracker>();
-        }
-
-        public static void Serialize()
-        {
-            try
-            {
-                if (TrackedPilots != null)
-                {
-                    File.WriteAllText(JsonPath, JsonConvert.SerializeObject(TrackedPilots));
-                }
-            }
-            catch (Exception)
-            {
-                return;
-            }
-        }
-
-        public static void Deserialize()
-        {
-            // read all text, then deserialize into an object
-            List<PanicTracker> panicTrackers = JsonConvert.DeserializeObject<List<PanicTracker>>(File.ReadAllText(JsonPath));
-
-            if (panicTrackers == null)
-            {
-                TrackedPilots = new List<PanicTracker>();
-            }
-            else
-            {
-                TrackedPilots = panicTrackers;
-            }
-
-        }
-    }
-
     public static class BasicPanic
     {
         internal static ModSettings Settings;
@@ -535,7 +492,8 @@ namespace BasicPanic
             var harmony = HarmonyInstance.Create("io.github.RealityMachina.BasicPanic");
             harmony.PatchAll(Assembly.GetExecutingAssembly());
             Holder.ModDirectory = Path.Combine(Path.GetDirectoryName(VersionManifestUtilities.MANIFEST_FILEPATH), @"..\..\..\Mods\BasicPanicSystem");
-            Holder.JsonPath = Path.Combine(Holder.ModDirectory, "BasicPanicSystem.json");
+            Holder.ActiveJsonPath = Path.Combine(Holder.ModDirectory, "BasicPanicSystem.json");
+            Holder.StorageJsonPath = Path.Combine(Holder.ModDirectory, "BasicPanicSystemStorage.json");
             try
             {
                 Settings = JsonConvert.DeserializeObject<ModSettings>(modSettings);

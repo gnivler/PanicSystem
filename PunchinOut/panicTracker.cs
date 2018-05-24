@@ -41,4 +41,26 @@ namespace PunchinOut
         }
     }
 
+    public class MetaTracker
+    {
+        public List<PanicTracker> TrackedPilots { get; private set; }
+        public DateTime SaveGameTimeStamp { get; private set; }
+
+        public MetaTracker()
+        {
+            //do nothing for this is when we deserialize/serialize objects
+        }
+
+        public void SetSaveGameTime(DateTime savedate)
+        {
+            SaveGameTimeStamp = savedate;
+        }
+
+        public void SetTrackedPilots(List<PanicTracker> trackers)
+        {
+            TrackedPilots = trackers;
+        }    
+
+            
+    }
 }

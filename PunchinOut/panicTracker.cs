@@ -45,10 +45,16 @@ namespace PunchinOut
     {
         public List<PanicTracker> TrackedPilots { get; private set; }
         public DateTime SaveGameTimeStamp { get; private set; }
+        public string SimGameGUID { get; private set; }
 
         public MetaTracker()
         {
             //do nothing for this is when we deserialize/serialize objects
+        }
+
+        public void SetGameGUID(string GUID)
+        {
+            SimGameGUID = GUID;
         }
 
         public void SetSaveGameTime(DateTime savedate)

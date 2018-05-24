@@ -10,7 +10,7 @@ namespace BasicPanic
     {
         public static List<PanicTracker> TrackedPilots;
         public static List<MetaTracker> metaTrackers;
-        public static int CurrentIndex;
+        private static int CurrentIndex;
         public static string ActiveJsonPath; //store current tracker here
         public static string StorageJsonPath; //store our meta trackers here
         public static string ModDirectory;
@@ -21,18 +21,20 @@ namespace BasicPanic
         }
         public static void Resync(DateTime previousSaveTime) //fired before a save deserializes itself through a patch on GameInstanceSave's PostDeserialization
         {
-            int index = FindTracker(previousSaveTime);
+            DeserializeStorageJson();
+            int index = FindTrackerByTime(previousSaveTime);
 
             if(index > -1)
             {
                 if(metaTrackers[index].TrackedPilots != null)
                 {
                     TrackedPilots = metaTrackers[index].TrackedPilots;
+                    CurrentIndex = index;
                 }
             }
         }
 
-        public static int FindTracker(DateTime previousSaveTime)
+        public static int FindTrackerByTime(DateTime previousSaveTime)
         {
             for(int i = 0; i < metaTrackers.Count; i++)
             {
@@ -47,6 +49,20 @@ namespace BasicPanic
 
         public static void SerializeStorageJson() //fired when a save game is made
         {
+            if(metaTrackers == null)
+            {
+                metaTrackers = new List<MetaTracker>();
+            }
+            else if (CurrentIndex > -1)
+            {
+                int index = CurrentIndex;
+
+                if(metaTrackers[index] != null)
+                {
+                    metaTrackers[index].SetTrackedPilots(TrackedPilots); //have our meta tracker get the latest data
+                }
+            }
+
             try
             {
                 if (metaTrackers != null)
@@ -59,7 +75,7 @@ namespace BasicPanic
                 return;
             }
         }
-        public static void DeserializeStorageJson() //fired on game start
+        public static void DeserializeStorageJson() //fired when we're close to using the json data
         {
             List<MetaTracker> trackers;
             
@@ -99,26 +115,28 @@ namespace BasicPanic
 
         public static void DeserializeActiveJson()
         {
-            // read all text, then deserialize into an object
-            List<PanicTracker> panicTrackers;
+            if (TrackedPilots == null) //we only need to deserialize if we have nothing here: this way resets should work properly
+            {
+                // read all text, then deserialize into an object
+                List<PanicTracker> panicTrackers;
 
-            try
-            {
-               panicTrackers = JsonConvert.DeserializeObject<List<PanicTracker>>(File.ReadAllText(ActiveJsonPath));
+                try
+                {
+                    panicTrackers = JsonConvert.DeserializeObject<List<PanicTracker>>(File.ReadAllText(ActiveJsonPath));
+                }
+                catch (Exception)
+                {
+                    panicTrackers = null;
+                }
+                if (panicTrackers == null)
+                {
+                    TrackedPilots = new List<PanicTracker>();
+                }
+                else
+                {
+                    TrackedPilots = panicTrackers;
+                }
             }
-            catch (Exception)
-            {
-                panicTrackers = null;
-            }
-            if (panicTrackers == null)
-            {
-                TrackedPilots = new List<PanicTracker>();
-            }
-            else
-            {
-                TrackedPilots = panicTrackers;
-            }
-
         }
     }
 }

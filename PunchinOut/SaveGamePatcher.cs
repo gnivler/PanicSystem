@@ -19,12 +19,12 @@ namespace BasicPanic
         }
     }
 
-    [HarmonyPatch(typeof(GameInstanceSave), "Load")]
-    public static class GameInstanceSave_Load_Patch
+    [HarmonyPatch(typeof(GameInstance), "Load")]
+    public static class GameInstance_Load_Patch
     {
-        static void Prefix(GameInstanceSave __instance)
+        static void Prefix(GameInstanceSave save)
         {
-            Holder.Resync(__instance.SaveTime);
+            Holder.Resync(save.SaveTime);
         }
     }
 }

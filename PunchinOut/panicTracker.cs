@@ -43,9 +43,9 @@ namespace PunchinOut
 
     public class MetaTracker
     {
-        public List<PanicTracker> TrackedPilots { get; private set; }
-        public DateTime SaveGameTimeStamp { get; private set; }
-        public string SimGameGUID { get; private set; }
+        public List<PanicTracker> TrackedPilots { get; set; }
+        public DateTime SaveGameTimeStamp { get; set; }
+        public string SimGameGUID { get; set; }
 
         public MetaTracker()
         {

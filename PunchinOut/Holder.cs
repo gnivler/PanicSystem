@@ -10,7 +10,7 @@ namespace BasicPanic
     {
         public static List<PanicTracker> TrackedPilots;
         public static List<MetaTracker> metaTrackers;
-        private static int CurrentIndex;
+        private static int CurrentIndex = -1;
         public static string ActiveJsonPath; //store current tracker here
         public static string StorageJsonPath; //store our meta trackers here
         public static string ModDirectory;
@@ -26,16 +26,29 @@ namespace BasicPanic
 
             if(index > -1)
             {
-                if(metaTrackers[index].TrackedPilots != null)
+                if(metaTrackers[index].TrackedPilots != null) //part where everything seems to fall apart?
                 {
                     TrackedPilots = metaTrackers[index].TrackedPilots;
-                    CurrentIndex = index;
                 }
+                CurrentIndex = index;
+            }
+            else if(metaTrackers != null)//we were unable to find a tracker, add our own
+            {
+                MetaTracker tracker = new MetaTracker();
+
+                tracker.SetTrackedPilots(TrackedPilots);
+                metaTrackers.Add(tracker);
+                CurrentIndex = metaTrackers.Count - 1; // -1 due to zero-based arrays
+
             }
         }
 
         public static int FindTrackerByTime(DateTime previousSaveTime)
         {
+            if(metaTrackers == null)
+            {
+                return -1;
+            }
             for(int i = 0; i < metaTrackers.Count; i++)
             {
                 if(metaTrackers[i].SaveGameTimeStamp == previousSaveTime)
@@ -47,7 +60,7 @@ namespace BasicPanic
             return -1;
         }
 
-        public static void SerializeStorageJson(string GUID) //fired when a save game is made
+        public static void SerializeStorageJson(string GUID, DateTime dateTime) //fired when a save game is made
         {
             if(metaTrackers == null)
             {
@@ -60,6 +73,11 @@ namespace BasicPanic
                 if(metaTrackers[index] != null)
                 {
                     metaTrackers[index].SetTrackedPilots(TrackedPilots); //have our meta tracker get the latest data
+                }
+
+                if(dateTime != null)
+                {
+                    metaTrackers[index].SetSaveGameTime(dateTime);
                 }
 
                 if (GUID != null) //set GUID if it's applicable
@@ -77,7 +95,7 @@ namespace BasicPanic
             {
                 if (metaTrackers != null)
                 {
-                    File.WriteAllText(StorageJsonPath, JsonConvert.SerializeObject(TrackedPilots));
+                    File.WriteAllText(StorageJsonPath, JsonConvert.SerializeObject(metaTrackers));
                 }
             }
             catch (Exception)

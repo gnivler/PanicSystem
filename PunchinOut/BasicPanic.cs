@@ -138,8 +138,6 @@ namespace BasicPanic
                 else //now normal
                 {
                     __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Recovered To Normal!", FloatieMessage.MessageNature.Buff, true)));
-                    __instance.StatCollection.ModifyStat<float>("Panic Turn: Panicking Aim!", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, BasicPanic.Settings.PanickedAimModifier, -1, true);
-                    __instance.StatCollection.ModifyStat<float>("Panic Turn: Panicking Defence!", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, BasicPanic.Settings.PanickedToHitModifier, -1, true);
                 }
             }
 
@@ -169,7 +167,7 @@ namespace BasicPanic
             if (mech != null)
             {
                 int i = GetTrackedPilotIndex(mech);
-
+                var weapons = mech.Weapons;
                 if (i > -1)
                 {
                     if (Holder.TrackedPilots[i].trackedMech == mech.GUID &&
@@ -182,6 +180,10 @@ namespace BasicPanic
                 if (pilot != null && pilot.Health - pilot.Injuries <= BasicPanic.Settings.MinimumHealthToAlwaysEjectRoll && !pilot.LethalInjuries)
                 {
                     return true;
+                }
+                if (weapons.TrueForAll(w => w.DamageLevel == ComponentDamageLevel.Destroyed || w.DamageLevel == ComponentDamageLevel.NonFunctional) && BasicPanic.Settings.ConsiderEjectingWithNoWeaps)
+                {
+                    return true; 
                 }
             }
             if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m.GUID == mech.GUID))
@@ -464,6 +466,7 @@ namespace BasicPanic
         public int MinimumHealthToAlwaysEjectRoll = 1;
         public bool KnockedDownCannotEject = true;
 
+        public bool ConsiderEjectingWithNoWeaps = true;
         public float MaxEjectChance = 50;
 
         public float BaseEjectionResist = 10;
@@ -481,6 +484,7 @@ namespace BasicPanic
         
         public float WeaponlessModifier = 15;
         public float AloneModifier = 20;
+
     }
 
     public static class BasicPanic

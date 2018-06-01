@@ -19,6 +19,7 @@ namespace BasicPanic
         {
             AttackCompleteMessage attackCompleteMessage = message as AttackCompleteMessage;
             bool ShouldPanic = false;
+            bool IsEarlyPanic = false;
             Mech mech = null;
 
             if (attackCompleteMessage  == null || attackCompleteMessage.stackItemUID != __instance.SequenceGUID)
@@ -35,7 +36,7 @@ namespace BasicPanic
 
             Holder.SerializeActiveJson();
 
-            if (PanicHelpers.IsPanicking(mech) && BasicPanic.RollForEjectionResult(mech, attackCompleteMessage.attackSequence))
+            if (PanicHelpers.IsPanicking(mech, ref IsEarlyPanic) && BasicPanic.RollForEjectionResult(mech, attackCompleteMessage.attackSequence, IsEarlyPanic))
             {
                 mech.EjectPilot(mech.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
             }
@@ -157,7 +158,7 @@ namespace BasicPanic
 
     public static class PanicHelpers
     {
-        public static bool IsPanicking(Mech mech)
+        public static bool IsPanicking(Mech mech, ref bool IsEarlyPanic)
         {
             if (mech == null || mech.IsDead || (mech.IsFlaggedForDeath && mech.HasHandledDeath))
                 return false;
@@ -185,6 +186,8 @@ namespace BasicPanic
                 {
                     return true; 
                 }
+
+
             }
             if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m.GUID == mech.GUID))
             {
@@ -437,8 +440,23 @@ namespace BasicPanic
     internal class ModSettings
     {
         public bool PlayerCharacterAlwaysResists = true;
+        public bool PlayerTeamCanPanic = true;
+        public bool EnemiesCanPanic = true;
 
+        //new mechanics for considering when to eject based on mech class
+        public bool PlayerLightsConsiderEjectingEarly = false;
+        public bool EnemyLightsConsiderEjectingEarly = true;
 
+        public bool PlayerMediumsConsiderEjectingEarly = false;
+        public bool EnemyMediumsConsiderEjectingEarly = false;
+
+        public bool PlayerLargesConsiderEjectingEarly = false;
+        public bool EnemyLargessConsiderEjectingEarly = false;
+
+        public bool PlayerAssaultsConsiderEjectingEarly = false;
+        public bool EnemyAssaultsConsiderEjectingEarly = false;
+
+        public float MaxEjectChanceWhenEarly = 10;
         //general panic roll
         //rolls out of 20
         //max guts and tactics almost prevents any panicking (or being the player character, by default)
@@ -467,6 +485,7 @@ namespace BasicPanic
         public bool KnockedDownCannotEject = true;
 
         public bool ConsiderEjectingWithNoWeaps = true;
+        public bool UseNextShotLikeThatCouldKill = true;
         public float MaxEjectChance = 50;
 
         public float BaseEjectionResist = 10;
@@ -508,7 +527,7 @@ namespace BasicPanic
             }
         }
         
-        public static bool RollForEjectionResult(Mech mech, AttackDirector.AttackSequence attackSequence)
+        public static bool RollForEjectionResult(Mech mech, AttackDirector.AttackSequence attackSequence, bool IsEarlyPanic)
         {
             if (mech == null || mech.IsDead || (mech.IsFlaggedForDeath && !mech.HasHandledDeath))
                 return false;
@@ -608,7 +627,7 @@ namespace BasicPanic
             }
 
             // next shot could kill
-            if (lowestRemaining <= attackSequence.cumulativeDamage)
+            if (lowestRemaining <= attackSequence.cumulativeDamage && Settings.UseNextShotLikeThatCouldKill)
             {
                 ejectModifiers += Settings.NextShotLikeThatCouldKill;
             }
@@ -638,7 +657,15 @@ namespace BasicPanic
                 return false;
             
             var rng = (new System.Random()).Next(100);
-            var rollToBeat = Math.Min(modifiers, Settings.MaxEjectChance);
+            float rollToBeat;
+            if (!IsEarlyPanic)
+            {
+                rollToBeat = Math.Min(modifiers, Settings.MaxEjectChance);
+            }
+            else
+            {
+                rollToBeat = Math.Min(modifiers, Settings.MaxEjectChanceWhenEarly);
+            }
 
             mech.Combat.MessageCenter.PublishMessage(!(rng < rollToBeat)
                 ? new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Guts/Tactics Check Passed {Math.Floor(rollToBeat)}%", FloatieMessage.MessageNature.Buff, true))

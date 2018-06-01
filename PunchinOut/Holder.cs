@@ -43,6 +43,20 @@ namespace BasicPanic
             }
         }
 
+        public static void SyncNewCampaign() //fired when player starts a new campaign
+        {
+            DeserializeStorageJson();
+            if (metaTrackers != null)//we were unable to find a tracker, add our own
+            {
+                MetaTracker tracker = new MetaTracker();
+
+                tracker.SetTrackedPilots(TrackedPilots);
+                metaTrackers.Add(tracker);
+                CurrentIndex = metaTrackers.Count - 1; // -1 due to zero-based arrays
+
+            }
+        }
+
         public static int FindTrackerByTime(DateTime previousSaveTime)
         {
             if(metaTrackers == null)

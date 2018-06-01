@@ -27,4 +27,13 @@ namespace BasicPanic
             Holder.Resync(save.SaveTime);
         }
     }
+
+    [HarmonyPatch(typeof(SimGameState), "_OnFirstPlayInit")]
+    public static class SimGameState_FirstPlayInit_Patch
+    {
+        static void Postfix(SimGameState __instance) //we're doing a new campaign, so we need to sync the json with the new addition
+        {
+            Holder.SyncNewCampaign();
+        }
+    }
 }

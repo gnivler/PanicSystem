@@ -28,8 +28,22 @@ Stressed Pilots by default, experience -10 to their hit chances, and are 5% more
 Panicked Pilots by default, experience -15 to their hit chances, and are 5% more likelier to be hit due to improper piloting. They roll for ejection every time they're hit while in this state.
 
 ## Special Cases
-Pilots with one point of HP left or are the last survivor in their lance will always roll for ejection when they receive an attack, no matter what.
+Pilots with one point of HP left, have no weapons remaining, or are the last survivor in their lance will always roll for ejection when they receive an attack, no matter what.
+
+Certain classes of mechs may have their pilots roll for a lower capped chance to eject at an earlier panic state. By default, this applies to enemy light mechs only, when they hit the Fatigued panic state.
+
 
 ## Configuration
 
 `mod.json` has some settings on how the chances work -- for a simple change to the max ejection roll, just change the `MaxEjectChance`. Rolls for the general panic system should be relatively self-explanatory.
+
+Other settings:
+
+AlwaysGatedChanges control whether only one panic state transition can happen for a mech per round. This prevents multiple alpha strikes from taking one of your mechs straight to the panicked state.
+
+The Early Panic Thresholds use ints to represent the panic states:
+
+0 = normal
+1 = fatigued
+2 = stressed
+3 = panicked

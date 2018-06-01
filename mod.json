@@ -10,7 +10,9 @@
     
     "Settings": {
         "PlayerCharacterAlwaysResists": true,
-
+        "PlayerTeamCanPanic": true,
+        "EnemiesCanPanic": true,
+        
         "PlayerLightsConsiderEjectingEarly": false,
         "EnemyLightsConsiderEjectingEarly": true,
         "LightMechEarlyPanicThreshold": 1,

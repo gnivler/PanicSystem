@@ -175,7 +175,14 @@ namespace BasicPanic
                 return false;
             }
 
-
+            if(mech.team == mech.Combat.LocalPlayerTeam && !BasicPanic.Settings.PlayerTeamCanPanic)
+            {
+                return false;
+            }
+            else if (mech.team != mech.Combat.LocalPlayerTeam && !BasicPanic.Settings.EnemiesCanPanic)
+            {
+                return false;
+            }
 
             int PanicRoll = 0;
 

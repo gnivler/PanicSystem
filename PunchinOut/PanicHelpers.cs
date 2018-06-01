@@ -1,4 +1,5 @@
-﻿using BattleTech;
+﻿using System;
+using BattleTech;
 using PunchinOut;
 
 namespace BasicPanic
@@ -34,12 +35,92 @@ namespace BasicPanic
                     return true; 
                 }
 
-                if
+                if(CanEarlyPanic(mech, i))
+                {
+                    IsEarlyPanic = true;
+                    return true;
+                }
 
             }
             if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m.GUID == mech.GUID))
             {
                 return true;
+            }
+
+            return false;
+        }
+
+        private static bool CanEarlyPanic(Mech mech, int i)
+        {
+            if (Holder.TrackedPilots[i].trackedMech == mech.GUID)
+            {
+               if(mech.team == mech.Combat.LocalPlayerTeam)
+               {
+                    if (BasicPanic.Settings.PlayerLightsConsiderEjectingEarly && mech.weightClass == WeightClass.LIGHT)
+                    {
+                        if (Holder.TrackedPilots[i].pilotStatus == BasicPanic.Settings.LightMechEarlyPanicThreshold)
+                        {
+                            return true;
+                        }
+                    }
+
+                    else if(BasicPanic.Settings.PlayerMediumsConsiderEjectingEarly && mech.weightClass == WeightClass.MEDIUM)
+                    {
+                        if (Holder.TrackedPilots[i].pilotStatus == BasicPanic.Settings.MediumMechEarlyPanicThreshold)
+                        {
+                            return true;
+                        }
+                    }
+                    else if (BasicPanic.Settings.PlayerHeaviesConsiderEjectingEarly && mech.weightClass == WeightClass.HEAVY)
+                    {
+                        if (Holder.TrackedPilots[i].pilotStatus == BasicPanic.Settings.HeavyMechEarlyPanicThreshold)
+                        {
+                            return true;
+                        }
+                    }
+
+                    else if (BasicPanic.Settings.PlayerAssaultsConsiderEjectingEarly && mech.weightClass == WeightClass.ASSAULT)
+                    {
+                        if (Holder.TrackedPilots[i].pilotStatus == BasicPanic.Settings.AssaultMechEarlyPanicThreshold)
+                        {
+                            return true;
+                        }
+                    }
+                }
+               else
+               {
+                    if (BasicPanic.Settings.EnemyLightsConsiderEjectingEarly && mech.weightClass == WeightClass.LIGHT)
+                    {
+                        if (Holder.TrackedPilots[i].pilotStatus == BasicPanic.Settings.LightMechEarlyPanicThreshold)
+                        {
+                            return true;
+                        }
+                    }
+
+                    else if (BasicPanic.Settings.EnemyMediumsConsiderEjectingEarly && mech.weightClass == WeightClass.MEDIUM)
+                    {
+                        if (Holder.TrackedPilots[i].pilotStatus == BasicPanic.Settings.MediumMechEarlyPanicThreshold)
+                        {
+                            return true;
+                        }
+                    }
+                    else if (BasicPanic.Settings.EnemyHeaviesConsiderEjectingEarly && mech.weightClass == WeightClass.HEAVY)
+                    {
+                        if (Holder.TrackedPilots[i].pilotStatus == BasicPanic.Settings.HeavyMechEarlyPanicThreshold)
+                        {
+                            return true;
+                        }
+                    }
+
+                    else if (BasicPanic.Settings.EnemyAssaultsConsiderEjectingEarly && mech.weightClass == WeightClass.ASSAULT)
+                    {
+                        if (Holder.TrackedPilots[i].pilotStatus == BasicPanic.Settings.AssaultMechEarlyPanicThreshold)
+                        {
+                            return true;
+                        }
+                    }
+                }
+
             }
 
             return false;

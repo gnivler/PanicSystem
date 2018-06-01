@@ -1,7 +1,7 @@
 {
     "Name": "BasicPanicSystem",
 
-    "Version": "0.4.1",
+    "Version": "0.5.0",
     "Description": "Adds basic panic system, based on mpstark's Punchin' Out.",
     "Author": "RealityMachina, forked from mpstark's work",
     "Website": "https://github.com/RealityMachina/PunchinOut",
@@ -10,6 +10,23 @@
     
     "Settings": {
         "PlayerCharacterAlwaysResists": true,
+
+        "PlayerLightsConsiderEjectingEarly": false,
+        "EnemyLightsConsiderEjectingEarly": true,
+        "LightMechEarlyPanicThreshold": 1,
+
+        "PlayerMediumsConsiderEjectingEarly": false,
+        "EnemyMediumsConsiderEjectingEarly": false,
+        "MediumMechEarlyPanicThreshold": 2,
+
+        "PlayerHeaviesConsiderEjectingEarly": false,
+        "EnemyHeaviesConsiderEjectingEarly": false,
+        "HeavyMechEarlyPanicThreshold": 2,
+
+        "PlayerAssaultsConsiderEjectingEarly": false,
+        "EnemyAssaultsConsiderEjectingEarly": false,
+        "AssaultMechEarlyPanicThreshold": 2,
+        "MaxEjectChanceWhenEarly": 10,
 
         "AtLeastOneChanceToPanic": true,
         "AlwaysGatedChanges": true,
@@ -27,6 +44,7 @@
         "TacticsTenAlwaysResists": false,
         "KnockedDownCannotEject": true,
         "ConsiderEjectingWithNoWeaps": true,
+        "UseNextShotLikeThatCouldKill": true,
 
         "BaseEjectionResist": 10,
         "GutsEjectionResistPerPoint": 2,

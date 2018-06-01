@@ -385,8 +385,8 @@ namespace BasicPanic
         public bool EnemyMediumsConsiderEjectingEarly = false;
         public PanicStatus MediumMechEarlyPanicThreshold = PanicStatus.Stressed;
 
-        public bool PlayerLargesConsiderEjectingEarly = false;
-        public bool EnemyLargessConsiderEjectingEarly = false;
+        public bool PlayerHeaviesConsiderEjectingEarly = false;
+        public bool EnemyHeaviesConsiderEjectingEarly = false;
         public PanicStatus HeavyMechEarlyPanicThreshold = PanicStatus.Stressed;
 
         public bool PlayerAssaultsConsiderEjectingEarly = false;

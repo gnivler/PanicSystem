@@ -35,16 +35,17 @@ namespace BasicPanic
                     return true; 
                 }
 
-                if(CanEarlyPanic(mech, i))
+                if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m.GUID == mech.GUID))
+                {
+                    return true;
+                }
+
+                if (CanEarlyPanic(mech, i))
                 {
                     IsEarlyPanic = true;
                     return true;
                 }
 
-            }
-            if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m.GUID == mech.GUID))
-            {
-                return true;
             }
 
             return false;

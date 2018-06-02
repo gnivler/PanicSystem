@@ -58,7 +58,7 @@ namespace BasicPanic
                {
                     if (BasicPanic.Settings.PlayerLightsConsiderEjectingEarly && mech.weightClass == WeightClass.LIGHT)
                     {
-                        if (Holder.TrackedPilots[i].pilotStatus == BasicPanic.Settings.LightMechEarlyPanicThreshold)
+                        if (Holder.TrackedPilots[i].pilotStatus >= BasicPanic.Settings.LightMechEarlyPanicThreshold)
                         {
                             return true;
                         }
@@ -66,14 +66,14 @@ namespace BasicPanic
 
                     else if(BasicPanic.Settings.PlayerMediumsConsiderEjectingEarly && mech.weightClass == WeightClass.MEDIUM)
                     {
-                        if (Holder.TrackedPilots[i].pilotStatus == BasicPanic.Settings.MediumMechEarlyPanicThreshold)
+                        if (Holder.TrackedPilots[i].pilotStatus >= BasicPanic.Settings.MediumMechEarlyPanicThreshold)
                         {
                             return true;
                         }
                     }
                     else if (BasicPanic.Settings.PlayerHeaviesConsiderEjectingEarly && mech.weightClass == WeightClass.HEAVY)
                     {
-                        if (Holder.TrackedPilots[i].pilotStatus == BasicPanic.Settings.HeavyMechEarlyPanicThreshold)
+                        if (Holder.TrackedPilots[i].pilotStatus >= BasicPanic.Settings.HeavyMechEarlyPanicThreshold)
                         {
                             return true;
                         }
@@ -81,7 +81,7 @@ namespace BasicPanic
 
                     else if (BasicPanic.Settings.PlayerAssaultsConsiderEjectingEarly && mech.weightClass == WeightClass.ASSAULT)
                     {
-                        if (Holder.TrackedPilots[i].pilotStatus == BasicPanic.Settings.AssaultMechEarlyPanicThreshold)
+                        if (Holder.TrackedPilots[i].pilotStatus >= BasicPanic.Settings.AssaultMechEarlyPanicThreshold)
                         {
                             return true;
                         }
@@ -91,7 +91,7 @@ namespace BasicPanic
                {
                     if (BasicPanic.Settings.EnemyLightsConsiderEjectingEarly && mech.weightClass == WeightClass.LIGHT)
                     {
-                        if (Holder.TrackedPilots[i].pilotStatus == BasicPanic.Settings.LightMechEarlyPanicThreshold)
+                        if (Holder.TrackedPilots[i].pilotStatus >= BasicPanic.Settings.LightMechEarlyPanicThreshold)
                         {
                             return true;
                         }
@@ -99,14 +99,14 @@ namespace BasicPanic
 
                     else if (BasicPanic.Settings.EnemyMediumsConsiderEjectingEarly && mech.weightClass == WeightClass.MEDIUM)
                     {
-                        if (Holder.TrackedPilots[i].pilotStatus == BasicPanic.Settings.MediumMechEarlyPanicThreshold)
+                        if (Holder.TrackedPilots[i].pilotStatus >= BasicPanic.Settings.MediumMechEarlyPanicThreshold)
                         {
                             return true;
                         }
                     }
                     else if (BasicPanic.Settings.EnemyHeaviesConsiderEjectingEarly && mech.weightClass == WeightClass.HEAVY)
                     {
-                        if (Holder.TrackedPilots[i].pilotStatus == BasicPanic.Settings.HeavyMechEarlyPanicThreshold)
+                        if (Holder.TrackedPilots[i].pilotStatus >= BasicPanic.Settings.HeavyMechEarlyPanicThreshold)
                         {
                             return true;
                         }
@@ -114,7 +114,7 @@ namespace BasicPanic
 
                     else if (BasicPanic.Settings.EnemyAssaultsConsiderEjectingEarly && mech.weightClass == WeightClass.ASSAULT)
                     {
-                        if (Holder.TrackedPilots[i].pilotStatus == BasicPanic.Settings.AssaultMechEarlyPanicThreshold)
+                        if (Holder.TrackedPilots[i].pilotStatus >= BasicPanic.Settings.AssaultMechEarlyPanicThreshold)
                         {
                             return true;
                         }

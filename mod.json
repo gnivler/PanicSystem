@@ -1,7 +1,7 @@
 {
     "Name": "BasicPanicSystem",
 
-    "Version": "0.5.0",
+    "Version": "0.5.1",
     "Description": "Adds basic panic system, based on mpstark's Punchin' Out.",
     "Author": "RealityMachina, forked from mpstark's work",
     "Website": "https://github.com/RealityMachina/PunchinOut",
@@ -33,6 +33,7 @@
         "AtLeastOneChanceToPanic": true,
         "AlwaysGatedChanges": true,
         "MaxPanicResistTotal": 15,
+        "LosingLimbAlwaysPanics": false,
         "FatiguedAimModifier": 1,
         "StressedAimModifier": 2,
         "StressedToHitModifier": -1,
@@ -46,7 +47,6 @@
         "TacticsTenAlwaysResists": false,
         "KnockedDownCannotEject": true,
         "ConsiderEjectingWithNoWeaps": true,
-        "UseNextShotLikeThatCouldKill": true,
 
         "BaseEjectionResist": 10,
         "GutsEjectionResistPerPoint": 2,

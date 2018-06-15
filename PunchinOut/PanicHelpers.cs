@@ -17,14 +17,6 @@ namespace BasicPanic
             {
                 int i = GetTrackedPilotIndex(mech);
                 var weapons = mech.Weapons;
-                if (i > -1)
-                {
-                    if (Holder.TrackedPilots[i].trackedMech == mech.GUID &&
-                        Holder.TrackedPilots[i].pilotStatus == PanicStatus.Panicked)
-                    {
-                        return true;
-                    }
-                }
 
                 if (pilot != null && pilot.Health - pilot.Injuries <= BasicPanic.Settings.MinimumHealthToAlwaysEjectRoll && !pilot.LethalInjuries)
                 {
@@ -40,10 +32,20 @@ namespace BasicPanic
                     return true;
                 }
 
-                if (CanEarlyPanic(mech, i))
+                if (i > -1)
                 {
-                    IsEarlyPanic = true;
-                    return true;
+                    if (Holder.TrackedPilots[i].trackedMech == mech.GUID &&
+                        Holder.TrackedPilots[i].pilotStatus == PanicStatus.Panicked)
+                    {
+                        return true;
+                    }
+
+
+                    if (CanEarlyPanic(mech, i))
+                    {
+                        IsEarlyPanic = true;
+                        return true;
+                    }
                 }
 
             }

@@ -224,7 +224,22 @@ namespace BasicPanic
                 return false;
             }
 
-            if(mech.team == mech.Combat.LocalPlayerTeam && !BasicPanic.Settings.PlayerTeamCanPanic)
+            if(!attackSequence.attackDamagedStructure && !attackSequence.lowArmorStruck) //no structure damage and didn't strike low armour
+            {
+                float totalArmor = 0, maxArmor = 0;
+
+                maxArmor = GetTotalMechArmour(mech, maxArmor);
+
+                totalArmor = GetCurrentMechArmour(mech, totalArmor);
+
+                if((totalArmor / maxArmor * 100 ) + (BasicPanic.Settings.MinimumArmourDamagePercentageRequired / maxArmor * 100 ) >= 100) //basically if this equals to 100%, mech didn't lose enough armour
+                {
+                    return false;
+                }
+            }
+
+
+            if (mech.team == mech.Combat.LocalPlayerTeam && !BasicPanic.Settings.PlayerTeamCanPanic)
             {
                 return false;
             }
@@ -386,8 +401,40 @@ namespace BasicPanic
                 ApplyPanicDebuff(mech, index);
                 return true;
             }
-            mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Resisted Panic Check!", FloatieMessage.MessageNature.Buff, true)));
+            mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Resisted Morale Check!", FloatieMessage.MessageNature.Buff, true)));
             return false;
+        }
+
+        private static float GetCurrentMechArmour(Mech mech, float totalArmor)
+        {
+            totalArmor += mech.GetCurrentArmor(ArmorLocation.Head);
+            totalArmor += mech.GetCurrentArmor(ArmorLocation.CenterTorso);
+            totalArmor += mech.GetCurrentArmor(ArmorLocation.CenterTorsoRear);
+            totalArmor += mech.GetCurrentArmor(ArmorLocation.LeftTorso);
+            totalArmor += mech.GetCurrentArmor(ArmorLocation.LeftTorsoRear);
+            totalArmor += mech.GetCurrentArmor(ArmorLocation.RightTorso);
+            totalArmor += mech.GetCurrentArmor(ArmorLocation.RightTorsoRear);
+            totalArmor += mech.GetCurrentArmor(ArmorLocation.RightArm);
+            totalArmor += mech.GetCurrentArmor(ArmorLocation.LeftArm);
+            totalArmor += mech.GetCurrentArmor(ArmorLocation.RightLeg);
+            totalArmor += mech.GetCurrentArmor(ArmorLocation.LeftLeg);
+            return totalArmor;
+        }
+
+        private static float GetTotalMechArmour(Mech mech, float maxArmor)
+        {
+            maxArmor += mech.GetMaxArmor(ArmorLocation.CenterTorso);
+            maxArmor += mech.GetMaxArmor(ArmorLocation.LeftArm);
+            maxArmor += mech.GetMaxArmor(ArmorLocation.CenterTorsoRear);
+            maxArmor += mech.GetMaxArmor(ArmorLocation.Head);
+            maxArmor += mech.GetMaxArmor(ArmorLocation.LeftTorso);
+            maxArmor += mech.GetMaxArmor(ArmorLocation.RightTorso);
+            maxArmor += mech.GetMaxArmor(ArmorLocation.RightTorsoRear);
+            maxArmor += mech.GetMaxArmor(ArmorLocation.LeftTorsoRear);
+            maxArmor += mech.GetMaxArmor(ArmorLocation.RightArm);
+            maxArmor += mech.GetMaxArmor(ArmorLocation.LeftLeg);
+            maxArmor += mech.GetMaxArmor(ArmorLocation.RightLeg);
+            return maxArmor;
         }
 
         public static void ApplyPanicDebuff(Mech mech, int index)
@@ -453,6 +500,10 @@ namespace BasicPanic
         public PanicStatus AssaultMechEarlyPanicThreshold = PanicStatus.Stressed;
 
         public float MaxEjectChanceWhenEarly = 10;
+
+        //minmum armour and structure damage
+        public float MinimumArmourDamagePercentageRequired = 10; //if no structure damage, a Mech must lost a bit of its armour before it starts worrying
+
         //general panic roll
         //rolls out of 20
         //max guts and tactics almost prevents any panicking (or being the player character, by default)

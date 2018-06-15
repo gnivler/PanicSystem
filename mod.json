@@ -29,7 +29,7 @@
         "EnemyAssaultsConsiderEjectingEarly": false,
         "AssaultMechEarlyPanicThreshold": 2,
         "MaxEjectChanceWhenEarly": 10,
-
+        "MinimumArmourDamagePercentageRequired": 10,
         "AtLeastOneChanceToPanic": true,
         "AlwaysGatedChanges": true,
         "MaxPanicResistTotal": 15,

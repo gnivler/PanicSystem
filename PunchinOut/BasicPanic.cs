@@ -232,7 +232,7 @@ namespace BasicPanic
 
                 totalArmor = GetCurrentMechArmour(mech, totalArmor);
 
-                if((totalArmor / maxArmor * 100 ) + (BasicPanic.Settings.MinimumArmourDamagePercentageRequired / maxArmor * 100 ) >= 100) //basically if this equals to 100%, mech didn't lose enough armour
+                if((totalArmor / maxArmor * 100 ) + ((BasicPanic.Settings.MinimumArmourDamagePercentageRequired * maxArmor / 100) / maxArmor * 100 ) >= 100) //basically if this equals to 100%, mech didn't lose enough armour
                 {
                     return false;
                 }

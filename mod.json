@@ -1,7 +1,7 @@
 {
     "Name": "BasicPanicSystem",
 
-    "Version": "0.5.1",
+    "Version": "1.0.0",
     "Description": "Adds basic panic system, based on mpstark's Punchin' Out.",
     "Author": "RealityMachina, forked from mpstark's work",
     "Website": "https://github.com/RealityMachina/PunchinOut",

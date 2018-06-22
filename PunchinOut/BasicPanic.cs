@@ -35,6 +35,11 @@ namespace BasicPanic
 
             }
 
+            if(mech == null || mech.GUID == null || attackCompleteMessage == null)
+            {
+                return;
+            }
+
             Holder.SerializeActiveJson();
 
             if (PanicHelpers.IsPanicking(mech, ref IsEarlyPanic) && BasicPanic.RollForEjectionResult(mech, attackCompleteMessage.attackSequence, IsEarlyPanic))

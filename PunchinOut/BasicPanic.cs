@@ -293,7 +293,7 @@ namespace BasicPanic
             // pilot health
             if (pilot != null)
             {
-                float pilotHealthPercent = 1 - (pilot.Injuries / pilot.Health);
+                float pilotHealthPercent = 1 - ((float)pilot.Injuries / pilot.Health);
 
                 if (pilotHealthPercent < 1)
                 {
@@ -378,7 +378,7 @@ namespace BasicPanic
             if(mech.team == mech.Combat.LocalPlayerTeam)
             {
                 MoraleConstantsDef moraleDef = mech.Combat.Constants.GetActiveMoraleDef(mech.Combat);
-                panicModifiers -= Math.Max(mech.Combat.LocalPlayerTeam.Morale - moraleDef.CanUseInspireLevel, 0) / 2;
+                panicModifiers -= Math.Max(mech.Combat.LocalPlayerTeam.Morale - moraleDef.CanUseInspireLevel, 0) / (float)2;
             }
 
             //reduce modifiers by 5 to account change to D20 roll instead of D100 roll, then min it t0 20 or modified floor
@@ -616,7 +616,7 @@ namespace BasicPanic
             // pilot health
             if (pilot != null)
             {
-                float pilotHealthPercent = 1 - (pilot.Injuries / pilot.Health);
+                float pilotHealthPercent = 1 - ((float)pilot.Injuries / pilot.Health);
 
                 if (pilotHealthPercent < 1)
                 {

@@ -293,7 +293,7 @@ namespace BasicPanic
             // pilot health
             if (pilot != null)
             {
-                var pilotHealthPercent = 1 - (pilot.Injuries / pilot.Health);
+                float pilotHealthPercent = 1 - (pilot.Injuries / pilot.Health);
 
                 if (pilotHealthPercent < 1)
                 {
@@ -616,7 +616,7 @@ namespace BasicPanic
             // pilot health
             if (pilot != null)
             {
-                var pilotHealthPercent = 1 - (pilot.Injuries / pilot.Health);
+                float pilotHealthPercent = 1 - (pilot.Injuries / pilot.Health);
 
                 if (pilotHealthPercent < 1)
                 {

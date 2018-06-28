@@ -231,11 +231,12 @@ namespace BasicPanic
 
             if(!attackSequence.attackDamagedStructure && !attackSequence.lowArmorStruck) // no structure damage and didn't strike low armour (unclear what lowArmorStruck is)
             {
+                Logger.Logline($"attackDamagedStructure {attackSequence.attackDamagedStructure}, lowArmorStruck {attackSequence.lowArmorStruck}");
                 float totalArmor = 0, maxArmor = 0;
                 maxArmor = GetTotalMechArmour(mech, maxArmor);
                 totalArmor = GetCurrentMechArmour(mech, totalArmor);
-
                 float currentArmorPercent = totalArmor / maxArmor * 100;
+                Logger.Logline($"maxArmor {maxArmor}, totalArmor {totalArmor}, currentArmorPercent { currentArmorPercent}");
                 var settings = BasicPanic.Settings;
 
                 var percentOfCurrentArmorDamaged = attackSequence.attackArmorDamage / currentArmorPercent;

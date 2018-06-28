@@ -31,15 +31,13 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="0Harmony">
-      <HintPath>D:\Games\GOG Galaxy\Games\BATTLETECH\BattleTech_Data\Managed\0Harmony.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>..\..\..\Reference Assemblies\0Harmony.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp">
-      <HintPath>D:\Games\GOG Galaxy\Games\BATTLETECH\BattleTech_Data\Managed\Assembly-CSharp.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>..\..\..\Reference Assemblies\Assembly-CSharp.dll</HintPath>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.11.0.2\lib\net35\Newtonsoft.Json.dll</HintPath>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\..\..\Reference Assemblies\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -48,7 +46,7 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
     <Reference Include="UnityEngine">
-      <HintPath>D:\Games\GOG Galaxy\Games\BATTLETECH\BattleTech_Data\Managed\UnityEngine.dll</HintPath>
+      <HintPath>..\..\..\Reference Assemblies\UnityEngine.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>
@@ -62,6 +60,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Analyzer Include="..\..\..\Reference Assemblies\0Harmony.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\Assembly-CSharp.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\Newtonsoft.Json.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

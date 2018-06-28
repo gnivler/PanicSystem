@@ -31,11 +31,11 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="0Harmony">
-      <HintPath>D:\Games\GOG Galaxy\Games\BATTLETECH\BattleTech_Data\Managed\0Harmony.dll</HintPath>
+      <HintPath>N:\SteamLibrary\steamapps\common\BATTLETECH\BattleTech_Data\Managed\0Harmony.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Assembly-CSharp">
-      <HintPath>D:\Games\GOG Galaxy\Games\BATTLETECH\BattleTech_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <HintPath>N:\SteamLibrary\steamapps\common\BATTLETECH\BattleTech_Data\Managed\Assembly-CSharp.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
@@ -48,7 +48,7 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
     <Reference Include="UnityEngine">
-      <HintPath>D:\Games\GOG Galaxy\Games\BATTLETECH\BattleTech_Data\Managed\UnityEngine.dll</HintPath>
+      <HintPath>N:\SteamLibrary\steamapps\common\BATTLETECH\BattleTech_Data\Managed\UnityEngine.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>

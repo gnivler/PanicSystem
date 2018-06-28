@@ -36,6 +36,18 @@
     <Reference Include="Assembly-CSharp">
       <HintPath>..\..\..\Reference Assemblies\Assembly-CSharp.dll</HintPath>
     </Reference>
+    <Reference Include="BattleTechModLoader">
+      <HintPath>..\..\..\Reference Assemblies\BattleTechModLoader.dll</HintPath>
+    </Reference>
+    <Reference Include="Google.GData.Client">
+      <HintPath>..\..\..\Reference Assemblies\Google.GData.Client.dll</HintPath>
+    </Reference>
+    <Reference Include="HBSNet">
+      <HintPath>..\..\..\Reference Assemblies\HBSNet.dll</HintPath>
+    </Reference>
+    <Reference Include="ModTek">
+      <HintPath>..\..\..\Reference Assemblies\ModTek.dll</HintPath>
+    </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\..\..\Reference Assemblies\Newtonsoft.Json.dll</HintPath>
     </Reference>
@@ -47,7 +59,6 @@
     <Reference Include="System.Xml" />
     <Reference Include="UnityEngine">
       <HintPath>..\..\..\Reference Assemblies\UnityEngine.dll</HintPath>
-      <Private>False</Private>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -63,8 +74,67 @@
   </ItemGroup>
   <ItemGroup>
     <Analyzer Include="..\..\..\Reference Assemblies\0Harmony.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\Assembly-CSharp-firstpass.dll" />
     <Analyzer Include="..\..\..\Reference Assemblies\Assembly-CSharp.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\AWSSDK.CognitoIdentity.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\AWSSDK.Core.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\AWSSDK.S3.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\AWSSDK.SecurityToken.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\BattleTech.Common.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\BattleTechModLoader.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\Dapper.Unity.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\DemiLib.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\DOTween.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\DOTween43.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\DOTween46.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\DOTween50.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\DOTweenPro.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\Google.GData.AccessControl.DLL" />
+    <Analyzer Include="..\..\..\Reference Assemblies\Google.GData.Client.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\Google.GData.Extensions.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\Google.GData.Spreadsheets.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\Google.Protobuf.Unity.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\HBSNet.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\HBSNetUdp.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\I18N.CJK.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\I18N.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\I18N.MidEast.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\I18N.Other.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\I18N.Rare.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\I18N.West.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\Ionic.Zip.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\LibTessDotNet.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\Lidgren.Network.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\Magick.NET-Q16-x64.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\ModTek.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\Mono.Data.Sqlite.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\Mono.Data.Tds.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\Mono.Posix.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\Mono.Security.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\mscorlib.dll" />
     <Analyzer Include="..\..\..\Reference Assemblies\Newtonsoft.Json.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\NGettext.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\Open.Nat.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\protobuf-net.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\ServiceStack.Interfaces.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\ShadowrunDTO.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\ShadowrunSerializer.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\Sigil.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\System.Configuration.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\System.Core.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\System.Data.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\System.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\System.Drawing.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\System.EnterpriseServices.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\System.Runtime.Serialization.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\System.Security.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\System.Threading.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\System.Transactions.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\System.Xml.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\System.Xml.Linq.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\UnityEngine.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\UnityEngine.Networking.dll" />
+    <Analyzer Include="..\..\..\Reference Assemblies\UnityEngine.UI.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

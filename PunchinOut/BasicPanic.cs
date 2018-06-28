@@ -238,7 +238,7 @@ namespace BasicPanic
                 float currentArmorPercent = totalArmor / maxArmor * 100;
                 var settings = BasicPanic.Settings;
 
-                var percentOfCurrentArmorDamaged = (attackSequence.attackArmorDamage / currentArmorPercent);
+                var percentOfCurrentArmorDamaged = attackSequence.attackArmorDamage / currentArmorPercent;
                 float mininumDamagePerecentRequired = settings.MinimumArmourDamagePercentageRequired;
                 
                 if (percentOfCurrentArmorDamaged <= 10) // (deprecated) basically if this equals to 100%, mech didn't lose enough armour

@@ -224,31 +224,39 @@ namespace BasicPanic
                 return false;
             }
 
-            if (!attackSequence.attackDidDamage) //no point in panicking over nothing
+            Logging.LogLine($"in ShouldPanic: with {attackSequence.attacker.DisplayName} attacking {mech.DisplayName} for {attackSequence.attackArmorDamage} to armour and {attackSequence.attackStructureDamage} to structure.");
+
+            if (!attackSequence.attackDidDamage)
             {
                 return false;
             }
-
-            if(!attackSequence.attackDamagedStructure && !attackSequence.lowArmorStruck) //no structure damage and didn't strike low armour
+            else if (attackSequence.attackStructureDamage > 0)
             {
+                return true;
+            }
+            else
+            {
+                var settings = Logger.Settings;
+                float mininumDamagePercentRequired = settings.MinimumArmourDamagePercentageRequired;  // default is 10%
+
                 float totalArmor = 0, maxArmor = 0;
-
                 maxArmor = GetTotalMechArmour(mech, maxArmor);
-
                 totalArmor = GetCurrentMechArmour(mech, totalArmor);
+                float currentArmorPercent = totalArmor / maxArmor * 100;
+                var percentOfCurrentArmorDamaged = attackSequence.attackArmorDamage / currentArmorPercent;
 
-                if((totalArmor / maxArmor * 100 ) + ((BasicPanic.Settings.MinimumArmourDamagePercentageRequired * maxArmor / 100) / maxArmor * 100 ) >= 100) //basically if this equals to 100%, mech didn't lose enough armour
-                {
-                    return false;
-                }
+                Logging.LogLine($"maxArmor {maxArmor}, totalArmor {totalArmor}, currentArmorPercent { currentArmorPercent}, percentOfCurrentArmorDamaged {percentOfCurrentArmorDamaged}");
+                if (percentOfCurrentArmorDamaged >= mininumDamagePercentRequired)
+                    return true;
             }
 
 
-            if (mech.team == mech.Combat.LocalPlayerTeam && !BasicPanic.Settings.PlayerTeamCanPanic)
+            // credit to jo and thanks!
+            if (mech.team.IsLocalPlayer && !Logger.Settings.PlayerTeamCanPanic)
             {
                 return false;
             }
-            else if (mech.team != mech.Combat.LocalPlayerTeam && !BasicPanic.Settings.EnemiesCanPanic)
+            else if (mech.team.IsLocalPlayer && !Logger.Settings.EnemiesCanPanic)
             {
                 return false;
             }

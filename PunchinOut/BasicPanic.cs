@@ -29,7 +29,6 @@ namespace BasicPanic
             if (__instance.directorSequences[0].target is Mech)
             {
                 mech = __instance.directorSequences[0].target as Mech;
-                //Logging.LogLine($"Checkinig ShouldPanic");
                 ShouldPanic = RollHelpers.ShouldPanic(mech, attackCompleteMessage.attackSequence);
                 Logging.LogLine($"ShouldPanic done: {ShouldPanic}");
             }
@@ -238,7 +237,7 @@ namespace BasicPanic
             else
             {
                 var settings = Logger.Settings;
-                float mininumDamagePerecentRequired = settings.MinimumArmourDamagePercentageRequired;  // default is 10%
+                float mininumDamagePercentRequired = settings.MinimumArmourDamagePercentageRequired;  // default is 10%
 
                 float totalArmor = 0, maxArmor = 0;
                 maxArmor = GetTotalMechArmour(mech, maxArmor);
@@ -247,13 +246,13 @@ namespace BasicPanic
                 var percentOfCurrentArmorDamaged = attackSequence.attackArmorDamage / currentArmorPercent;
 
                 Logging.LogLine($"maxArmor {maxArmor}, totalArmor {totalArmor}, currentArmorPercent { currentArmorPercent}, percentOfCurrentArmorDamaged {percentOfCurrentArmorDamaged}");
-                if (percentOfCurrentArmorDamaged >= mininumDamagePerecentRequired)
+                if (percentOfCurrentArmorDamaged >= mininumDamagePercentRequired)
                     return true;
             }
 
             if (mech.team == mech.Combat.LocalPlayerTeam && !Logger.Settings.PlayerTeamCanPanic)
             {
-                return false;
+                return false;is
             }
             else if (mech.team != mech.Combat.LocalPlayerTeam && !Logger.Settings.EnemiesCanPanic)
             {

@@ -22,7 +22,6 @@ namespace BasicPanic
             bool ShouldPanic = false;
             bool IsEarlyPanic = false;
             Mech mech = null;
-
             if (attackCompleteMessage == null || attackCompleteMessage.stackItemUID != __instance.SequenceGUID)
                 return;
 
@@ -31,19 +30,19 @@ namespace BasicPanic
             {
                 mech = __instance.directorSequences[0].target as Mech;
                 ShouldPanic = RollHelpers.ShouldPanic(mech, attackCompleteMessage.attackSequence);
-
-
+                Logging.LogLine($"ShouldPanic done: {ShouldPanic}");
             }
 
-            if(mech == null || mech.GUID == null || attackCompleteMessage == null)
+            if (mech == null || mech.GUID == null || attackCompleteMessage == null)
             {
                 return;
             }
 
             Holder.SerializeActiveJson();
 
-            if (PanicHelpers.IsPanicking(mech, ref IsEarlyPanic) && BasicPanic.RollForEjectionResult(mech, attackCompleteMessage.attackSequence, IsEarlyPanic))
+            if (PanicHelpers.IsPanicking(mech, ref IsEarlyPanic) && Logger.RollForEjectionResult(mech, attackCompleteMessage.attackSequence, IsEarlyPanic))
             {
+                Logging.LogLine($"Ejecting: {mech}");
                 mech.EjectPilot(mech.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
             }
         }
@@ -131,15 +130,15 @@ namespace BasicPanic
                 if (Holder.TrackedPilots[index].pilotStatus == PanicStatus.Fatigued)
                 {
                     __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Recovered To Fatigued!", FloatieMessage.MessageNature.Buff, true)));
-                    __instance.StatCollection.ModifyStat<float>("Panic Turn: Fatigued Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, BasicPanic.Settings.FatiguedAimModifier, -1, true);
+                    __instance.StatCollection.ModifyStat<float>("Panic Turn: Fatigued Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, Logger.Settings.FatiguedAimModifier, -1, true);
                 }
 
 
                 else if (Holder.TrackedPilots[index].pilotStatus == PanicStatus.Stressed)
                 {
                     __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Recovered To Stressed!", FloatieMessage.MessageNature.Buff, true)));
-                    __instance.StatCollection.ModifyStat<float>("Panic Turn: Stressed Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, BasicPanic.Settings.StressedAimModifier, -1, true);
-                    __instance.StatCollection.ModifyStat<float>("Panic Turn: Stressed Defence", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, BasicPanic.Settings.StressedToHitModifier, -1, true);
+                    __instance.StatCollection.ModifyStat<float>("Panic Turn: Stressed Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, Logger.Settings.StressedAimModifier, -1, true);
+                    __instance.StatCollection.ModifyStat<float>("Panic Turn: Stressed Defence", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, Logger.Settings.StressedToHitModifier, -1, true);
                 }
 
                 else //now normal
@@ -182,7 +181,7 @@ namespace BasicPanic
             }
             int index = PanicHelpers.GetTrackedPilotIndex(__instance);
 
-            if (BasicPanic.Settings.LosingLimbAlwaysPanics)
+            if (Logger.Settings.LosingLimbAlwaysPanics)
             {
                 if (index < 0)
                 {
@@ -201,7 +200,7 @@ namespace BasicPanic
                     return;
                 }
 
-                if (Holder.TrackedPilots[index].trackedMech == __instance.GUID && Holder.TrackedPilots[index].ChangedRecently && BasicPanic.Settings.AlwaysGatedChanges)
+                if (Holder.TrackedPilots[index].trackedMech == __instance.GUID && Holder.TrackedPilots[index].ChangedRecently && Logger.Settings.AlwaysGatedChanges)
                 {
                     return;
                 }
@@ -214,78 +213,84 @@ namespace BasicPanic
     {
         public static bool ShouldPanic(Mech mech, AttackDirector.AttackSequence attackSequence)
         {
+
             if (mech == null || mech.IsDead || (mech.IsFlaggedForDeath && mech.HasHandledDeath))
             {
                 return false;
             }
 
-            if(attackSequence == null)
+            if (attackSequence == null)
             {
                 return false;
             }
 
-            if (!attackSequence.attackDidDamage) //no point in panicking over nothing
+            Logging.LogLine($"in ShouldPanic: with {attackSequence.attacker.DisplayName} attacking {mech.DisplayName} for {attackSequence.attackArmorDamage} to armour and {attackSequence.attackStructureDamage} to structure.");
+
+            if (!attackSequence.attackDidDamage)
             {
                 return false;
             }
-
-            if(!attackSequence.attackDamagedStructure && !attackSequence.lowArmorStruck) //no structure damage and didn't strike low armour
+            else if (attackSequence.attackStructureDamage > 0)
             {
+                return true;
+            }
+            else
+            {
+                var settings = Logger.Settings;
+                float mininumDamagePercentRequired = settings.MinimumArmourDamagePercentageRequired;  // default is 10%
+
                 float totalArmor = 0, maxArmor = 0;
-
                 maxArmor = GetTotalMechArmour(mech, maxArmor);
-
                 totalArmor = GetCurrentMechArmour(mech, totalArmor);
+                float currentArmorPercent = totalArmor / maxArmor * 100;
+                var percentOfCurrentArmorDamaged = attackSequence.attackArmorDamage / currentArmorPercent;
 
-                if((totalArmor / maxArmor * 100 ) + ((BasicPanic.Settings.MinimumArmourDamagePercentageRequired * maxArmor / 100) / maxArmor * 100 ) >= 100) //basically if this equals to 100%, mech didn't lose enough armour
-                {
-                    return false;
-                }
+                Logging.LogLine($"maxArmor {maxArmor}, totalArmor {totalArmor}, currentArmorPercent { currentArmorPercent}, percentOfCurrentArmorDamaged {percentOfCurrentArmorDamaged}");
+                if (percentOfCurrentArmorDamaged >= mininumDamagePercentRequired)
+                    return true;
             }
 
 
-            if (mech.team == mech.Combat.LocalPlayerTeam && !BasicPanic.Settings.PlayerTeamCanPanic)
+            // credit to jo and thanks!
+            if (mech.team.IsLocalPlayer && !Logger.Settings.PlayerTeamCanPanic)
             {
                 return false;
             }
-            else if (mech.team != mech.Combat.LocalPlayerTeam && !BasicPanic.Settings.EnemiesCanPanic)
+            else if (mech.team.IsLocalPlayer && !Logger.Settings.EnemiesCanPanic)
             {
                 return false;
             }
-
-            int PanicRoll = 0;
 
             Pilot pilot = mech.GetPilot();
             var weapons = mech.Weapons;
             var guts = mech.SkillGuts;
             var tactics = mech.SkillTactics;
             var total = guts + tactics;
+
             int index = -1;
+            int PanicRoll = 0;
+            float panicModifiers = 0;
 
             index = PanicHelpers.GetTrackedPilotIndex(mech);
-                
-  
+
             float lowestRemaining = mech.CenterTorsoStructure + mech.CenterTorsoFrontArmor;
-            float panicModifiers = 0;
 
             if (index < 0)
             {
                 Holder.TrackedPilots.Add(new PanicTracker(mech)); //add a new tracker to tracked pilot, then we run it all over again;
 
                 index = PanicHelpers.GetTrackedPilotIndex(mech);
-                if(index < 0)
+                if (index < 0)
                 {
-                    
                     return false;
                 }
- 
             }
-           
+
             if (Holder.TrackedPilots[index].trackedMech != mech.GUID)
                 return false;
 
-            if (Holder.TrackedPilots[index].trackedMech == mech.GUID && 
-                Holder.TrackedPilots[index].ChangedRecently && BasicPanic.Settings.AlwaysGatedChanges)
+            if (Holder.TrackedPilots[index].trackedMech == mech.GUID &&
+                Holder.TrackedPilots[index].ChangedRecently && Logger.Settings.AlwaysGatedChanges)
             {
                 return false;
             }
@@ -297,27 +302,27 @@ namespace BasicPanic
 
                 if (pilotHealthPercent < 1)
                 {
-                    panicModifiers += BasicPanic.Settings.PilotHealthMaxModifier * (1 - pilotHealthPercent);
+                    panicModifiers += Logger.Settings.PilotHealthMaxModifier * (1 - pilotHealthPercent);
                 }
             }
 
             if (mech.IsUnsteady)
             {
-                panicModifiers += BasicPanic.Settings.UnsteadyModifier;
+                panicModifiers += Logger.Settings.UnsteadyModifier;
             }
 
             // Head
             var headHealthPercent = (mech.HeadArmor + mech.HeadStructure) / (mech.GetMaxArmor(ArmorLocation.Head) + mech.GetMaxStructure(ChassisLocations.Head));
             if (headHealthPercent < 1)
             {
-                panicModifiers += BasicPanic.Settings.HeadDamageMaxModifier * (1 - headHealthPercent);
+                panicModifiers += Logger.Settings.HeadDamageMaxModifier * (1 - headHealthPercent);
             }
 
             // CT
             var ctPercent = (mech.CenterTorsoFrontArmor + mech.CenterTorsoStructure) / (mech.GetMaxArmor(ArmorLocation.CenterTorso) + mech.GetMaxStructure(ChassisLocations.CenterTorso));
             if (ctPercent < 1)
             {
-                panicModifiers += BasicPanic.Settings.CTDamageMaxModifier * (1 - ctPercent);
+                panicModifiers += Logger.Settings.CTDamageMaxModifier * (1 - ctPercent);
                 lowestRemaining = Math.Min(mech.CenterTorsoStructure, lowestRemaining);
             }
 
@@ -325,13 +330,13 @@ namespace BasicPanic
             var ltStructurePercent = mech.LeftTorsoStructure / mech.GetMaxStructure(ChassisLocations.LeftTorso);
             if (ltStructurePercent < 1)
             {
-                panicModifiers += BasicPanic.Settings.SideTorsoInternalDamageMaxModifier * (1 - ltStructurePercent);
+                panicModifiers += Logger.Settings.SideTorsoInternalDamageMaxModifier * (1 - ltStructurePercent);
             }
 
             var rtStructurePercent = mech.RightTorsoStructure / mech.GetMaxStructure(ChassisLocations.RightTorso);
             if (rtStructurePercent < 1)
             {
-                panicModifiers += BasicPanic.Settings.SideTorsoInternalDamageMaxModifier * (1 - rtStructurePercent);
+                panicModifiers += Logger.Settings.SideTorsoInternalDamageMaxModifier * (1 - rtStructurePercent);
             }
 
             // legs
@@ -351,31 +356,31 @@ namespace BasicPanic
                 if (legPercent < 1)
                 {
                     lowestRemaining = Math.Min(legPercent * (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg)), lowestRemaining);
-                    panicModifiers += BasicPanic.Settings.LeggedMaxModifier * (1 - legPercent);
+                    panicModifiers += Logger.Settings.LeggedMaxModifier * (1 - legPercent);
                 }
             }
 
             // next shot could kill
             if (lowestRemaining <= attackSequence.cumulativeDamage)
             {
-                panicModifiers += BasicPanic.Settings.NextShotLikeThatCouldKill;
+                panicModifiers += Logger.Settings.NextShotLikeThatCouldKill;
             }
 
             // weaponless
             if (weapons.TrueForAll(w =>
                 w.DamageLevel == ComponentDamageLevel.Destroyed || w.DamageLevel == ComponentDamageLevel.NonFunctional))
             {
-                panicModifiers += BasicPanic.Settings.WeaponlessModifier;
+                panicModifiers += Logger.Settings.WeaponlessModifier;
             }
 
             // alone
             if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m == mech as AbstractActor))
             {
-                panicModifiers += BasicPanic.Settings.AloneModifier;
+                panicModifiers += Logger.Settings.AloneModifier;
             }
             //straight up add guts, tactics, and morale to this as negative values
             panicModifiers -= total;
-            if(mech.team == mech.Combat.LocalPlayerTeam)
+            if (mech.team == mech.Combat.LocalPlayerTeam)
             {
                 MoraleConstantsDef moraleDef = mech.Combat.Constants.GetActiveMoraleDef(mech.Combat);
                 panicModifiers -= Math.Max(mech.Combat.LocalPlayerTeam.Morale - moraleDef.CanUseInspireLevel, 0) / (float)2;
@@ -383,25 +388,25 @@ namespace BasicPanic
 
             //reduce modifiers by 5 to account change to D20 roll instead of D100 roll, then min it t0 20 or modified floor
             panicModifiers /= 5;
-            
+
             PanicRoll = PanicRoll + (int)panicModifiers;
 
-            if ((total >= 20 || PanicRoll <= 0) && !BasicPanic.Settings.AtLeastOneChanceToPanic)
+            if ((total >= 20 || PanicRoll <= 0) && !Logger.Settings.AtLeastOneChanceToPanic)
                 return false;
 
             PanicRoll = Math.Min(PanicRoll, 20);
 
-            if(PanicRoll < 0)
+            if (PanicRoll < 0)
             {
                 PanicRoll = 0; //make this have some kind of chance to happen
             }
             PanicRoll = UnityEngine.Random.Range(PanicRoll, 20); // actual roll
             //we get this far, we reduce total to under the max panic chance
-            total = Math.Min(total, (int)BasicPanic.Settings.MaxPanicResistTotal);
+            total = Math.Min(total, (int)Logger.Settings.MaxPanicResistTotal);
 
             int rngRoll = UnityEngine.Random.Range(total, 20);
 
-            if(rngRoll <= PanicRoll)
+            if (rngRoll <= PanicRoll)
             {
                 ApplyPanicDebuff(mech, index);
                 return true;
@@ -452,7 +457,7 @@ namespace BasicPanic
 
                 mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f, -1, true);
                 mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f, -1, true);
-                mech.StatCollection.ModifyStat<float>("Panic Attack: Fatigued Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, BasicPanic.Settings.FatiguedAimModifier, -1, true);
+                mech.StatCollection.ModifyStat<float>("Panic Attack: Fatigued Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, Logger.Settings.FatiguedAimModifier, -1, true);
 
             }
             else if (Holder.TrackedPilots[index].trackedMech == mech.GUID && Holder.TrackedPilots[index].pilotStatus == PanicStatus.Fatigued)
@@ -461,8 +466,8 @@ namespace BasicPanic
                 Holder.TrackedPilots[index].pilotStatus = PanicStatus.Stressed;
                 mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f, -1, true);
                 mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f, -1, true);
-                mech.StatCollection.ModifyStat<float>("Panic Attack: Stressed Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, BasicPanic.Settings.StressedAimModifier, -1, true);
-                mech.StatCollection.ModifyStat<float>("Panic Attack: Stressed Defence", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, BasicPanic.Settings.StressedToHitModifier, -1, true);
+                mech.StatCollection.ModifyStat<float>("Panic Attack: Stressed Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, Logger.Settings.StressedAimModifier, -1, true);
+                mech.StatCollection.ModifyStat<float>("Panic Attack: Stressed Defence", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, Logger.Settings.StressedToHitModifier, -1, true);
             }
             else if (Holder.TrackedPilots[index].trackedMech == mech.GUID && Holder.TrackedPilots[index].pilotStatus == PanicStatus.Stressed)
             {
@@ -471,8 +476,8 @@ namespace BasicPanic
 
                 mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f, -1, true);
                 mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f, -1, true);
-                mech.StatCollection.ModifyStat<float>("Panic Attack: Panicking Aim!", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, BasicPanic.Settings.PanickedAimModifier, -1, true);
-                mech.StatCollection.ModifyStat<float>("Panic Attack: Panicking Defence!", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, BasicPanic.Settings.PanickedToHitModifier, -1, true);
+                mech.StatCollection.ModifyStat<float>("Panic Attack: Panicking Aim!", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, Logger.Settings.PanickedAimModifier, -1, true);
+                mech.StatCollection.ModifyStat<float>("Panic Attack: Panicking Defence!", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, Logger.Settings.PanickedToHitModifier, -1, true);
             }
             else
             {
@@ -552,13 +557,13 @@ namespace BasicPanic
         public float LeggedMaxModifier = 10;
 
         public float NextShotLikeThatCouldKill = 15;
-        
+
         public float WeaponlessModifier = 15;
         public float AloneModifier = 20;
 
     }
 
-    public static class BasicPanic
+    public static class Logger
     {
         internal static ModSettings Settings;
 
@@ -566,7 +571,7 @@ namespace BasicPanic
         {
             var harmony = HarmonyInstance.Create("io.github.RealityMachina.BasicPanic");
             harmony.PatchAll(Assembly.GetExecutingAssembly());
-            Holder.ModDirectory = Path.Combine(Path.GetDirectoryName(VersionManifestUtilities.MANIFEST_FILEPATH), @"..\..\..\Mods\BasicPanicSystem");
+            Holder.ModDirectory = Path.Combine(Path.GetDirectoryName(VersionManifestUtilities.MANIFEST_FILEPATH), @"..\..\..\Mods\PanicSystem");
             Holder.ActiveJsonPath = Path.Combine(Holder.ModDirectory, "BasicPanicSystem.json");
             Holder.StorageJsonPath = Path.Combine(Holder.ModDirectory, "BasicPanicSystemStorage.json");
             try
@@ -578,7 +583,7 @@ namespace BasicPanic
                 Settings = new ModSettings();
             }
         }
-        
+
         public static bool RollForEjectionResult(Mech mech, AttackDirector.AttackSequence attackSequence, bool IsEarlyPanic)
         {
             if (mech == null || mech.IsDead || (mech.IsFlaggedForDeath && !mech.HasHandledDeath))
@@ -600,7 +605,7 @@ namespace BasicPanic
 
             float lowestRemaining = mech.CenterTorsoStructure + mech.CenterTorsoFrontArmor;
             float ejectModifiers = 0;
-            
+
             // guts 10 makes you immune, player character cannot be forced to eject
             if ((guts >= 10 && Settings.GutsTenAlwaysResists) || (pilot != null && pilot.IsPlayerCharacter && Settings.PlayerCharacterAlwaysResists))
                 return false;
@@ -656,7 +661,7 @@ namespace BasicPanic
             {
                 ejectModifiers += Settings.SideTorsoInternalDamageMaxModifier * (1 - rtStructurePercent);
             }
-            
+
             // legs
             if (mech.RightLegDamageLevel == LocationDamageLevel.Destroyed || mech.LeftLegDamageLevel == LocationDamageLevel.Destroyed)
             {
@@ -683,7 +688,7 @@ namespace BasicPanic
             {
                 ejectModifiers += Settings.NextShotLikeThatCouldKill;
             }
-            
+
             // weaponless
             if (weapons.TrueForAll(w =>
                 w.DamageLevel == ComponentDamageLevel.Destroyed || w.DamageLevel == ComponentDamageLevel.NonFunctional))
@@ -697,17 +702,17 @@ namespace BasicPanic
                 ejectModifiers += Settings.AloneModifier;
             }
 
-            var modifiers = (ejectModifiers - Settings.BaseEjectionResist - (Settings.GutsEjectionResistPerPoint * guts) - (Settings.TacticsEjectionResistPerPoint * tactics) ) * 5;
+            var modifiers = (ejectModifiers - Settings.BaseEjectionResist - (Settings.GutsEjectionResistPerPoint * guts) - (Settings.TacticsEjectionResistPerPoint * tactics)) * 5;
 
             if (mech.team == mech.Combat.LocalPlayerTeam)
             {
                 MoraleConstantsDef moraleDef = mech.Combat.Constants.GetActiveMoraleDef(mech.Combat);
-               modifiers -= Math.Max(mech.Combat.LocalPlayerTeam.Morale - moraleDef.CanUseInspireLevel, 0);
+                modifiers -= Math.Max(mech.Combat.LocalPlayerTeam.Morale - moraleDef.CanUseInspireLevel, 0);
             }
 
             if (modifiers < 0)
                 return false;
-            
+
             var rng = (new System.Random()).Next(100);
             float rollToBeat;
             if (!IsEarlyPanic)

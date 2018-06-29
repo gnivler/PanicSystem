@@ -55,6 +55,7 @@
   <ItemGroup>
     <Compile Include="BasicPanic.cs" />
     <Compile Include="Holder.cs" />
+    <Compile Include="Logging.cs" />
     <Compile Include="PanicHelpers.cs" />
     <Compile Include="panicTracker.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

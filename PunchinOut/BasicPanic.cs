@@ -574,7 +574,7 @@ namespace BasicPanic
         {
             var harmony = HarmonyInstance.Create("io.github.RealityMachina.BasicPanic");
             harmony.PatchAll(Assembly.GetExecutingAssembly());
-            Holder.ModDirectory = Path.Combine(Path.GetDirectoryName(VersionManifestUtilities.MANIFEST_FILEPATH), @"..\..\..\Mods\BasicPanicSystem");
+            Holder.ModDirectory = Path.Combine(Path.GetDirectoryName(VersionManifestUtilities.MANIFEST_FILEPATH), @"..\..\..\Mods\PanicSystem");
             Holder.ActiveJsonPath = Path.Combine(Holder.ModDirectory, "BasicPanicSystem.json");
             Holder.StorageJsonPath = Path.Combine(Holder.ModDirectory, "BasicPanicSystemStorage.json");
             try

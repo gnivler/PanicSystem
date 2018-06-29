@@ -236,7 +236,7 @@ namespace BasicPanic
             }
             else
             {
-                var settings = Logger.Settings;
+                var settings = BasicPanic.Settings;
                 float mininumDamagePercentRequired = settings.MinimumArmourDamagePercentageRequired;  // default is 10%
 
                 float totalArmor = 0, maxArmor = 0;
@@ -252,11 +252,11 @@ namespace BasicPanic
 
 
             // credit to jo and thanks!
-            if (mech.team.IsLocalPlayer && !Logger.Settings.PlayerTeamCanPanic)
+            if (mech.team.IsLocalPlayer && !BasicPanic.Settings.PlayerTeamCanPanic)
             {
                 return false;
             }
-            else if (mech.team.IsLocalPlayer && !Logger.Settings.EnemiesCanPanic)
+            else if (mech.team.IsLocalPlayer && !BasicPanic.Settings.EnemiesCanPanic)
             {
                 return false;
             }

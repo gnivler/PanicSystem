@@ -214,7 +214,6 @@ namespace BasicPanic
     {
         public static bool ShouldPanic(Mech mech, AttackDirector.AttackSequence attackSequence)
         {
-            Logging.LogLine($"in ShouldPanic: with {attackSequence.attacker.DisplayName} attacking {mech.DisplayName} for {attackSequence.attackArmorDamage} to armour and {attackSequence.attackStructureDamage} to structure.");
 
             if (mech == null || mech.IsDead || (mech.IsFlaggedForDeath && mech.HasHandledDeath))
             {
@@ -226,33 +225,31 @@ namespace BasicPanic
                 return false;
             }
 
-            if (!attackSequence.attackDidDamage) //no point in panicking over nothing
+            Logging.LogLine($"in ShouldPanic: with {attackSequence.attacker.DisplayName} attacking {mech.DisplayName} for {attackSequence.attackArmorDamage} to armour and {attackSequence.attackStructureDamage} to structure.");
+
+            if (!attackSequence.attackDidDamage)
             {
                 return false;
             }
-
-
-            // regular hit check - no structure of lowArmorStruck locations affected.  Panic roll if attack removes more than 10% of remaining armour
-            // this isn't as desired though, we want a panic roll if 10% damage is done regardless of whether it hit structure or low parts
-            if (!attackSequence.attackDamagedStructure && !attackSequence.lowArmorStruck)
+            else if (attackSequence.attackStructureDamage > 0)
             {
+                return true;
+            }
+            else
+            {
+                var settings = Logger.Settings;
+                float mininumDamagePerecentRequired = settings.MinimumArmourDamagePercentageRequired;  // default is 10%
+
                 float totalArmor = 0, maxArmor = 0;
                 maxArmor = GetTotalMechArmour(mech, maxArmor);
                 totalArmor = GetCurrentMechArmour(mech, totalArmor);
                 float currentArmorPercent = totalArmor / maxArmor * 100;
-                var settings = Logger.Settings;
-
                 var percentOfCurrentArmorDamaged = attackSequence.attackArmorDamage / currentArmorPercent;
-                float mininumDamagePerecentRequired = settings.MinimumArmourDamagePercentageRequired;
 
                 Logging.LogLine($"maxArmor {maxArmor}, totalArmor {totalArmor}, currentArmorPercent { currentArmorPercent}, percentOfCurrentArmorDamaged {percentOfCurrentArmorDamaged}");
-                if (percentOfCurrentArmorDamaged < 10)
-                    return false;
-                else
-                    Logging.LogLine($"OMFG!");
-                return true;
+                if (percentOfCurrentArmorDamaged >= mininumDamagePerecentRequired)
+                    return true;
             }
-
 
             if (mech.team == mech.Combat.LocalPlayerTeam && !Logger.Settings.PlayerTeamCanPanic)
             {

@@ -18,13 +18,13 @@ namespace BasicPanic
                 int i = GetTrackedPilotIndex(mech);
                 var weapons = mech.Weapons;
 
-                if (pilot != null && pilot.Health - pilot.Injuries <= BasicPanic.Settings.MinimumHealthToAlwaysEjectRoll && !pilot.LethalInjuries)
+                if (pilot != null && pilot.Health - pilot.Injuries <= Logger.Settings.MinimumHealthToAlwaysEjectRoll && !pilot.LethalInjuries)
                 {
                     return true;
                 }
-                if (weapons.TrueForAll(w => w.DamageLevel == ComponentDamageLevel.Destroyed || w.DamageLevel == ComponentDamageLevel.NonFunctional) && BasicPanic.Settings.ConsiderEjectingWithNoWeaps)
+                if (weapons.TrueForAll(w => w.DamageLevel == ComponentDamageLevel.Destroyed || w.DamageLevel == ComponentDamageLevel.NonFunctional) && Logger.Settings.ConsiderEjectingWithNoWeaps)
                 {
-                    return true; 
+                    return true;
                 }
 
                 if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m.GUID == mech.GUID))
@@ -57,67 +57,67 @@ namespace BasicPanic
         {
             if (Holder.TrackedPilots[i].trackedMech == mech.GUID)
             {
-               if(mech.team == mech.Combat.LocalPlayerTeam)
-               {
-                    if (BasicPanic.Settings.PlayerLightsConsiderEjectingEarly && mech.weightClass == WeightClass.LIGHT)
+                if (mech.team == mech.Combat.LocalPlayerTeam)
+                {
+                    if (Logger.Settings.PlayerLightsConsiderEjectingEarly && mech.weightClass == WeightClass.LIGHT)
                     {
-                        if (Holder.TrackedPilots[i].pilotStatus >= BasicPanic.Settings.LightMechEarlyPanicThreshold)
+                        if (Holder.TrackedPilots[i].pilotStatus >= Logger.Settings.LightMechEarlyPanicThreshold)
                         {
                             return true;
                         }
                     }
 
-                    else if(BasicPanic.Settings.PlayerMediumsConsiderEjectingEarly && mech.weightClass == WeightClass.MEDIUM)
+                    else if (Logger.Settings.PlayerMediumsConsiderEjectingEarly && mech.weightClass == WeightClass.MEDIUM)
                     {
-                        if (Holder.TrackedPilots[i].pilotStatus >= BasicPanic.Settings.MediumMechEarlyPanicThreshold)
+                        if (Holder.TrackedPilots[i].pilotStatus >= Logger.Settings.MediumMechEarlyPanicThreshold)
                         {
                             return true;
                         }
                     }
-                    else if (BasicPanic.Settings.PlayerHeaviesConsiderEjectingEarly && mech.weightClass == WeightClass.HEAVY)
+                    else if (Logger.Settings.PlayerHeaviesConsiderEjectingEarly && mech.weightClass == WeightClass.HEAVY)
                     {
-                        if (Holder.TrackedPilots[i].pilotStatus >= BasicPanic.Settings.HeavyMechEarlyPanicThreshold)
+                        if (Holder.TrackedPilots[i].pilotStatus >= Logger.Settings.HeavyMechEarlyPanicThreshold)
                         {
                             return true;
                         }
                     }
 
-                    else if (BasicPanic.Settings.PlayerAssaultsConsiderEjectingEarly && mech.weightClass == WeightClass.ASSAULT)
+                    else if (Logger.Settings.PlayerAssaultsConsiderEjectingEarly && mech.weightClass == WeightClass.ASSAULT)
                     {
-                        if (Holder.TrackedPilots[i].pilotStatus >= BasicPanic.Settings.AssaultMechEarlyPanicThreshold)
+                        if (Holder.TrackedPilots[i].pilotStatus >= Logger.Settings.AssaultMechEarlyPanicThreshold)
                         {
                             return true;
                         }
                     }
                 }
-               else
-               {
-                    if (BasicPanic.Settings.EnemyLightsConsiderEjectingEarly && mech.weightClass == WeightClass.LIGHT)
+                else
+                {
+                    if (Logger.Settings.EnemyLightsConsiderEjectingEarly && mech.weightClass == WeightClass.LIGHT)
                     {
-                        if (Holder.TrackedPilots[i].pilotStatus >= BasicPanic.Settings.LightMechEarlyPanicThreshold)
+                        if (Holder.TrackedPilots[i].pilotStatus >= Logger.Settings.LightMechEarlyPanicThreshold)
                         {
                             return true;
                         }
                     }
 
-                    else if (BasicPanic.Settings.EnemyMediumsConsiderEjectingEarly && mech.weightClass == WeightClass.MEDIUM)
+                    else if (Logger.Settings.EnemyMediumsConsiderEjectingEarly && mech.weightClass == WeightClass.MEDIUM)
                     {
-                        if (Holder.TrackedPilots[i].pilotStatus >= BasicPanic.Settings.MediumMechEarlyPanicThreshold)
+                        if (Holder.TrackedPilots[i].pilotStatus >= Logger.Settings.MediumMechEarlyPanicThreshold)
                         {
                             return true;
                         }
                     }
-                    else if (BasicPanic.Settings.EnemyHeaviesConsiderEjectingEarly && mech.weightClass == WeightClass.HEAVY)
+                    else if (Logger.Settings.EnemyHeaviesConsiderEjectingEarly && mech.weightClass == WeightClass.HEAVY)
                     {
-                        if (Holder.TrackedPilots[i].pilotStatus >= BasicPanic.Settings.HeavyMechEarlyPanicThreshold)
+                        if (Holder.TrackedPilots[i].pilotStatus >= Logger.Settings.HeavyMechEarlyPanicThreshold)
                         {
                             return true;
                         }
                     }
 
-                    else if (BasicPanic.Settings.EnemyAssaultsConsiderEjectingEarly && mech.weightClass == WeightClass.ASSAULT)
+                    else if (Logger.Settings.EnemyAssaultsConsiderEjectingEarly && mech.weightClass == WeightClass.ASSAULT)
                     {
-                        if (Holder.TrackedPilots[i].pilotStatus >= BasicPanic.Settings.AssaultMechEarlyPanicThreshold)
+                        if (Holder.TrackedPilots[i].pilotStatus >= Logger.Settings.AssaultMechEarlyPanicThreshold)
                         {
                             return true;
                         }
@@ -136,9 +136,9 @@ namespace BasicPanic
                 return -1;
             }
 
-            if(Holder.TrackedPilots == null)
+            if (Holder.TrackedPilots == null)
             {
-                  Holder.DeserializeActiveJson();
+                Holder.DeserializeActiveJson();
             }
 
             for (int i = 0; i < Holder.TrackedPilots.Count; i++)

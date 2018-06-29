@@ -250,11 +250,13 @@ namespace BasicPanic
                     return true;
             }
 
-            if (mech.team == mech.Combat.LocalPlayerTeam && !Logger.Settings.PlayerTeamCanPanic)
+
+            // credit to jo and thanks!
+            if (mech.team.IsLocalPlayer && !Logger.Settings.PlayerTeamCanPanic)
             {
-                return false;is
+                return false;
             }
-            else if (mech.team != mech.Combat.LocalPlayerTeam && !Logger.Settings.EnemiesCanPanic)
+            else if (mech.team.IsLocalPlayer && !Logger.Settings.EnemiesCanPanic)
             {
                 return false;
             }

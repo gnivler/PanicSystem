@@ -20,15 +20,18 @@ namespace BasicPanic
 
                 if (pilot != null && pilot.Health - pilot.Injuries <= BasicPanic.Settings.MinimumHealthToAlwaysEjectRoll && !pilot.LethalInjuries)
                 {
+                    Logging.Debug($"Panicking due to health.");
                     return true;
                 }
                 if (weapons.TrueForAll(w => w.DamageLevel == ComponentDamageLevel.Destroyed || w.DamageLevel == ComponentDamageLevel.NonFunctional) && BasicPanic.Settings.ConsiderEjectingWithNoWeaps)
                 {
-                    return true; 
+                    Logging.Debug($"Panicking due to components being affected.");
+                    return true;
                 }
 
                 if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m.GUID == mech.GUID))
                 {
+                    Logging.Debug($"Panicking due to being the last alive.");
                     return true;
                 }
 
@@ -37,19 +40,20 @@ namespace BasicPanic
                     if (Holder.TrackedPilots[i].trackedMech == mech.GUID &&
                         Holder.TrackedPilots[i].pilotStatus == PanicStatus.Panicked)
                     {
+                        Logging.Debug($"Panicking due to health.");
                         return true;
                     }
 
-
                     if (CanEarlyPanic(mech, i))
                     {
+                        Logging.Debug($"In early panic.");
                         IsEarlyPanic = true;
                         return true;
                     }
                 }
 
             }
-
+            Logging.Debug($"Not panicking.");
             return false;
         }
 
@@ -57,27 +61,31 @@ namespace BasicPanic
         {
             if (Holder.TrackedPilots[i].trackedMech == mech.GUID)
             {
-               if(mech.team == mech.Combat.LocalPlayerTeam)
-               {
+                if (mech.team.IsLocalPlayer)
+                {
                     if (BasicPanic.Settings.PlayerLightsConsiderEjectingEarly && mech.weightClass == WeightClass.LIGHT)
                     {
                         if (Holder.TrackedPilots[i].pilotStatus >= BasicPanic.Settings.LightMechEarlyPanicThreshold)
                         {
+                            Logging.Debug($"Panicking early.");
                             return true;
                         }
                     }
 
-                    else if(BasicPanic.Settings.PlayerMediumsConsiderEjectingEarly && mech.weightClass == WeightClass.MEDIUM)
+                    else if (BasicPanic.Settings.PlayerMediumsConsiderEjectingEarly && mech.weightClass == WeightClass.MEDIUM)
                     {
                         if (Holder.TrackedPilots[i].pilotStatus >= BasicPanic.Settings.MediumMechEarlyPanicThreshold)
                         {
+                            Logging.Debug($"Panicking early.");
                             return true;
                         }
                     }
+
                     else if (BasicPanic.Settings.PlayerHeaviesConsiderEjectingEarly && mech.weightClass == WeightClass.HEAVY)
                     {
                         if (Holder.TrackedPilots[i].pilotStatus >= BasicPanic.Settings.HeavyMechEarlyPanicThreshold)
                         {
+                            Logging.Debug($"Panicking early.");
                             return true;
                         }
                     }
@@ -86,16 +94,18 @@ namespace BasicPanic
                     {
                         if (Holder.TrackedPilots[i].pilotStatus >= BasicPanic.Settings.AssaultMechEarlyPanicThreshold)
                         {
+                            Logging.Debug($"Panicking early.");
                             return true;
                         }
                     }
                 }
-               else
-               {
+                else
+                {
                     if (BasicPanic.Settings.EnemyLightsConsiderEjectingEarly && mech.weightClass == WeightClass.LIGHT)
                     {
                         if (Holder.TrackedPilots[i].pilotStatus >= BasicPanic.Settings.LightMechEarlyPanicThreshold)
                         {
+                            Logging.Debug($"Panicking early.");
                             return true;
                         }
                     }
@@ -104,13 +114,16 @@ namespace BasicPanic
                     {
                         if (Holder.TrackedPilots[i].pilotStatus >= BasicPanic.Settings.MediumMechEarlyPanicThreshold)
                         {
+                            Logging.Debug($"Panicking early.");
                             return true;
                         }
                     }
+
                     else if (BasicPanic.Settings.EnemyHeaviesConsiderEjectingEarly && mech.weightClass == WeightClass.HEAVY)
                     {
                         if (Holder.TrackedPilots[i].pilotStatus >= BasicPanic.Settings.HeavyMechEarlyPanicThreshold)
                         {
+                            Logging.Debug($"Panicking early.");
                             return true;
                         }
                     }
@@ -119,13 +132,13 @@ namespace BasicPanic
                     {
                         if (Holder.TrackedPilots[i].pilotStatus >= BasicPanic.Settings.AssaultMechEarlyPanicThreshold)
                         {
+                            Logging.Debug($"Panicking early.");
                             return true;
                         }
                     }
                 }
-
             }
-
+            Logging.Debug($"Not panicking early.");
             return false;
         }
 
@@ -136,9 +149,9 @@ namespace BasicPanic
                 return -1;
             }
 
-            if(Holder.TrackedPilots == null)
+            if (Holder.TrackedPilots == null)
             {
-                  Holder.DeserializeActiveJson();
+                Holder.DeserializeActiveJson();
             }
 
             for (int i = 0; i < Holder.TrackedPilots.Count; i++)
@@ -149,9 +162,7 @@ namespace BasicPanic
                     return i;
                 }
             }
-
             return -1;
         }
-
     }
 }

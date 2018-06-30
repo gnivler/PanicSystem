@@ -3,8 +3,8 @@ using System.IO;
 
 namespace BasicPanic
 {
-    // 'borrowed' from Morphyum
-    public class Logging
+    // code 'borrowed' from Morphyum
+    public static class Logging
     {
         static string filePath = $"{Holder.ModDirectory}/Log.txt";
         public static void LogError(Exception ex)
@@ -17,8 +17,10 @@ namespace BasicPanic
             }
         }
 
-        public static void LogLine(object line)
+        public static void Debug(object line)
         {
+            // idea 'borrowed' from jo
+            if (!BasicPanic.Settings.DebugEnabled) return;
             using (StreamWriter writer = new StreamWriter(filePath, true))
             {
                 writer.WriteLine($"{DateTime.Now.ToShortTimeString()} {line}");

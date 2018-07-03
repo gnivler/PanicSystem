@@ -8,11 +8,180 @@ using Newtonsoft.Json;
 using PunchinOut;
 using System.IO;
 using BattleTech.UI;
+using static BasicPanic.BasicPanic;
 
 namespace BasicPanic
 {
     [UsedImplicitly]
     [SuppressMessage("ReSharper", "InconsistentNaming")]
+    public static class BasicPanic
+    {
+        internal static ModSettings Settings;
+
+        public static void Init(string modDir, string modSettings)
+        {
+            var harmony = HarmonyInstance.Create("io.github.RealityMachina.BasicPanic");
+            harmony.PatchAll(Assembly.GetExecutingAssembly());
+            Holder.ModDirectory = Path.Combine(Path.GetDirectoryName(VersionManifestUtilities.MANIFEST_FILEPATH), @"..\..\..\Mods\PanicSystem");
+            Holder.ActiveJsonPath = Path.Combine(Holder.ModDirectory, "BasicPanicSystem.json");
+            Holder.StorageJsonPath = Path.Combine(Holder.ModDirectory, "BasicPanicSystemStorage.json");
+            try
+            {
+                Settings = JsonConvert.DeserializeObject<ModSettings>(modSettings);
+            }
+            catch (Exception)
+            {
+                Settings = new ModSettings();
+            }
+        }
+        public static bool RollForEjectionResult(Mech mech, AttackDirector.AttackSequence attackSequence, bool IsEarlyPanic)
+        {
+            if (mech == null || mech.IsDead || (mech.IsFlaggedForDeath && !mech.HasHandledDeath))
+                return false;
+
+            // knocked down mechs cannot eject
+            if (mech.IsProne && Settings.KnockedDownCannotEject)
+                return false;
+
+            // have to do damage
+            if (!attackSequence.attackDidDamage)
+                return false;
+
+            Pilot pilot = mech.GetPilot();
+            var weapons = mech.Weapons;
+            var guts = mech.SkillGuts;
+            var tactics = mech.SkillTactics;
+            var total = guts + tactics;
+
+            float lowestRemaining = mech.CenterTorsoStructure + mech.CenterTorsoFrontArmor;
+            float ejectModifiers = 0;
+
+            // guts 10 makes you immune, player character cannot be forced to eject
+            if ((guts >= 10 && Settings.GutsTenAlwaysResists) || (pilot != null && pilot.IsPlayerCharacter && Settings.PlayerCharacterAlwaysResists))
+                return false;
+
+            // tactics 10 makes you immune, or combination of guts and tactics makes you immune.
+            if ((tactics >= 10 && Settings.TacticsTenAlwaysResists) || (total >= 10 && Settings.ComboTenAlwaysResists))
+                return false;
+
+            // pilots that cannot eject or be headshot shouldn't eject
+            if (!mech.CanBeHeadShot || (pilot != null && !pilot.CanEject))
+                return false;
+
+            // pilot health
+            if (pilot != null)
+            {
+                float pilotHealthPercent = 1 - ((float)pilot.Injuries / pilot.Health);
+
+                if (pilotHealthPercent < 1)
+                {
+                    ejectModifiers += Settings.PilotHealthMaxModifier * (1 - pilotHealthPercent);
+                }
+            }
+
+            if (mech.IsUnsteady)
+            {
+                ejectModifiers += Settings.UnsteadyModifier;
+            }
+
+            // Head
+            var headHealthPercent = (mech.HeadArmor + mech.HeadStructure) / (mech.GetMaxArmor(ArmorLocation.Head) + mech.GetMaxStructure(ChassisLocations.Head));
+            if (headHealthPercent < 1)
+            {
+                ejectModifiers += Settings.HeadDamageMaxModifier * (1 - headHealthPercent);
+            }
+
+            // CT
+            var ctPercent = (mech.CenterTorsoFrontArmor + mech.CenterTorsoStructure) / (mech.GetMaxArmor(ArmorLocation.CenterTorso) + mech.GetMaxStructure(ChassisLocations.CenterTorso));
+            if (ctPercent < 1)
+            {
+                ejectModifiers += Settings.CTDamageMaxModifier * (1 - ctPercent);
+                lowestRemaining = Math.Min(mech.CenterTorsoStructure, lowestRemaining);
+            }
+
+            // side torsos
+            var ltStructurePercent = mech.LeftTorsoStructure / mech.GetMaxStructure(ChassisLocations.LeftTorso);
+            if (ltStructurePercent < 1)
+            {
+                ejectModifiers += Settings.SideTorsoInternalDamageMaxModifier * (1 - ltStructurePercent);
+            }
+
+            var rtStructurePercent = mech.RightTorsoStructure / mech.GetMaxStructure(ChassisLocations.RightTorso);
+            if (rtStructurePercent < 1)
+            {
+                ejectModifiers += Settings.SideTorsoInternalDamageMaxModifier * (1 - rtStructurePercent);
+            }
+
+            // legs
+            if (mech.RightLegDamageLevel == LocationDamageLevel.Destroyed || mech.LeftLegDamageLevel == LocationDamageLevel.Destroyed)
+            {
+                float legPercent;
+
+                if (mech.LeftLegDamageLevel == LocationDamageLevel.Destroyed)
+                {
+                    legPercent = (mech.RightLegStructure + mech.RightLegArmor) / (mech.GetMaxStructure(ChassisLocations.RightLeg) + mech.GetMaxArmor(ArmorLocation.RightLeg));
+                }
+                else
+                {
+                    legPercent = (mech.LeftLegStructure + mech.LeftLegArmor) / (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg));
+                }
+
+                if (legPercent < 1)
+                {
+                    lowestRemaining = Math.Min(legPercent * (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg)), lowestRemaining);
+                    ejectModifiers += Settings.LeggedMaxModifier * (1 - legPercent);
+                }
+            }
+
+            // next shot could kill
+            if (lowestRemaining <= attackSequence.cumulativeDamage)
+            {
+                ejectModifiers += Settings.NextShotLikeThatCouldKill;
+            }
+
+            // weaponless
+            if (weapons.TrueForAll(w =>
+                w.DamageLevel == ComponentDamageLevel.Destroyed || w.DamageLevel == ComponentDamageLevel.NonFunctional))
+            {
+                ejectModifiers += Settings.WeaponlessModifier;
+            }
+
+            // alone
+            if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m == mech as AbstractActor))
+            {
+                ejectModifiers += Settings.AloneModifier;
+            }
+
+            var modifiers = (ejectModifiers - Settings.BaseEjectionResist - (Settings.GutsEjectionResistPerPoint * guts) - (Settings.TacticsEjectionResistPerPoint * tactics)) * 5;
+
+            if (mech.team == mech.Combat.LocalPlayerTeam)
+            {
+                MoraleConstantsDef moraleDef = mech.Combat.Constants.GetActiveMoraleDef(mech.Combat);
+                modifiers -= Math.Max(mech.Combat.LocalPlayerTeam.Morale - moraleDef.CanUseInspireLevel, 0);
+            }
+
+            if (modifiers < 0)
+                return false;
+
+            var rng = (new System.Random()).Next(100);
+            float rollToBeat;
+            if (!IsEarlyPanic)
+            {
+                rollToBeat = Math.Min(modifiers, Settings.MaxEjectChance);
+            }
+            else
+            {
+                rollToBeat = Math.Min(modifiers, Settings.MaxEjectChanceWhenEarly);
+            }
+
+            mech.Combat.MessageCenter.PublishMessage(!(rng < rollToBeat)
+                ? new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Guts/Tactics Check Passed {Math.Floor(rollToBeat)}%", FloatieMessage.MessageNature.Buff, true))
+                : new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Punchin' Out! {Math.Floor(rollToBeat)}%", FloatieMessage.MessageNature.Debuff, true)));
+
+            return rng < rollToBeat;
+        }
+    }
+
     [HarmonyPatch(typeof(AttackStackSequence), "OnAttackComplete")]
     public static class AttackStackSequence_OnAttackComplete_Patch
     {
@@ -26,23 +195,20 @@ namespace BasicPanic
             if (attackCompleteMessage == null || attackCompleteMessage.stackItemUID != __instance.SequenceGUID)
                 return;
 
-
             if (__instance.directorSequences[0].target is Mech)
             {
                 mech = __instance.directorSequences[0].target as Mech;
                 ShouldPanic = RollHelpers.ShouldPanic(mech, attackCompleteMessage.attackSequence);
-
-
             }
 
-            if(mech == null || mech.GUID == null || attackCompleteMessage == null)
+            if (mech == null || mech.GUID == null || attackCompleteMessage == null)
             {
                 return;
             }
 
             Holder.SerializeActiveJson();
 
-            if (PanicHelpers.IsPanicking(mech, ref IsEarlyPanic) && BasicPanic.RollForEjectionResult(mech, attackCompleteMessage.attackSequence, IsEarlyPanic))
+            if (PanicHelpers.IsPanicking(mech, ref IsEarlyPanic) && RollForEjectionResult(mech, attackCompleteMessage.attackSequence, IsEarlyPanic))
             {
                 mech.EjectPilot(mech.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
             }
@@ -214,44 +380,60 @@ namespace BasicPanic
     {
         public static bool ShouldPanic(Mech mech, AttackDirector.AttackSequence attackSequence)
         {
+            Logging.Debug($"------ START ------");
             if (mech == null || mech.IsDead || (mech.IsFlaggedForDeath && mech.HasHandledDeath))
             {
+                Logging.Debug($"{mech.DisplayName} incapacitated by {attackSequence.attacker.DisplayName}.");
                 return false;
             }
 
-            if(attackSequence == null)
+            if (attackSequence == null)
             {
+                Logging.Debug($"No attack.");
+                return false;
+            }
+            // credit to jo and thanks!
+            if (mech.team.IsLocalPlayer && !BasicPanic.Settings.PlayerTeamCanPanic)
+            {
+                Logging.Debug($"Players can't panic.");
+                return false;
+            }
+            else if (!mech.team.IsLocalPlayer && !BasicPanic.Settings.EnemiesCanPanic)
+            {
+                Logging.Debug($"AI can't panic.");
                 return false;
             }
 
-            if (!attackSequence.attackDidDamage) //no point in panicking over nothing
+            if (!attackSequence.attackDidDamage)
             {
+                Logging.Debug($"No damage.");
                 return false;
             }
 
-            if(!attackSequence.attackDamagedStructure && !attackSequence.lowArmorStruck) //no structure damage and didn't strike low armour
+            if (attackSequence.attackStructureDamage > 0)
             {
+                Logging.Debug($"{mech.DisplayName} suffers structure damage from {attackSequence.attacker.DisplayName}.");
+                return true;
+            }
+            else
+            {
+                var settings = BasicPanic.Settings;
+                float mininumDamagePercentRequired = settings.MinimumArmourDamagePercentageRequired;  // default is 10%
                 float totalArmor = 0, maxArmor = 0;
-
                 maxArmor = GetTotalMechArmour(mech, maxArmor);
-
                 totalArmor = GetCurrentMechArmour(mech, totalArmor);
-
-                if((totalArmor / maxArmor * 100 ) + ((BasicPanic.Settings.MinimumArmourDamagePercentageRequired * maxArmor / 100) / maxArmor * 100 ) >= 100) //basically if this equals to 100%, mech didn't lose enough armour
+                float currentArmorPercent = totalArmor / maxArmor * 100;
+                float percentOfCurrentArmorDamaged = attackSequence.attackArmorDamage / currentArmorPercent;
+                Logging.Debug($"{attackSequence.attacker.DisplayName} attacking {mech.DisplayName} for {attackSequence.attackArmorDamage} to armour.");
+                Logging.Debug($"{mech.DisplayName} has {currentArmorPercent.ToString("0.0")}% armor ({totalArmor}/{maxArmor}).  The attack does {(attackSequence.attackArmorDamage / totalArmor * 100).ToString("0.0")}% damage.");
+                if (attackSequence.attackArmorDamage / totalArmor * 100 >= mininumDamagePercentRequired)
                 {
-                    return false;
+                    Logging.Debug($"Big hit causes panic.");
+                    return true;
                 }
             }
 
-
-            if (mech.team == mech.Combat.LocalPlayerTeam && !BasicPanic.Settings.PlayerTeamCanPanic)
-            {
-                return false;
-            }
-            else if (mech.team != mech.Combat.LocalPlayerTeam && !BasicPanic.Settings.EnemiesCanPanic)
-            {
-                return false;
-            }
+            Logging.Debug($"Attack yields no reason to panic.  Considering other factors...");
 
             int PanicRoll = 0;
 
@@ -263,8 +445,7 @@ namespace BasicPanic
             int index = -1;
 
             index = PanicHelpers.GetTrackedPilotIndex(mech);
-                
-  
+
             float lowestRemaining = mech.CenterTorsoStructure + mech.CenterTorsoFrontArmor;
             float panicModifiers = 0;
 
@@ -273,18 +454,16 @@ namespace BasicPanic
                 Holder.TrackedPilots.Add(new PanicTracker(mech)); //add a new tracker to tracked pilot, then we run it all over again;
 
                 index = PanicHelpers.GetTrackedPilotIndex(mech);
-                if(index < 0)
+                if (index < 0)
                 {
-                    
                     return false;
                 }
- 
             }
-           
+
             if (Holder.TrackedPilots[index].trackedMech != mech.GUID)
                 return false;
 
-            if (Holder.TrackedPilots[index].trackedMech == mech.GUID && 
+            if (Holder.TrackedPilots[index].trackedMech == mech.GUID &&
                 Holder.TrackedPilots[index].ChangedRecently && BasicPanic.Settings.AlwaysGatedChanges)
             {
                 return false;
@@ -375,7 +554,7 @@ namespace BasicPanic
             }
             //straight up add guts, tactics, and morale to this as negative values
             panicModifiers -= total;
-            if(mech.team == mech.Combat.LocalPlayerTeam)
+            if (mech.team == mech.Combat.LocalPlayerTeam)
             {
                 MoraleConstantsDef moraleDef = mech.Combat.Constants.GetActiveMoraleDef(mech.Combat);
                 panicModifiers -= Math.Max(mech.Combat.LocalPlayerTeam.Morale - moraleDef.CanUseInspireLevel, 0) / (float)2;
@@ -383,7 +562,7 @@ namespace BasicPanic
 
             //reduce modifiers by 5 to account change to D20 roll instead of D100 roll, then min it t0 20 or modified floor
             panicModifiers /= 5;
-            
+
             PanicRoll = PanicRoll + (int)panicModifiers;
 
             if ((total >= 20 || PanicRoll <= 0) && !BasicPanic.Settings.AtLeastOneChanceToPanic)
@@ -391,7 +570,7 @@ namespace BasicPanic
 
             PanicRoll = Math.Min(PanicRoll, 20);
 
-            if(PanicRoll < 0)
+            if (PanicRoll < 0)
             {
                 PanicRoll = 0; //make this have some kind of chance to happen
             }
@@ -401,12 +580,14 @@ namespace BasicPanic
 
             int rngRoll = UnityEngine.Random.Range(total, 20);
 
-            if(rngRoll <= PanicRoll)
+            if (rngRoll <= PanicRoll)
             {
+                Logging.Debug($"Failed panic save, debuffed!");
                 ApplyPanicDebuff(mech, index);
                 return true;
             }
             mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Resisted Morale Check!", FloatieMessage.MessageNature.Buff, true)));
+            Logging.Debug($"No reason to panic.");
             return false;
         }
 
@@ -481,11 +662,13 @@ namespace BasicPanic
             Holder.TrackedPilots[index].ChangedRecently = true;
         }
     }
+
     internal class ModSettings
     {
         public bool PlayerCharacterAlwaysResists = true;
         public bool PlayerTeamCanPanic = true;
         public bool EnemiesCanPanic = true;
+        public bool DebugEnabled = false;
 
         //new mechanics for considering when to eject based on mech class
         public bool PlayerLightsConsiderEjectingEarly = false;
@@ -552,178 +735,8 @@ namespace BasicPanic
         public float LeggedMaxModifier = 10;
 
         public float NextShotLikeThatCouldKill = 15;
-        
+
         public float WeaponlessModifier = 15;
         public float AloneModifier = 20;
-
-    }
-
-    public static class BasicPanic
-    {
-        internal static ModSettings Settings;
-
-        public static void Init(string modDir, string modSettings)
-        {
-            var harmony = HarmonyInstance.Create("io.github.RealityMachina.BasicPanic");
-            harmony.PatchAll(Assembly.GetExecutingAssembly());
-            Holder.ModDirectory = Path.Combine(Path.GetDirectoryName(VersionManifestUtilities.MANIFEST_FILEPATH), @"..\..\..\Mods\BasicPanicSystem");
-            Holder.ActiveJsonPath = Path.Combine(Holder.ModDirectory, "BasicPanicSystem.json");
-            Holder.StorageJsonPath = Path.Combine(Holder.ModDirectory, "BasicPanicSystemStorage.json");
-            try
-            {
-                Settings = JsonConvert.DeserializeObject<ModSettings>(modSettings);
-            }
-            catch (Exception)
-            {
-                Settings = new ModSettings();
-            }
-        }
-        
-        public static bool RollForEjectionResult(Mech mech, AttackDirector.AttackSequence attackSequence, bool IsEarlyPanic)
-        {
-            if (mech == null || mech.IsDead || (mech.IsFlaggedForDeath && !mech.HasHandledDeath))
-                return false;
-
-            // knocked down mechs cannot eject
-            if (mech.IsProne && Settings.KnockedDownCannotEject)
-                return false;
-
-            // have to do damage
-            if (!attackSequence.attackDidDamage)
-                return false;
-
-            Pilot pilot = mech.GetPilot();
-            var weapons = mech.Weapons;
-            var guts = mech.SkillGuts;
-            var tactics = mech.SkillTactics;
-            var total = guts + tactics;
-
-            float lowestRemaining = mech.CenterTorsoStructure + mech.CenterTorsoFrontArmor;
-            float ejectModifiers = 0;
-            
-            // guts 10 makes you immune, player character cannot be forced to eject
-            if ((guts >= 10 && Settings.GutsTenAlwaysResists) || (pilot != null && pilot.IsPlayerCharacter && Settings.PlayerCharacterAlwaysResists))
-                return false;
-
-            // tactics 10 makes you immune, or combination of guts and tactics makes you immune.
-            if ((tactics >= 10 && Settings.TacticsTenAlwaysResists) || (total >= 10 && Settings.ComboTenAlwaysResists))
-                return false;
-
-            // pilots that cannot eject or be headshot shouldn't eject
-            if (!mech.CanBeHeadShot || (pilot != null && !pilot.CanEject))
-                return false;
-
-            // pilot health
-            if (pilot != null)
-            {
-                float pilotHealthPercent = 1 - ((float)pilot.Injuries / pilot.Health);
-
-                if (pilotHealthPercent < 1)
-                {
-                    ejectModifiers += Settings.PilotHealthMaxModifier * (1 - pilotHealthPercent);
-                }
-            }
-
-            if (mech.IsUnsteady)
-            {
-                ejectModifiers += Settings.UnsteadyModifier;
-            }
-
-            // Head
-            var headHealthPercent = (mech.HeadArmor + mech.HeadStructure) / (mech.GetMaxArmor(ArmorLocation.Head) + mech.GetMaxStructure(ChassisLocations.Head));
-            if (headHealthPercent < 1)
-            {
-                ejectModifiers += Settings.HeadDamageMaxModifier * (1 - headHealthPercent);
-            }
-
-            // CT
-            var ctPercent = (mech.CenterTorsoFrontArmor + mech.CenterTorsoStructure) / (mech.GetMaxArmor(ArmorLocation.CenterTorso) + mech.GetMaxStructure(ChassisLocations.CenterTorso));
-            if (ctPercent < 1)
-            {
-                ejectModifiers += Settings.CTDamageMaxModifier * (1 - ctPercent);
-                lowestRemaining = Math.Min(mech.CenterTorsoStructure, lowestRemaining);
-            }
-
-            // side torsos
-            var ltStructurePercent = mech.LeftTorsoStructure / mech.GetMaxStructure(ChassisLocations.LeftTorso);
-            if (ltStructurePercent < 1)
-            {
-                ejectModifiers += Settings.SideTorsoInternalDamageMaxModifier * (1 - ltStructurePercent);
-            }
-
-            var rtStructurePercent = mech.RightTorsoStructure / mech.GetMaxStructure(ChassisLocations.RightTorso);
-            if (rtStructurePercent < 1)
-            {
-                ejectModifiers += Settings.SideTorsoInternalDamageMaxModifier * (1 - rtStructurePercent);
-            }
-            
-            // legs
-            if (mech.RightLegDamageLevel == LocationDamageLevel.Destroyed || mech.LeftLegDamageLevel == LocationDamageLevel.Destroyed)
-            {
-                float legPercent;
-
-                if (mech.LeftLegDamageLevel == LocationDamageLevel.Destroyed)
-                {
-                    legPercent = (mech.RightLegStructure + mech.RightLegArmor) / (mech.GetMaxStructure(ChassisLocations.RightLeg) + mech.GetMaxArmor(ArmorLocation.RightLeg));
-                }
-                else
-                {
-                    legPercent = (mech.LeftLegStructure + mech.LeftLegArmor) / (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg));
-                }
-
-                if (legPercent < 1)
-                {
-                    lowestRemaining = Math.Min(legPercent * (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg)), lowestRemaining);
-                    ejectModifiers += Settings.LeggedMaxModifier * (1 - legPercent);
-                }
-            }
-
-            // next shot could kill
-            if (lowestRemaining <= attackSequence.cumulativeDamage)
-            {
-                ejectModifiers += Settings.NextShotLikeThatCouldKill;
-            }
-            
-            // weaponless
-            if (weapons.TrueForAll(w =>
-                w.DamageLevel == ComponentDamageLevel.Destroyed || w.DamageLevel == ComponentDamageLevel.NonFunctional))
-            {
-                ejectModifiers += Settings.WeaponlessModifier;
-            }
-
-            // alone
-            if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m == mech as AbstractActor))
-            {
-                ejectModifiers += Settings.AloneModifier;
-            }
-
-            var modifiers = (ejectModifiers - Settings.BaseEjectionResist - (Settings.GutsEjectionResistPerPoint * guts) - (Settings.TacticsEjectionResistPerPoint * tactics) ) * 5;
-
-            if (mech.team == mech.Combat.LocalPlayerTeam)
-            {
-                MoraleConstantsDef moraleDef = mech.Combat.Constants.GetActiveMoraleDef(mech.Combat);
-               modifiers -= Math.Max(mech.Combat.LocalPlayerTeam.Morale - moraleDef.CanUseInspireLevel, 0);
-            }
-
-            if (modifiers < 0)
-                return false;
-            
-            var rng = (new System.Random()).Next(100);
-            float rollToBeat;
-            if (!IsEarlyPanic)
-            {
-                rollToBeat = Math.Min(modifiers, Settings.MaxEjectChance);
-            }
-            else
-            {
-                rollToBeat = Math.Min(modifiers, Settings.MaxEjectChanceWhenEarly);
-            }
-
-            mech.Combat.MessageCenter.PublishMessage(!(rng < rollToBeat)
-                ? new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Guts/Tactics Check Passed {Math.Floor(rollToBeat)}%", FloatieMessage.MessageNature.Buff, true))
-                : new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Punchin' Out! {Math.Floor(rollToBeat)}%", FloatieMessage.MessageNature.Debuff, true)));
-
-            return rng < rollToBeat;
-        }
     }
 }

@@ -1,10 +1,10 @@
 ﻿using System;
 using System.IO;
 
-namespace BasicPanic
+namespace RogueTechPanicSystem
 {
     // code 'borrowed' from Morphyum
-    public static class Logging
+    public static class Logger
     {
         static string filePath = $"{Holder.ModDirectory}/Log.txt";
         public static void LogError(Exception ex)
@@ -20,7 +20,7 @@ namespace BasicPanic
         public static void Debug(object line)
         {
             // idea 'borrowed' from jo
-            if (!BasicPanic.Settings.DebugEnabled) return;
+            if (!RogueTechPanicSystem.Settings.DebugEnabled) return;
             using (StreamWriter writer = new StreamWriter(filePath, true))
             {
                 writer.WriteLine($"{DateTime.Now.ToShortTimeString()} {line}");

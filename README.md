@@ -1,9 +1,9 @@
-# Basic Panic System
+# RogueTechPanicSystem
 ModTek mod that adds a basic panic system for MechWarriors, both playable and non-playable into the game.  Forked from RealityMachina's fork of mpstark's PunchinOut mod (https://github.com/Mpstark/PunchinOut).
 
 ## Installation
 
-Install [BTML](https://github.com/Mpstark/BattleTechModLoader) and [ModTek](https://github.com/Mpstark/ModTek). Extract files to `BATTLETECH\Mods\BasicPanicSystem\`.
+Install RogueTech AIO.
 
 ## General Details
 

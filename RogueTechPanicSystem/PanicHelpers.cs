@@ -1,5 +1,6 @@
 ﻿using BattleTech;
 
+// HUGE thanks to RealityMachina and mpstark for their work, outstanding.
 namespace RogueTechPanicSystem
 {
     public static class PanicHelpers

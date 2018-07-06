@@ -4,6 +4,7 @@ using BattleTech.Save.SaveGameStructure;
 using Harmony;
 using System;
 
+// HUGE thanks to RealityMachina and mpstark for their work, outstanding.
 namespace RogueTechPanicSystem
 {
     [HarmonyPatch(typeof(GameInstanceSave))]

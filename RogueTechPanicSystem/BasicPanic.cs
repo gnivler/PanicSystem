@@ -9,6 +9,7 @@ using System.IO;
 using System.Reflection;
 using static RogueTechPanicSystem.RogueTechPanicSystem;
 
+// HUGE thanks to RealityMachina and mpstark for their work, outstanding.
 namespace RogueTechPanicSystem
 {
     [UsedImplicitly]

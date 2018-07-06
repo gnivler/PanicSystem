@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
+// HUGE thanks to RealityMachina and mpstark for their work, outstanding.
 namespace RogueTechPanicSystem
 {
     public static class Holder

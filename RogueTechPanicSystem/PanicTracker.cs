@@ -1,12 +1,10 @@
-﻿using System;
+﻿using BattleTech;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using BattleTech;
 
-namespace PunchinOut
+// HUGE thanks to RealityMachina and mpstark for their work, outstanding.
+namespace RogueTechPanicSystem
 {
-
     public enum PanicStatus
     {
         Normal,
@@ -15,16 +13,10 @@ namespace PunchinOut
         Panicked
     }
 
-
     public class PanicTracker
     {
-
         public PanicStatus pilotStatus;
-
-
         public string trackedMech;
-
-
         public bool ChangedRecently;
 
         public PanicTracker()
@@ -33,8 +25,6 @@ namespace PunchinOut
         }
         public PanicTracker(Mech mech)
         {
-            
-     
             trackedMech = mech.GUID;
             pilotStatus = PanicStatus.Normal;
             ChangedRecently = false;
@@ -65,8 +55,6 @@ namespace PunchinOut
         public void SetTrackedPilots(List<PanicTracker> trackers)
         {
             TrackedPilots = trackers;
-        }    
-
-            
+        }
     }
 }

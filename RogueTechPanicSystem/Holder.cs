@@ -1,10 +1,10 @@
-﻿using System;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
-using PunchinOut;
 using System.IO;
 
-namespace BasicPanic
+// HUGE thanks to RealityMachina and mpstark for their work, outstanding.
+namespace RogueTechPanicSystem
 {
     public static class Holder
     {
@@ -70,7 +70,6 @@ namespace BasicPanic
                     return i;
                 }
             }
-
             return -1;
         }
 
@@ -83,28 +82,22 @@ namespace BasicPanic
             else if (CurrentIndex > -1)
             {
                 int index = CurrentIndex;
-
                 if(metaTrackers[index] != null)
                 {
                     metaTrackers[index].SetTrackedPilots(TrackedPilots); //have our meta tracker get the latest data
                 }
-
                 if(dateTime != null)
                 {
                     metaTrackers[index].SetSaveGameTime(dateTime);
                 }
-
                 if (GUID != null) //set GUID if it's applicable
                 {
                     if(metaTrackers[index].SimGameGUID != GUID)
                     {
                         metaTrackers[index].SetGameGUID(GUID);
                     }
-                    
                 }
             }
-
-
             try
             {
                 if (metaTrackers != null)
@@ -120,7 +113,6 @@ namespace BasicPanic
         public static void DeserializeStorageJson() //fired when we're close to using the json data
         {
             List<MetaTracker> trackers;
-            
             try
             {
                 trackers = JsonConvert.DeserializeObject<List<MetaTracker>>(File.ReadAllText(StorageJsonPath));
@@ -129,7 +121,6 @@ namespace BasicPanic
             {
                 trackers = null;
             }
-
             if(trackers == null)
             {
                 metaTrackers = new List<MetaTracker>();
@@ -161,7 +152,6 @@ namespace BasicPanic
             {
                 // read all text, then deserialize into an object
                 List<PanicTracker> panicTrackers;
-
                 try
                 {
                     panicTrackers = JsonConvert.DeserializeObject<List<PanicTracker>>(File.ReadAllText(ActiveJsonPath));

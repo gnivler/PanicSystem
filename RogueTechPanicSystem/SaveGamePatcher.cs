@@ -1,13 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using BattleTech;
 using BattleTech.Save;
-using Harmony;
-using BattleTech;
 using BattleTech.Save.SaveGameStructure;
+using Harmony;
+using System;
 
-namespace BasicPanic
+// HUGE thanks to RealityMachina and mpstark for their work, outstanding.
+namespace RogueTechPanicSystem
 {
     [HarmonyPatch(typeof(GameInstanceSave))]
     [HarmonyPatch(new Type[] { typeof(GameInstance), typeof(SaveReason) })]

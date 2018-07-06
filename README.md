@@ -1,5 +1,5 @@
 # Basic Panic System
-ModTek mod that adds a basic panic system for MechWarriors, both playable and non-playable into the game. Forked from mpstark's PunchinOut mod (https://github.com/Mpstark/PunchinOut).
+ModTek mod that adds a basic panic system for MechWarriors, both playable and non-playable into the game.  Forked from RealityMachina's fork of mpstark's PunchinOut mod (https://github.com/Mpstark/PunchinOut).
 
 ## Installation
 
@@ -19,16 +19,16 @@ For panic recovery, as long as a pilot avoids failing another roll while they're
 
 A typical chain of events under this system is thus something like Normal at start -> Turn 1 during enemy action: takes hit, downgrades to Fatigued -> Turn 2: manages to avoid failing a panic roll -> Turn 3 on pilot's movement: hits Normal again
 
-## Panic Effects
+## Panic Effects  -- stil subject to tweaks for RT
 
 Fatigued pilots by default, experience -5 to their hit chances.
 
-Stressed Pilots by default, experience -10 to their hit chances, and are 5% more likelier to be hit due to improper piloting.
+Stressed Pilots by default, experience -10 to their hit chances, and are 5% more likely to be hit due to improper piloting.
 
-Panicked Pilots by default, experience -15 to their hit chances, and are 5% more likelier to be hit due to improper piloting. They roll for ejection every time they're hit while in this state.
+Panicked Pilots by default, experience -15 to their hit chances, and are 5% more likely to be hit due to improper piloting. They roll for ejection every time they're hit while in this state.
 
 ## Special Cases
-Pilots with one point of HP left, have no weapons remaining, or are the last survivor in their lance will always roll for ejection when they receive an attack, no matter what.
+Pilots with one point of HP left, have no weapons remaining, or are the last survivor in their lance will always roll for ejection when they receive an attack.
 
 Certain classes of mechs may have their pilots roll for a lower capped chance to eject at an earlier panic state. By default, this applies to enemy light mechs only, when they hit the Fatigued panic state.
 

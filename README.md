@@ -1,5 +1,5 @@
 # RogueTechPanicSystem
-ModTek mod that adds a basic panic system for MechWarriors, both playable and non-playable into the game.  Forked from RealityMachina's fork of mpstark's PunchinOut mod (https://github.com/Mpstark/PunchinOut).
+ModTek mod that adds a basic panic system for MechWarriors, both playable and non-playable into the game.  Forked from RealityMachina's fork (https://github.com/RealityMachina/Basic-Panic-System) of mpstark's PunchinOut mod (https://github.com/Mpstark/PunchinOut).
 
 ## Installation
 

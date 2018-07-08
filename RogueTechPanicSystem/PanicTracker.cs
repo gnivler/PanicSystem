@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 
-// HUGE thanks to RealityMachina and mpstark for their work, outstanding.
 namespace RogueTechPanicSystem
 {
     public enum PanicStatus

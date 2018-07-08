@@ -13,7 +13,6 @@ using static RogueTechPanicSystem.RogueTechPanicSystem;
 namespace RogueTechPanicSystem
 {
     [UsedImplicitly]
-    [SuppressMessage("ReSharper", "InconsistentNaming")]
     public static class RogueTechPanicSystem
     {
         internal static ModSettings Settings;
@@ -22,9 +21,9 @@ namespace RogueTechPanicSystem
         {
             var harmony = HarmonyInstance.Create("de.group.RogueTechPanicSystem");
             harmony.PatchAll(Assembly.GetExecutingAssembly());
-            Holder.ModDirectory = Path.Combine(Path.GetDirectoryName(VersionManifestUtilities.MANIFEST_FILEPATH), @"..\..\..\Mods\RogueTechPanicSystem");
-            Holder.ActiveJsonPath = Path.Combine(Holder.ModDirectory, "RogueTechPanicSystem.json");
-            Holder.StorageJsonPath = Path.Combine(Holder.ModDirectory, "RogueTechPanicSystemStorage.json");
+            Holder.ModDirectory = modDir;
+            Holder.ActiveJsonPath = Path.Combine(modDir, "RogueTechPanicSystem.json");
+            Holder.StorageJsonPath = Path.Combine(modDir, "RogueTechPanicSystemStorage.json");
             try
             {
                 Settings = JsonConvert.DeserializeObject<ModSettings>(modSettings);
@@ -34,6 +33,14 @@ namespace RogueTechPanicSystem
                 Settings = new ModSettings();
             }
         }
+
+        /// <summary>
+        /// returning anything true implies an ejection save will be required
+        /// </summary>
+        /// <param name="mech"></param>
+        /// <param name="attackSequence"></param>
+        /// <param name="IsEarlyPanic"></param>
+        /// <returns></returns>
         public static bool RollForEjectionResult(Mech mech, AttackDirector.AttackSequence attackSequence, bool IsEarlyPanic)
         {
             if (mech == null || mech.IsDead || (mech.IsFlaggedForDeath && !mech.HasHandledDeath))
@@ -48,53 +55,60 @@ namespace RogueTechPanicSystem
                 return false;
 
             Pilot pilot = mech.GetPilot();
+            if (pilot == null)
+                return false;
+
             var weapons = mech.Weapons;
             var guts = mech.SkillGuts;
             var tactics = mech.SkillTactics;
             var total = guts + tactics;
-            float lowestRemaining = mech.CenterTorsoStructure + mech.CenterTorsoFrontArmor;
-            float ejectModifiers = 0;
 
             // guts 10 makes you immune, player character cannot be forced to eject
-            if ((guts >= 10 && Settings.GutsTenAlwaysResists) || (pilot != null && pilot.IsPlayerCharacter && Settings.PlayerCharacterAlwaysResists))
+            if ((guts == 10 && Settings.GutsTenAlwaysResists) ||
+                (Settings.PlayerCharacterAlwaysResists && pilot.IsPlayerCharacter))
                 return false;
 
             // tactics 10 makes you immune, or combination of guts and tactics makes you immune.
-            if ((tactics >= 10 && Settings.TacticsTenAlwaysResists) || (total >= 10 && Settings.ComboTenAlwaysResists))
+            if ((tactics == 10 && Settings.TacticsTenAlwaysResists) ||
+                (total == 10 && Settings.ComboTenAlwaysResists))
                 return false;
 
             // pilots that cannot eject or be headshot shouldn't eject
-            if (!mech.CanBeHeadShot || (pilot != null && !pilot.CanEject))
+            if (!mech.CanBeHeadShot || !pilot.CanEject)
                 return false;
 
-            // pilot health
-            if (pilot != null)
-            {
-                float pilotHealthPercent = 1 - ((float)pilot.Injuries / pilot.Health);
+            // TODO - this doesn't look complete
+            // start building ejectModifiers
+            float lowestHealthLethalLocation = float.MaxValue;
+            float ejectModifiers = 0;
 
-                if (pilotHealthPercent < 1)
-                {
-                    ejectModifiers += Settings.PilotHealthMaxModifier * (1 - pilotHealthPercent);
-                }
+            // pilot health
+            float pilotHealthPercent = 1 - ((float)pilot.Injuries / pilot.Health);
+            if (pilotHealthPercent < 1)
+            {
+                ejectModifiers += Settings.PilotHealthMaxModifier * (1 - pilotHealthPercent);
             }
 
             if (mech.IsUnsteady)
             {
                 ejectModifiers += Settings.UnsteadyModifier;
             }
+
             // Head
-            var headHealthPercent = (mech.HeadArmor + mech.HeadStructure) / (mech.GetMaxArmor(ArmorLocation.Head) + mech.GetMaxStructure(ChassisLocations.Head));
+            var headHealthPercent = (mech.HeadArmor + mech.HeadStructure) / ((mech.GetMaxArmor(ArmorLocation.Head) + mech.GetMaxStructure(ChassisLocations.Head)));
             if (headHealthPercent < 1)
             {
                 ejectModifiers += Settings.HeadDamageMaxModifier * (1 - headHealthPercent);
             }
-            // CT
-            var ctPercent = (mech.CenterTorsoFrontArmor + mech.CenterTorsoStructure) / (mech.GetMaxArmor(ArmorLocation.CenterTorso) + mech.GetMaxStructure(ChassisLocations.CenterTorso));
+
+            // CT                                                                                      // parenthesis bugfix
+            var ctPercent = (mech.CenterTorsoFrontArmor + mech.CenterTorsoStructure) / ((mech.GetMaxArmor(ArmorLocation.CenterTorso) + mech.GetMaxStructure(ChassisLocations.CenterTorso)));
             if (ctPercent < 1)
             {
                 ejectModifiers += Settings.CTDamageMaxModifier * (1 - ctPercent);
-                lowestRemaining = Math.Min(mech.CenterTorsoStructure, lowestRemaining);
+                lowestHealthLethalLocation = Math.Min(mech.CenterTorsoStructure, lowestHealthLethalLocation);
             }
+
             // side torsos
             var ltStructurePercent = mech.LeftTorsoStructure / mech.GetMaxStructure(ChassisLocations.LeftTorso);
             if (ltStructurePercent < 1)
@@ -106,39 +120,41 @@ namespace RogueTechPanicSystem
             {
                 ejectModifiers += Settings.SideTorsoInternalDamageMaxModifier * (1 - rtStructurePercent);
             }
+
             // legs
             if (mech.RightLegDamageLevel == LocationDamageLevel.Destroyed || mech.LeftLegDamageLevel == LocationDamageLevel.Destroyed)
             {
                 float legPercent;
-
                 if (mech.LeftLegDamageLevel == LocationDamageLevel.Destroyed)
-                {
-                    legPercent = (mech.RightLegStructure + mech.RightLegArmor) / (mech.GetMaxStructure(ChassisLocations.RightLeg) + mech.GetMaxArmor(ArmorLocation.RightLeg));
+                {                                                                                      // parenthesis bugfix
+                    legPercent = (mech.RightLegStructure + mech.RightLegArmor) / ((mech.GetMaxStructure(ChassisLocations.RightLeg) + mech.GetMaxArmor(ArmorLocation.RightLeg)));
                 }
                 else
-                {
-                    legPercent = (mech.LeftLegStructure + mech.LeftLegArmor) / (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg));
+                {                                                                                      // parenthesis bugfix
+                    legPercent = (mech.LeftLegStructure + mech.LeftLegArmor) / ((mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg)));
                 }
 
                 if (legPercent < 1)
                 {
-                    lowestRemaining = Math.Min(legPercent * (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg)), lowestRemaining);
+                    lowestHealthLethalLocation = Math.Min(legPercent, lowestHealthLethalLocation);
                     ejectModifiers += Settings.LeggedMaxModifier * (1 - legPercent);
                 }
             }
-            // next shot could kill
-            if (lowestRemaining <= attackSequence.cumulativeDamage)
+
+            // next shot like that could kill
+            if (lowestHealthLethalLocation <= attackSequence.cumulativeDamage)
             {
                 ejectModifiers += Settings.NextShotLikeThatCouldKill;
             }
+
             // weaponless
-            if (weapons.TrueForAll(w =>
-                w.DamageLevel == ComponentDamageLevel.Destroyed || w.DamageLevel == ComponentDamageLevel.NonFunctional))
+            if (weapons.TrueForAll(w => w.DamageLevel == ComponentDamageLevel.Destroyed))
             {
                 ejectModifiers += Settings.WeaponlessModifier;
             }
+
             // alone
-            if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m == mech as AbstractActor))
+            if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m == mech as AbstractActor || m.IsDead))
             {
                 ejectModifiers += Settings.AloneModifier;
             }
@@ -153,7 +169,7 @@ namespace RogueTechPanicSystem
                 return false;
             }
 
-            var rng = (new Random()).Next(100);
+            var rng = (new Random()).NextDouble();
             float rollToBeat;
             if (!IsEarlyPanic)
             {

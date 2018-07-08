@@ -183,33 +183,64 @@ namespace RogueTechPanicSystem
         }
     }
 
-    [HarmonyPatch(typeof(AttackStackSequence), "OnAttackComplete")]
+    [HarmonyPatch(typeof(AttackStackSequence), "OnAttackComplete", null)]
     public static class AttackStackSequence_OnAttackComplete_Patch
     {
         public static void Prefix(AttackStackSequence __instance, MessageCenterMessage message)
         {
             AttackCompleteMessage attackCompleteMessage = message as AttackCompleteMessage;
             bool hasReasonToPanic = false;
-            bool panicStarted = false;
             Mech mech = null;
-
             if (attackCompleteMessage == null || attackCompleteMessage.stackItemUID != __instance.SequenceGUID)
+            {
                 return;
+            }
             if (__instance.directorSequences[0].target is Mech)
             {
                 mech = __instance.directorSequences[0].target as Mech;
-                hasReasonToPanic = RollHelpers.ShouldPanic(mech, attackCompleteMessage.attackSequence);
+                RollHelpers.ShouldPanic(mech, attackCompleteMessage.attackSequence);
             }
             if (mech == null || mech.GUID == null || attackCompleteMessage == null)
+            {
                 return;
-
+            }
             Holder.SerializeActiveJson();
-            if (PanicHelpers.IsPanicking(mech, ref panicStarted) && RollForEjectionResult(mech, attackCompleteMessage.attackSequence, panicStarted))
+            if (PanicHelpers.IsPanicking(mech, ref hasReasonToPanic) && RollForEjectionResult(mech, attackCompleteMessage.attackSequence, hasReasonToPanic))
             {
                 mech.EjectPilot(mech.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
             }
         }
     }
+
+    //[HarmonyPatch(typeof(AttackStackSequence), "OnAttackComplete")]
+    //public static class AttackStackSequence_OnAttackComplete_Patch
+    //{
+    //    public static void Prefix(AttackStackSequence __instance, MessageCenterMessage message)
+    //    {
+    //        AttackCompleteMessage attackCompleteMessage = message as AttackCompleteMessage;
+    //        bool hasReasonToPanic = false;
+    //        bool panicStarted = false;
+    //        Mech mech = null;
+    //        if (attackCompleteMessage == null || attackCompleteMessage.stackItemUID != __instance.SequenceGUID)
+    //        {
+    //            return;
+    //        }
+    //        if (__instance.directorSequences[0].target is Mech)
+    //        {
+    //            mech = __instance.directorSequences[0].target as Mech;
+    //            hasReasonToPanic = RollHelpers.ShouldPanic(mech, attackCompleteMessage.attackSequence);
+    //        }
+    //        if (mech == null || mech.GUID == null || attackCompleteMessage == null)
+    //        {
+    //            return;
+    //        }
+    //        Holder.SerializeActiveJson();
+    //        if (PanicHelpers.IsPanicking(mech, ref panicStarted) && RollForEjectionResult(mech, attackCompleteMessage.attackSequence, panicStarted))
+    //        {
+    //            mech.EjectPilot(mech.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
+    //        }
+    //    }
+    //}
 
     [HarmonyPatch(typeof(AbstractActor), "OnNewRound")]
     public static class AbstractActor_BeginNewRound_Patch

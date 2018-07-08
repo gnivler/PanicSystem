@@ -62,6 +62,7 @@
     <Compile Include="SaveGamePatcher.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="assets\mod.json" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

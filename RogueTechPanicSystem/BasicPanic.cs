@@ -77,7 +77,6 @@ namespace RogueTechPanicSystem
             if (!mech.CanBeHeadShot || !pilot.CanEject)
                 return false;
 
-            // TODO - this doesn't look complete
             // start building ejectModifiers
             float lowestHealthLethalLocation = float.MaxValue;
             float ejectModifiers = 0;
@@ -95,19 +94,18 @@ namespace RogueTechPanicSystem
             }
 
             // Head
-            var headHealthPercent = (mech.HeadArmor + mech.HeadStructure) / ((mech.GetMaxArmor(ArmorLocation.Head) + mech.GetMaxStructure(ChassisLocations.Head)));
+            var headHealthPercent = (mech.HeadArmor + mech.HeadStructure) / (mech.GetMaxArmor(ArmorLocation.Head) + mech.GetMaxStructure(ChassisLocations.Head));
             if (headHealthPercent < 1)
             {
                 ejectModifiers += Settings.HeadDamageMaxModifier * (1 - headHealthPercent);
             }
 
-            // CT                                                                                      // parenthesis bugfix
-            var ctPercent = (mech.CenterTorsoFrontArmor + mech.CenterTorsoStructure) / ((mech.GetMaxArmor(ArmorLocation.CenterTorso) + mech.GetMaxStructure(ChassisLocations.CenterTorso)));
+            // CT                                                                                   
+            var ctPercent = (mech.CenterTorsoFrontArmor + mech.CenterTorsoStructure) / (mech.GetMaxArmor(ArmorLocation.CenterTorso) + mech.GetMaxStructure(ChassisLocations.CenterTorso));
             if (ctPercent < 1)
             {
                 ejectModifiers += Settings.CTDamageMaxModifier * (1 - ctPercent);
-           
-   lowestHealthLethalLocation = Math.Min(mech.CenterTorsoStructure, lowestHealthLethalLocation);
+                lowestHealthLethalLocation = Math.Min(mech.CenterTorsoStructure, lowestHealthLethalLocation);
             }
 
             // side torsos
@@ -127,12 +125,12 @@ namespace RogueTechPanicSystem
             {
                 float legPercent;
                 if (mech.LeftLegDamageLevel == LocationDamageLevel.Destroyed)
-                {                                                                                      // parenthesis bugfix
-                    legPercent = (mech.RightLegStructure + mech.RightLegArmor) / ((mech.GetMaxStructure(ChassisLocations.RightLeg) + mech.GetMaxArmor(ArmorLocation.RightLeg)));
+                {                                                                                  
+                    legPercent = (mech.RightLegStructure + mech.RightLegArmor) / (mech.GetMaxStructure(ChassisLocations.RightLeg) + mech.GetMaxArmor(ArmorLocation.RightLeg));
                 }
                 else
-                {                                                                                      // parenthesis bugfix
-                    legPercent = (mech.LeftLegStructure + mech.LeftLegArmor) / ((mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg)));
+                {                                                                                 
+                    legPercent = (mech.LeftLegStructure + mech.LeftLegArmor) / (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg));
                 }
 
                 if (legPercent < 1)
@@ -197,8 +195,8 @@ namespace RogueTechPanicSystem
         public static void Prefix(AttackStackSequence __instance, MessageCenterMessage message)
         {
             AttackCompleteMessage attackCompleteMessage = message as AttackCompleteMessage;
-            bool ShouldPanic = false;
-            bool IsEarlyPanic = false;
+            bool hasReasonToPanic = false;
+            bool panicStarted = false;
             Mech mech = null;
 
             if (attackCompleteMessage == null || attackCompleteMessage.stackItemUID != __instance.SequenceGUID)
@@ -206,15 +204,13 @@ namespace RogueTechPanicSystem
             if (__instance.directorSequences[0].target is Mech)
             {
                 mech = __instance.directorSequences[0].target as Mech;
-                ShouldPanic = RollHelpers.ShouldPanic(mech, attackCompleteMessage.attackSequence);
+                hasReasonToPanic = RollHelpers.ShouldPanic(mech, attackCompleteMessage.attackSequence);
             }
             if (mech == null || mech.GUID == null || attackCompleteMessage == null)
-            {
                 return;
-            }
 
             Holder.SerializeActiveJson();
-            if (PanicHelpers.IsPanicking(mech, ref IsEarlyPanic) && RollForEjectionResult(mech, attackCompleteMessage.attackSequence, IsEarlyPanic))
+            if (PanicHelpers.IsPanicking(mech, ref panicStarted) && RollForEjectionResult(mech, attackCompleteMessage.attackSequence, panicStarted))
             {
                 mech.EjectPilot(mech.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
             }

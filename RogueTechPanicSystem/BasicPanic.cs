@@ -121,10 +121,10 @@ namespace RogueTechPanicSystem
             }
 
             // legs
-            if (mech.RightLegDamageLevel == LocationDamageLevel.Destroyed || mech.LeftLegDamageLevel == LocationDamageLevel.Destroyed)
+            var LegPercentRight = 1 - (mech.RightLegStructure + mech.RightLegArmor) / (mech.GetMaxStructure(ChassisLocations.RightLeg) + mech.GetMaxArmor(ArmorLocation.RightLeg));
+            var LegPercentLeft = 1 - (mech.LeftLegStructure + mech.LeftLegArmor) / (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg));
+            if ((LegPercentRight + LegPercentLeft) < 2)
             {
-                var LegPercentRight = 1 - (mech.RightLegStructure + mech.RightLegArmor) / (mech.GetMaxStructure(ChassisLocations.RightLeg) + mech.GetMaxArmor(ArmorLocation.RightLeg));
-                var LegPercentLeft = 1 - (mech.LeftLegStructure + mech.LeftLegArmor) / (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg));
                 ejectModifiers += Settings.LeggedMaxModifier * (LegPercentRight + LegPercentLeft);
             }
 
@@ -150,8 +150,8 @@ namespace RogueTechPanicSystem
             if (mech.team == mech.Combat.LocalPlayerTeam)
             {
                 MoraleConstantsDef moraleDef = mech.Combat.Constants.GetActiveMoraleDef(mech.Combat);
-                float  medianMorale = 25;
-                modifiers -= medianMorale;
+                float medianMorale = 25;
+                modifiers -= mech.Combat.LocalPlayerTeam.Morale - medianMorale;
             }
             if (modifiers < 0)
             {
@@ -416,7 +416,7 @@ namespace RogueTechPanicSystem
                 float percentOfCurrentArmorDamaged = attackSequence.attackArmorDamage / currentArmorPercent;
                 Logger.Debug($"{attackSequence.attacker.DisplayName} attacking {mech.DisplayName} for {attackSequence.attackArmorDamage} to armour.");
                 Logger.Debug($"{mech.DisplayName} has {currentArmorPercent.ToString("0.0")}% armor ({totalArmor}/{maxArmor}).  The attack does {(attackSequence.attackArmorDamage / totalArmor * 100).ToString("0.0")}% damage.");
-                if (attackSequence.attackArmorDamage / totalArmor * 100 >= mininumDamagePercentRequired)
+                if (attackSequence.attackArmorDamage / (totalArmor + attackSequence.attackArmorDamage) * 100 >= mininumDamagePercentRequired)
                 {
                     Logger.Debug($"Big hit causes panic.");
                     return true;
@@ -433,7 +433,7 @@ namespace RogueTechPanicSystem
             var total = guts + tactics;
             int index = -1;
             index = PanicHelpers.GetTrackedPilotIndex(mech);
-            float lowestRemaining = mech.CenterTorsoStructure + mech.CenterTorsoFrontArmor;
+            float lowestRemaining = mech.CenterTorsoStructure + mech.CenterTorsoFrontArmor + mech.CenterTorsoRearArmor;
             float panicModifiers = 0;
 
             if (index < 0)
@@ -475,7 +475,7 @@ namespace RogueTechPanicSystem
                 panicModifiers += RogueTechPanicSystem.Settings.HeadDamageMaxModifier * (1 - headHealthPercent);
             }
             // CT
-            var ctPercent = (mech.CenterTorsoFrontArmor + mech.CenterTorsoStructure) / (mech.GetMaxArmor(ArmorLocation.CenterTorso) + mech.GetMaxStructure(ChassisLocations.CenterTorso));
+            var ctPercent = (mech.CenterTorsoFrontArmor + mech.CenterTorsoStructure + mech.CenterTorsoRearArmor) / (mech.GetMaxArmor(ArmorLocation.CenterTorso) + mech.GetMaxStructure(ChassisLocations.CenterTorso));
             if (ctPercent < 1)
             {
                 panicModifiers += RogueTechPanicSystem.Settings.CTDamageMaxModifier * (1 - ctPercent);
@@ -492,25 +492,18 @@ namespace RogueTechPanicSystem
             {
                 panicModifiers += RogueTechPanicSystem.Settings.SideTorsoInternalDamageMaxModifier * (1 - rtStructurePercent);
             }
-            // legs
-            if (mech.RightLegDamageLevel == LocationDamageLevel.Destroyed || mech.LeftLegDamageLevel == LocationDamageLevel.Destroyed)
+            var LegPercentRight = 1 - (mech.RightLegStructure + mech.RightLegArmor) / (mech.GetMaxStructure(ChassisLocations.RightLeg) + mech.GetMaxArmor(ArmorLocation.RightLeg));
+            var LegPercentLeft = 1 - (mech.LeftLegStructure + mech.LeftLegArmor) / (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg));
+            if ((LegPercentRight + LegPercentLeft) < 2)
             {
-                float legPercent;
+                panicModifiers += RogueTechPanicSystem.Settings.LeggedMaxModifier * (LegPercentRight + LegPercentLeft);
+                lowestRemaining = Math.Min(LegPercentRight * (mech.GetMaxStructure(ChassisLocations.RightLeg) + mech.GetMaxArmor(ArmorLocation.RightLeg)), lowestRemaining);
+                lowestRemaining = Math.Min(LegPercentLeft * (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg)), lowestRemaining);
+            }
 
-                if (mech.LeftLegDamageLevel == LocationDamageLevel.Destroyed)
-                {
-                    legPercent = (mech.RightLegStructure + mech.RightLegArmor) / (mech.GetMaxStructure(ChassisLocations.RightLeg) + mech.GetMaxArmor(ArmorLocation.RightLeg));
-                }
-                else
-                {
-                    legPercent = (mech.LeftLegStructure + mech.LeftLegArmor) / (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg));
-                }
+            if ((LegPercentRight + LegPercentLeft) < 1)
+            {
 
-                if (legPercent < 1)
-                {
-                    lowestRemaining = Math.Min(legPercent * (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg)), lowestRemaining);
-                    panicModifiers += RogueTechPanicSystem.Settings.LeggedMaxModifier * (1 - legPercent);
-                }
             }
 
             // next shot could kill

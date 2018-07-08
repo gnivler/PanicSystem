@@ -28,7 +28,7 @@ namespace RogueTechPanicSystem
                     return true;
                 }
 
-                if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m.GUID == mech.GUID))
+                if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m.GUID == mech.GUID) && RogueTechPanicSystem.Settings.ConsiderEjectingWhenAlone)
                 {
                     Logger.Debug($"Panicking due to being the last alive.");
                     return true;

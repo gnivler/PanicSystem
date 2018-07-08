@@ -1,0 +1,76 @@
+{
+    "Name": "BasicPanicSystem",
+
+    "Enabled":  true,
+    "Version": "2.0",
+    "Description": "Adds basic panic system, based on mpstark's Punchin' Out.",
+    "Author": "RealityMachina, forked from mpstark's work - Modified by donZappo and gnivler",
+    "Website": "https://github.com/RealityMachina/PunchinOut",
+
+    "DLL": "RogueTechPanicSystem.dll",
+    
+    "Settings": {
+    "PlayerCharacterAlwaysResists": false,
+    "PlayerTeamCanPanic": true,
+    "EnemiesCanPanic": true,
+        
+    "PlayerLightsConsiderEjectingEarly": false,
+    "EnemyLightsConsiderEjectingEarly": true,
+    "LightMechEarlyPanicThreshold": 2,
+
+    "PlayerMediumsConsiderEjectingEarly": false,
+    "EnemyMediumsConsiderEjectingEarly": false,
+    "MediumMechEarlyPanicThreshold": 2,
+
+    "PlayerHeaviesConsiderEjectingEarly": false,
+    "EnemyHeaviesConsiderEjectingEarly": false,
+    "HeavyMechEarlyPanicThreshold": 2,
+
+    "PlayerAssaultsConsiderEjectingEarly": false,
+    "EnemyAssaultsConsiderEjectingEarly": false,
+    "AssaultMechEarlyPanicThreshold": 2,
+        
+		"MaxEjectChanceWhenEarly": 10,
+        
+		"MinimumArmourDamagePercentageRequired": 10,
+    "AtLeastOneChanceToPanic": false,
+		"AtLeastOneChanceToPanicPercentage" : 10,
+    "AlwaysGatedChanges": false,
+    "MaxPanicResistTotal": 100,
+    "LosingLimbAlwaysPanics": false,
+        
+		"UnsettledAttackModifier": 1,
+		"StressedAimModifier": 1,
+		"StressedToHitModifier": -1,
+		"PanickedAimModifier": 2,
+    "PanickedToHitModifier": -2,
+
+    "MinimumHealthToAlwaysEjectRoll": 1,
+    "MaxEjectChance": 50,
+		// EjectChanceMultiplier is the factor by which all the eject resistances and bonuses are muliplied. 
+		"EjectChanceMultiplier" : 2,
+    "GutsTenAlwaysResists": false,
+    "ComboTenAlwaysResists": false,
+    "TacticsTenAlwaysResists": false,
+    "KnockedDownCannotEject": false,
+		
+    "ConsiderEjectingWithNoWeaps": false,
+		"ConsiderEjectingWhenAlone" : false,
+
+    "BaseEjectionResist": 5,
+    "GutsEjectionResistPerPoint": 2,
+    "TacticsEjectionResistPerPoint": 1,
+    "UnsteadyModifier": 5,
+    "PilotHealthMaxModifier": 10,
+
+    "HeadDamageMaxModifier": 10,
+    "CTDamageMaxModifier": 10,
+    "SideTorsoInternalDamageMaxModifier": 10,
+    "LeggedMaxModifier": 10,
+
+    "NextShotLikeThatCouldKill": 15,
+        
+    "WeaponlessModifier": 15,
+    "AloneModifier": 20
+    }
+}

@@ -301,21 +301,24 @@ namespace RogueTechPanicSystem
                     __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
                                                                   (new ShowActorInfoSequence(mech, $"Stressed", FloatieMessage.MessageNature.Buff, true)));
                     __instance.StatCollection.ModifyStat("Panic Turn: Stressed Aim", -1, "AccuracyModifier", 
-                        StatCollection.StatOperation.Float_Add, RogueTechPanicSystem.Settings.StressedAimModifier);
+                                                         StatCollection.StatOperation.Float_Add,
+                                                         RogueTechPanicSystem.Settings.StressedAimModifier);
                     __instance.StatCollection.ModifyStat("Panic Turn: Stressed Defence", -1, "ToHitThisActor", 
-                                                          StatCollection.StatOperation.Float_Add, RogueTechPanicSystem.Settings.StressedToHitModifier);
+                                                         StatCollection.StatOperation.Float_Add,
+                                                         RogueTechPanicSystem.Settings.StressedToHitModifier);
                 }
 
                 else //now normal
                 {
-                    __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Confident", FloatieMessage.MessageNature.Buff, true)));
+                    __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
+                                                                  (new ShowActorInfoSequence(mech, $"Confident", FloatieMessage.MessageNature.Buff, true)));
                 }
             }
             Holder.SerializeActiveJson();
         }
     }
 
-    [HarmonyPatch(typeof(BattleTech.GameInstance), "LaunchContract", new Type[] { typeof(Contract), typeof(string) })]
+    [HarmonyPatch(typeof(GameInstance), "LaunchContract")]
     public static class BattleTech_GameInstance_LaunchContract_Patch
     {
         static void Postfix()

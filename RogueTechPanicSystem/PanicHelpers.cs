@@ -50,7 +50,6 @@ namespace RogueTechPanicSystem
                         return true;
                     }
                 }
-
             }
             Logger.Debug($"Not panicking.");
             return false;

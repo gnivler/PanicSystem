@@ -35,7 +35,7 @@ namespace RogueTechPanicSystem
         }
 
         /// <summary>
-        /// returning anything true implies an ejection save will be required
+        /// G returning anything true implies an ejection save will be required
         /// </summary>
         /// <param name="mech"></param>
         /// <param name="attackSequence"></param>
@@ -70,7 +70,7 @@ namespace RogueTechPanicSystem
 
             // tactics 10 makes you immune, or combination of guts and tactics makes you immune.
             if ((tactics == 10 && Settings.TacticsTenAlwaysResists) ||
-                (total == 10 && Settings.ComboTenAlwaysResists))
+                (total >= 10 && Settings.ComboTenAlwaysResists))
                 return false;
 
             // pilots that cannot eject or be headshot shouldn't eject
@@ -125,11 +125,11 @@ namespace RogueTechPanicSystem
             {
                 float legPercent;
                 if (mech.LeftLegDamageLevel == LocationDamageLevel.Destroyed)
-                {                                                                                  
+                {
                     legPercent = (mech.RightLegStructure + mech.RightLegArmor) / (mech.GetMaxStructure(ChassisLocations.RightLeg) + mech.GetMaxArmor(ArmorLocation.RightLeg));
                 }
                 else
-                {                                                                                 
+                {
                     legPercent = (mech.LeftLegStructure + mech.LeftLegArmor) / (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg));
                 }
 
@@ -239,13 +239,12 @@ namespace RogueTechPanicSystem
             index = PanicHelpers.GetTrackedPilotIndex(mech);
             if (index > -1)
             {
-
                 FoundPilot = true;
             }
+
             if (!FoundPilot)
             {
                 PanicTracker panicTracker = new PanicTracker(mech);
-
                 Holder.TrackedPilots.Add(panicTracker); //add a new tracker to tracked pilot, then we run it all over again;;
                 index = PanicHelpers.GetTrackedPilotIndex(mech);
                 if (index > -1)
@@ -257,22 +256,27 @@ namespace RogueTechPanicSystem
                     return;
                 }
             }
+
             PanicStatus originalStatus = Holder.TrackedPilots[index].pilotStatus;
             if (FoundPilot && !Holder.TrackedPilots[index].ChangedRecently)
             {
-                if (Holder.TrackedPilots[index].pilotStatus == PanicStatus.Fatigued)
+                switch (Holder.TrackedPilots[index].pilotStatus)
                 {
-                    Holder.TrackedPilots[index].pilotStatus = PanicStatus.Normal;
+                    case PanicStatus.Fatigued:
+                        Holder.TrackedPilots[index].pilotStatus = PanicStatus.Normal;
+                        break;
+                    case PanicStatus.Stressed:
+                        Holder.TrackedPilots[index].pilotStatus = PanicStatus.Fatigued;
+                        break;
+                    case PanicStatus.Panicked:
+                        Holder.TrackedPilots[index].pilotStatus = PanicStatus.Stressed;
+                        break;
+                    default:
+                        break;
                 }
-                if (Holder.TrackedPilots[index].pilotStatus == PanicStatus.Stressed)
-                {
-                    Holder.TrackedPilots[index].pilotStatus = PanicStatus.Fatigued;
-                }
-                if (Holder.TrackedPilots[index].pilotStatus == PanicStatus.Panicked)
-                {
-                    Holder.TrackedPilots[index].pilotStatus = PanicStatus.Stressed;
-                }
+
             }
+
             //reset panic values to account for panic level changes if we get this far, and we recovered.
 
             if (Holder.TrackedPilots[index].ChangedRecently)

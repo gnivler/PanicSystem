@@ -7,7 +7,7 @@ namespace RogueTechPanicSystem
     public enum PanicStatus
     {
         Normal,
-        Fatigued,
+        Unsettled,
         Stressed,
         Panicked
     }

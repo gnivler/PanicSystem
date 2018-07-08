@@ -262,11 +262,11 @@ namespace RogueTechPanicSystem
             {
                 switch (Holder.TrackedPilots[index].pilotStatus)
                 {
-                    case PanicStatus.Fatigued:
+                    case PanicStatus.Unsettled:
                         Holder.TrackedPilots[index].pilotStatus = PanicStatus.Normal;
                         break;
                     case PanicStatus.Stressed:
-                        Holder.TrackedPilots[index].pilotStatus = PanicStatus.Fatigued;
+                        Holder.TrackedPilots[index].pilotStatus = PanicStatus.Unsettled;
                         break;
                     case PanicStatus.Panicked:
                         Holder.TrackedPilots[index].pilotStatus = PanicStatus.Stressed;
@@ -285,25 +285,30 @@ namespace RogueTechPanicSystem
             }
             else if (Holder.TrackedPilots[index].pilotStatus != originalStatus)
             {
-                __instance.StatCollection.ModifyStat<float>("Panic Turn Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f, -1, true);
-                __instance.StatCollection.ModifyStat<float>("Panic Turn Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f, -1, true);
+                __instance.StatCollection.ModifyStat("Panic Turn Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f);
+                __instance.StatCollection.ModifyStat("Panic Turn Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f);
 
-                if (Holder.TrackedPilots[index].pilotStatus == PanicStatus.Fatigued)
+                if (Holder.TrackedPilots[index].pilotStatus == PanicStatus.Unsettled)
                 {
-                    __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Recovered To Fatigued!", FloatieMessage.MessageNature.Buff, true)));
-                    __instance.StatCollection.ModifyStat<float>("Panic Turn: Fatigued Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, RogueTechPanicSystem.Settings.FatiguedAimModifier, -1, true);
+                    __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
+                                                                   new ShowActorInfoSequence(mech, $"Unsettled", FloatieMessage.MessageNature.Buff, true)));
+                    __instance.StatCollection.ModifyStat("Panic Turn: Unsettled Aim", -1,
+                        "AccuracyModifier", StatCollection.StatOperation.Float_Add, RogueTechPanicSystem.Settings.UnsettledAttackModifier, -1, true);
                 }
 
                 else if (Holder.TrackedPilots[index].pilotStatus == PanicStatus.Stressed)
                 {
-                    __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Recovered To Stressed!", FloatieMessage.MessageNature.Buff, true)));
-                    __instance.StatCollection.ModifyStat<float>("Panic Turn: Stressed Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, RogueTechPanicSystem.Settings.StressedAimModifier, -1, true);
-                    __instance.StatCollection.ModifyStat<float>("Panic Turn: Stressed Defence", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, RogueTechPanicSystem.Settings.StressedToHitModifier, -1, true);
+                    __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
+                                                                  (new ShowActorInfoSequence(mech, $"Stressed", FloatieMessage.MessageNature.Buff, true)));
+                    __instance.StatCollection.ModifyStat("Panic Turn: Stressed Aim", -1, "AccuracyModifier", 
+                        StatCollection.StatOperation.Float_Add, RogueTechPanicSystem.Settings.StressedAimModifier);
+                    __instance.StatCollection.ModifyStat("Panic Turn: Stressed Defence", -1, "ToHitThisActor", 
+                                                          StatCollection.StatOperation.Float_Add, RogueTechPanicSystem.Settings.StressedToHitModifier);
                 }
 
                 else //now normal
                 {
-                    __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Recovered To Normal!", FloatieMessage.MessageNature.Buff, true)));
+                    __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Confident", FloatieMessage.MessageNature.Buff, true)));
                 }
             }
             Holder.SerializeActiveJson();
@@ -603,13 +608,13 @@ namespace RogueTechPanicSystem
             if (Holder.TrackedPilots[index].trackedMech == mech.GUID && Holder.TrackedPilots[index].pilotStatus == PanicStatus.Normal)
             {
                 mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Fatigued!", FloatieMessage.MessageNature.Debuff, true)));
-                Holder.TrackedPilots[index].pilotStatus = PanicStatus.Fatigued;
+                Holder.TrackedPilots[index].pilotStatus = PanicStatus.Unsettled;
                 mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f, -1, true);
                 mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f, -1, true);
-                mech.StatCollection.ModifyStat<float>("Panic Attack: Fatigued Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, RogueTechPanicSystem.Settings.FatiguedAimModifier, -1, true);
+                mech.StatCollection.ModifyStat<float>("Panic Attack: Fatigued Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, RogueTechPanicSystem.Settings.UnsettledAttackModifier, -1, true);
 
             }
-            else if (Holder.TrackedPilots[index].trackedMech == mech.GUID && Holder.TrackedPilots[index].pilotStatus == PanicStatus.Fatigued)
+            else if (Holder.TrackedPilots[index].trackedMech == mech.GUID && Holder.TrackedPilots[index].pilotStatus == PanicStatus.Unsettled)
             {
                 mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Stressed!", FloatieMessage.MessageNature.Debuff, true)));
                 Holder.TrackedPilots[index].pilotStatus = PanicStatus.Stressed;
@@ -645,7 +650,7 @@ namespace RogueTechPanicSystem
         //new mechanics for considering when to eject based on mech class
         public bool PlayerLightsConsiderEjectingEarly = false;
         public bool EnemyLightsConsiderEjectingEarly = true;
-        public PanicStatus LightMechEarlyPanicThreshold = PanicStatus.Fatigued;
+        public PanicStatus LightMechEarlyPanicThreshold = PanicStatus.Unsettled;
 
         public bool PlayerMediumsConsiderEjectingEarly = false;
         public bool EnemyMediumsConsiderEjectingEarly = false;
@@ -673,7 +678,7 @@ namespace RogueTechPanicSystem
         public bool LosingLimbAlwaysPanics = false;
         //fatigued debuffs
         //+1 difficulty to attacks
-        public float FatiguedAimModifier = 1;
+        public float UnsettledAttackModifier = 1;
 
         //stressed debuffs
         //+2 difficulty to attacks

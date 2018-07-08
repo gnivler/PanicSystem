@@ -4,10 +4,10 @@ using Harmony;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using static RogueTechPanicSystem.RogueTechPanicSystem;
+using static RogueTechPanicSystem.RollHelpers;
 
 // HUGE thanks to RealityMachina and mpstark for their work, outstanding.
 namespace RogueTechPanicSystem
@@ -39,9 +39,9 @@ namespace RogueTechPanicSystem
         /// </summary>
         /// <param name="mech"></param>
         /// <param name="attackSequence"></param>
-        /// <param name="IsEarlyPanic"></param>
+        /// <param name="panicStarted"></param>
         /// <returns></returns>
-        public static bool RollForEjectionResult(Mech mech, AttackDirector.AttackSequence attackSequence, bool IsEarlyPanic)
+        public static bool RollForEjectionResult(Mech mech, AttackDirector.AttackSequence attackSequence, bool panicStarted)
         {
             if (mech == null || mech.IsDead || (mech.IsFlaggedForDeath && !mech.HasHandledDeath))
                 return false;
@@ -155,7 +155,7 @@ namespace RogueTechPanicSystem
             {
                 MoraleConstantsDef moraleDef = mech.Combat.Constants.GetActiveMoraleDef(mech.Combat);
                 float medianMorale = 25;
-                modifiers -= (mech.Combat.LocalPlayerTeam.Morale - medianMorale)/2;
+                modifiers -= (mech.Combat.LocalPlayerTeam.Morale - medianMorale) / 2;
             }
             if (modifiers < 0)
             {
@@ -164,7 +164,7 @@ namespace RogueTechPanicSystem
 
             var rng = (new Random()).Next(1, 101);
             float rollToBeat;
-            if (!IsEarlyPanic)
+            if (!panicStarted)
             {
                 rollToBeat = Math.Min(modifiers, Settings.MaxEjectChance);
             }
@@ -175,7 +175,7 @@ namespace RogueTechPanicSystem
 
             mech.Combat.MessageCenter.PublishMessage(!(rng < rollToBeat)
                 ? new AddSequenceToStackMessage(new ShowActorInfoSequence(
-                    mech, $"{Math.Floor(rollToBeat)}% save SUCCESS for Guts & Tactics ", FloatieMessage.MessageNature.Buff, true))
+                    mech, $"{Math.Floor(rollToBeat)}% save SUCCESS for Guts & Tactics", FloatieMessage.MessageNature.Buff, true))
                 : new AddSequenceToStackMessage(new ShowActorInfoSequence(
                     mech, $"{Math.Floor(rollToBeat)}% save FAILED: Punchin' Out!!", FloatieMessage.MessageNature.Debuff, true)));
 
@@ -327,10 +327,10 @@ namespace RogueTechPanicSystem
                     __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
                                                                   (new ShowActorInfoSequence(mech, $"Stressed",
                                                                   FloatieMessage.MessageNature.Buff, true)));
-                    __instance.StatCollection.ModifyStat("Panic Turn: Stressed Aim", -1, "AccuracyModifier", 
+                    __instance.StatCollection.ModifyStat("Panic Turn: Stressed Aim", -1, "AccuracyModifier",
                                                          StatCollection.StatOperation.Float_Add,
                                                          RogueTechPanicSystem.Settings.StressedAimModifier);
-                    __instance.StatCollection.ModifyStat("Panic Turn: Stressed Defence", -1, "ToHitThisActor", 
+                    __instance.StatCollection.ModifyStat("Panic Turn: Stressed Defence", -1, "ToHitThisActor",
                                                          StatCollection.StatOperation.Float_Add,
                                                          RogueTechPanicSystem.Settings.StressedToHitModifier);
                 }
@@ -444,15 +444,16 @@ namespace RogueTechPanicSystem
             {
                 var settings = RogueTechPanicSystem.Settings;
                 float mininumDamagePercentRequired = settings.MinimumArmourDamagePercentageRequired;  // default is 10%
-                float armorPercent = (mech.SummaryArmorCurrent / mech.SummaryArmorMax) * 100;
-                float percentOfCurrentArmorDamaged = attackSequence.attackArmorDamage / armorPercent * 100;
+                float totalArmor = 0, maxArmor = 0;
+                maxArmor = GetTotalMechArmour(mech, maxArmor);
+                totalArmor = GetCurrentMechArmour(mech, totalArmor);
+                float currentArmorPercent = totalArmor / maxArmor * 100;
+                float percentOfCurrentArmorDamaged = attackSequence.attackArmorDamage / currentArmorPercent;
                 Logger.Debug($"{attackSequence.attacker.DisplayName} attacking {mech.DisplayName} for {attackSequence.attackArmorDamage} to armour.");
                 Logger.Debug($"{mech.DisplayName} has {currentArmorPercent.ToString("0.0")}% armor ({totalArmor}/{maxArmor}).  The attack does {(attackSequence.attackArmorDamage / totalArmor * 100).ToString("0.0")}% damage.");
-                if (attackSequence.attackArmorDamage / (totalArmor + attackSequence.attackArmorDamage) * 100 >= mininumDamagePercentRequired)
+                if (attackSequence.attackArmorDamage / totalArmor * 100 >= mininumDamagePercentRequired)
                 {
                     Logger.Debug($"Big hit causes panic.");
-                    mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
-                                                             new ShowActorInfoSequence(mech, $"Big hit causes panic!", FloatieMessage.MessageNature.Debuff, true)));
                     return true;
                 }
             }
@@ -566,7 +567,7 @@ namespace RogueTechPanicSystem
                 MoraleConstantsDef moraleDef = mech.Combat.Constants.GetActiveMoraleDef(mech.Combat);
                 panicModifiers -= (mech.Combat.LocalPlayerTeam.Morale - medianMorale) / 2;
             }
-            
+
             if ((panicModifiers <= 0) && !RogueTechPanicSystem.Settings.AtLeastOneChanceToPanic)
             {
                 return false;
@@ -594,6 +595,37 @@ namespace RogueTechPanicSystem
             return false;
         }
 
+        private static float GetCurrentMechArmour(Mech mech, float totalArmor)
+        {
+            totalArmor += mech.GetCurrentArmor(ArmorLocation.Head);
+            totalArmor += mech.GetCurrentArmor(ArmorLocation.CenterTorso);
+            totalArmor += mech.GetCurrentArmor(ArmorLocation.CenterTorsoRear);
+            totalArmor += mech.GetCurrentArmor(ArmorLocation.LeftTorso);
+            totalArmor += mech.GetCurrentArmor(ArmorLocation.LeftTorsoRear);
+            totalArmor += mech.GetCurrentArmor(ArmorLocation.RightTorso);
+            totalArmor += mech.GetCurrentArmor(ArmorLocation.RightTorsoRear);
+            totalArmor += mech.GetCurrentArmor(ArmorLocation.RightArm);
+            totalArmor += mech.GetCurrentArmor(ArmorLocation.LeftArm);
+            totalArmor += mech.GetCurrentArmor(ArmorLocation.RightLeg);
+            totalArmor += mech.GetCurrentArmor(ArmorLocation.LeftLeg);
+            return totalArmor;
+        }
+
+        private static float GetTotalMechArmour(Mech mech, float maxArmor)
+        {
+            maxArmor += mech.GetMaxArmor(ArmorLocation.CenterTorso);
+            maxArmor += mech.GetMaxArmor(ArmorLocation.LeftArm);
+            maxArmor += mech.GetMaxArmor(ArmorLocation.CenterTorsoRear);
+            maxArmor += mech.GetMaxArmor(ArmorLocation.Head);
+            maxArmor += mech.GetMaxArmor(ArmorLocation.LeftTorso);
+            maxArmor += mech.GetMaxArmor(ArmorLocation.RightTorso);
+            maxArmor += mech.GetMaxArmor(ArmorLocation.RightTorsoRear);
+            maxArmor += mech.GetMaxArmor(ArmorLocation.LeftTorsoRear);
+            maxArmor += mech.GetMaxArmor(ArmorLocation.RightArm);
+            maxArmor += mech.GetMaxArmor(ArmorLocation.LeftLeg);
+            maxArmor += mech.GetMaxArmor(ArmorLocation.RightLeg);
+            return maxArmor;
+        }
 
         public static void ApplyPanicDebuff(Mech mech, int index)
         {
@@ -630,85 +662,86 @@ namespace RogueTechPanicSystem
             }
             Holder.TrackedPilots[index].ChangedRecently = true;
         }
-    }
 
-    internal class ModSettings
-    {
-        public bool PlayerCharacterAlwaysResists = true;
-        public bool PlayerTeamCanPanic = true;
-        public bool EnemiesCanPanic = true;
-        public bool DebugEnabled = false;
 
-        //new mechanics for considering when to eject based on mech class
-        public bool PlayerLightsConsiderEjectingEarly = false;
-        public bool EnemyLightsConsiderEjectingEarly = true;
-        public PanicStatus LightMechEarlyPanicThreshold = PanicStatus.Unsettled;
+        internal class ModSettings
+        {
+            public bool PlayerCharacterAlwaysResists = true;
+            public bool PlayerTeamCanPanic = true;
+            public bool EnemiesCanPanic = true;
+            public bool DebugEnabled = false;
 
-        public bool PlayerMediumsConsiderEjectingEarly = false;
-        public bool EnemyMediumsConsiderEjectingEarly = false;
-        public PanicStatus MediumMechEarlyPanicThreshold = PanicStatus.Stressed;
+            //new mechanics for considering when to eject based on mech class
+            public bool PlayerLightsConsiderEjectingEarly = false;
+            public bool EnemyLightsConsiderEjectingEarly = true;
+            public PanicStatus LightMechEarlyPanicThreshold = PanicStatus.Unsettled;
 
-        public bool PlayerHeaviesConsiderEjectingEarly = false;
-        public bool EnemyHeaviesConsiderEjectingEarly = false;
-        public PanicStatus HeavyMechEarlyPanicThreshold = PanicStatus.Stressed;
+            public bool PlayerMediumsConsiderEjectingEarly = false;
+            public bool EnemyMediumsConsiderEjectingEarly = false;
+            public PanicStatus MediumMechEarlyPanicThreshold = PanicStatus.Stressed;
 
-        public bool PlayerAssaultsConsiderEjectingEarly = false;
-        public bool EnemyAssaultsConsiderEjectingEarly = false;
-        public PanicStatus AssaultMechEarlyPanicThreshold = PanicStatus.Stressed;
+            public bool PlayerHeaviesConsiderEjectingEarly = false;
+            public bool EnemyHeaviesConsiderEjectingEarly = false;
+            public PanicStatus HeavyMechEarlyPanicThreshold = PanicStatus.Stressed;
 
-        public float MaxEjectChanceWhenEarly = 10;
+            public bool PlayerAssaultsConsiderEjectingEarly = false;
+            public bool EnemyAssaultsConsiderEjectingEarly = false;
+            public PanicStatus AssaultMechEarlyPanicThreshold = PanicStatus.Stressed;
 
-        //minmum armour and structure damage
-        public float MinimumArmourDamagePercentageRequired = 10; //if no structure damage, a Mech must lost a bit of its armour before it starts worrying
+            public float MaxEjectChanceWhenEarly = 10;
 
-        //general panic roll
-        //rolls out of 20
-        //max guts and tactics almost prevents any panicking (or being the player character, by default)
-        public bool AtLeastOneChanceToPanic = true;
-        public int AtLeastOneChanceToPanicPercentage = 10;
-        public bool AlwaysGatedChanges = true;
-        public float MaxPanicResistTotal = 15; //at least 20% chance to panic if you can't nullify the whole thing
-        public bool LosingLimbAlwaysPanics = false;
-        //fatigued debuffs
-        //+1 difficulty to attacks
-        public float UnsettledAttackModifier = 1;
+            //minmum armour and structure damage
+            public float MinimumArmourDamagePercentageRequired = 10; //if no structure damage, a Mech must lost a bit of its armour before it starts worrying
 
-        //stressed debuffs
-        //+2 difficulty to attacks
-        //-1 difficulty to being hit
+            //general panic roll
+            //rolls out of 20
+            //max guts and tactics almost prevents any panicking (or being the player character, by default)
+            public bool AtLeastOneChanceToPanic = true;
+            public int AtLeastOneChanceToPanicPercentage = 10;
+            public bool AlwaysGatedChanges = true;
+            public float MaxPanicResistTotal = 15; //at least 20% chance to panic if you can't nullify the whole thing
+            public bool LosingLimbAlwaysPanics = false;
+            //fatigued debuffs
+            //+1 difficulty to attacks
+            public float UnsettledAttackModifier = 1;
 
-        public float StressedAimModifier = 2;
-        public float StressedToHitModifier = -1;
-        //ejection
-        //+4 difficulty to attacks
-        //-2 difficulty to being hit
-        public float PanickedAimModifier = 4;
-        public float PanickedToHitModifier = -2;
-        public bool GutsTenAlwaysResists = false;
-        public bool ComboTenAlwaysResists = false;
-        public bool TacticsTenAlwaysResists = false;
-        public int MinimumHealthToAlwaysEjectRoll = 1;
-        public bool KnockedDownCannotEject = true;
+            //stressed debuffs
+            //+2 difficulty to attacks
+            //-1 difficulty to being hit
 
-        public bool ConsiderEjectingWithNoWeaps = true;
-        public bool ConsiderEjectingWhenAlone = true;
-        public float MaxEjectChance = 50;
-        public float EjectChanceMultiplier = 5;
+            public float StressedAimModifier = 2;
+            public float StressedToHitModifier = -1;
+            //ejection
+            //+4 difficulty to attacks
+            //-2 difficulty to being hit
+            public float PanickedAimModifier = 4;
+            public float PanickedToHitModifier = -2;
+            public bool GutsTenAlwaysResists = false;
+            public bool ComboTenAlwaysResists = false;
+            public bool TacticsTenAlwaysResists = false;
+            public int MinimumHealthToAlwaysEjectRoll = 1;
+            public bool KnockedDownCannotEject = true;
 
-        public float BaseEjectionResist = 10;
-        public float GutsEjectionResistPerPoint = 2;
-        public float TacticsEjectionResistPerPoint = 1;
-        public float UnsteadyModifier = 5;
-        public float PilotHealthMaxModifier = 10;
+            public bool ConsiderEjectingWithNoWeaps = true;
+            public bool ConsiderEjectingWhenAlone = true;
+            public float MaxEjectChance = 50;
+            public float EjectChanceMultiplier = 5;
 
-        public float HeadDamageMaxModifier = 10;
-        public float CTDamageMaxModifier = 10;
-        public float SideTorsoInternalDamageMaxModifier = 10;
-        public float LeggedMaxModifier = 10;
+            public float BaseEjectionResist = 10;
+            public float GutsEjectionResistPerPoint = 2;
+            public float TacticsEjectionResistPerPoint = 1;
+            public float UnsteadyModifier = 5;
+            public float PilotHealthMaxModifier = 10;
 
-        public float NextShotLikeThatCouldKill = 15;
+            public float HeadDamageMaxModifier = 10;
+            public float CTDamageMaxModifier = 10;
+            public float SideTorsoInternalDamageMaxModifier = 10;
+            public float LeggedMaxModifier = 10;
 
-        public float WeaponlessModifier = 15;
-        public float AloneModifier = 20;
+            public float NextShotLikeThatCouldKill = 15;
+
+            public float WeaponlessModifier = 15;
+            public float AloneModifier = 20;
+        }
     }
 }

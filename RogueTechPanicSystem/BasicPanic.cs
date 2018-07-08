@@ -106,7 +106,8 @@ namespace RogueTechPanicSystem
             if (ctPercent < 1)
             {
                 ejectModifiers += Settings.CTDamageMaxModifier * (1 - ctPercent);
-                lowestHealthLethalLocation = Math.Min(mech.CenterTorsoStructure, lowestHealthLethalLocation);
+           
+   lowestHealthLethalLocation = Math.Min(mech.CenterTorsoStructure, lowestHealthLethalLocation);
             }
 
             // side torsos
@@ -181,8 +182,10 @@ namespace RogueTechPanicSystem
             }
 
             mech.Combat.MessageCenter.PublishMessage(!(rng < rollToBeat)
-                ? new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Guts/Tactics Check Passed {Math.Floor(rollToBeat)}%", FloatieMessage.MessageNature.Buff, true))
-                : new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Punchin' Out! {Math.Floor(rollToBeat)}%", FloatieMessage.MessageNature.Debuff, true)));
+                ? new AddSequenceToStackMessage(new ShowActorInfoSequence(
+                    mech, $"{Math.Floor(rollToBeat)}% save SUCCESS for Guts & Tactics ", FloatieMessage.MessageNature.Buff, true))
+                : new AddSequenceToStackMessage(new ShowActorInfoSequence(
+                    mech, $"{Math.Floor(rollToBeat)}% save FAILED: Punchin' Out!!", FloatieMessage.MessageNature.Debuff, true)));
 
             return rng < rollToBeat;
         }

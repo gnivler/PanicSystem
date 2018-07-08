@@ -101,7 +101,7 @@ namespace RogueTechPanicSystem
             }
 
             // CT                                                                                   
-            var ctPercent = (mech.CenterTorsoFrontArmor + mech.CenterTorsoStructure) / (mech.GetMaxArmor(ArmorLocation.CenterTorso) + mech.GetMaxStructure(ChassisLocations.CenterTorso));
+            var ctPercent = (mech.CenterTorsoFrontArmor + mech.CenterTorsoStructure + mech.CenterTorsoRearArmor) / (mech.GetMaxArmor(ArmorLocation.CenterTorso) + mech.GetMaxStructure(ChassisLocations.CenterTorso));
             if (ctPercent < 1)
             {
                 ejectModifiers += Settings.CTDamageMaxModifier * (1 - ctPercent);
@@ -126,9 +126,12 @@ namespace RogueTechPanicSystem
             if ((LegPercentRight + LegPercentLeft) < 2)
             {
                 ejectModifiers += Settings.LeggedMaxModifier * (LegPercentRight + LegPercentLeft);
+                var LegCheck = LegPercentRight * (mech.GetMaxStructure(ChassisLocations.RightLeg) + mech.GetMaxArmor(ArmorLocation.RightLeg)) + LegPercentLeft * (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg));
+                lowestHealthLethalLocation = Math.Min(LegCheck, lowestHealthLethalLocation);
+                lowestHealthLethalLocation = Math.Min(LegCheck, lowestHealthLethalLocation);
             }
 
-            // next shot like that could kill
+            // next shot like that could kill or leg
             if (lowestHealthLethalLocation <= attackSequence.cumulativeDamage)
             {
                 ejectModifiers += Settings.NextShotLikeThatCouldKill;
@@ -146,12 +149,13 @@ namespace RogueTechPanicSystem
                 ejectModifiers += Settings.AloneModifier;
             }
 
-            var modifiers = (ejectModifiers - Settings.BaseEjectionResist - (Settings.GutsEjectionResistPerPoint * guts) - (Settings.TacticsEjectionResistPerPoint * tactics)) * 5;
+            //dZ Because this is how it should be. Make this changeable. 
+            var modifiers = (ejectModifiers - Settings.BaseEjectionResist - (Settings.GutsEjectionResistPerPoint * guts) - (Settings.TacticsEjectionResistPerPoint * tactics)) * RogueTechPanicSystem.Settings.EjectChanceMultiplier;
             if (mech.team == mech.Combat.LocalPlayerTeam)
             {
                 MoraleConstantsDef moraleDef = mech.Combat.Constants.GetActiveMoraleDef(mech.Combat);
                 float medianMorale = 25;
-                modifiers -= mech.Combat.LocalPlayerTeam.Morale - medianMorale;
+                modifiers -= (mech.Combat.LocalPlayerTeam.Morale - medianMorale)/2;
             }
             if (modifiers < 0)
             {
@@ -425,11 +429,11 @@ namespace RogueTechPanicSystem
 
             Logger.Debug($"Attack yields no reason to panic.  Considering other factors...");
 
-            int PanicRoll = 0;
+            //dZ Get rid of garbage.
             Pilot pilot = mech.GetPilot();
             var weapons = mech.Weapons;
-            var guts = mech.SkillGuts;
-            var tactics = mech.SkillTactics;
+            var guts = mech.SkillGuts * RogueTechPanicSystem.Settings.GutsEjectionResistPerPoint;
+            var tactics = mech.SkillTactics * RogueTechPanicSystem.Settings.TacticsEjectionResistPerPoint;
             var total = guts + tactics;
             int index = -1;
             index = PanicHelpers.GetTrackedPilotIndex(mech);
@@ -492,21 +496,19 @@ namespace RogueTechPanicSystem
             {
                 panicModifiers += RogueTechPanicSystem.Settings.SideTorsoInternalDamageMaxModifier * (1 - rtStructurePercent);
             }
+
+            // dZ Check legs independently. Code here significantly improved.
             var LegPercentRight = 1 - (mech.RightLegStructure + mech.RightLegArmor) / (mech.GetMaxStructure(ChassisLocations.RightLeg) + mech.GetMaxArmor(ArmorLocation.RightLeg));
             var LegPercentLeft = 1 - (mech.LeftLegStructure + mech.LeftLegArmor) / (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg));
             if ((LegPercentRight + LegPercentLeft) < 2)
             {
                 panicModifiers += RogueTechPanicSystem.Settings.LeggedMaxModifier * (LegPercentRight + LegPercentLeft);
-                lowestRemaining = Math.Min(LegPercentRight * (mech.GetMaxStructure(ChassisLocations.RightLeg) + mech.GetMaxArmor(ArmorLocation.RightLeg)), lowestRemaining);
-                lowestRemaining = Math.Min(LegPercentLeft * (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg)), lowestRemaining);
+                var LegCheck = LegPercentRight * (mech.GetMaxStructure(ChassisLocations.RightLeg) + mech.GetMaxArmor(ArmorLocation.RightLeg)) + LegPercentLeft * (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg));
+                lowestRemaining = Math.Min(LegCheck, lowestRemaining);
+                lowestRemaining = Math.Min(LegCheck, lowestRemaining);
             }
 
-            if ((LegPercentRight + LegPercentLeft) < 1)
-            {
-
-            }
-
-            // next shot could kill
+            // next shot could kill or leg
             if (lowestRemaining <= attackSequence.cumulativeDamage)
             {
                 panicModifiers += RogueTechPanicSystem.Settings.NextShotLikeThatCouldKill;
@@ -527,31 +529,27 @@ namespace RogueTechPanicSystem
             //straight up add guts, tactics, and morale to this as negative values
             panicModifiers -= total;
             if (mech.team == mech.Combat.LocalPlayerTeam)
+
+            //dZ - Inputtable morale is superior.
             {
+                float medianMorale = 25;
                 MoraleConstantsDef moraleDef = mech.Combat.Constants.GetActiveMoraleDef(mech.Combat);
-                panicModifiers -= Math.Max(mech.Combat.LocalPlayerTeam.Morale - moraleDef.CanUseInspireLevel, 0) / (float)2;
+                panicModifiers -= (mech.Combat.LocalPlayerTeam.Morale - medianMorale) / 2;
             }
-
-            //reduce modifiers by 5 to account change to D20 roll instead of D100 roll, then min it t0 20 or modified floor
-            panicModifiers /= 5;
-
-            PanicRoll = PanicRoll + (int)panicModifiers;
-
-            if ((total >= 20 || PanicRoll <= 0) && !RogueTechPanicSystem.Settings.AtLeastOneChanceToPanic)
+            
+            if ((panicModifiers <= 0) || !RogueTechPanicSystem.Settings.AtLeastOneChanceToPanic)
             {
                 return false;
             }
 
-            PanicRoll = Math.Min(PanicRoll, 20);
-            if (PanicRoll < 0)
+            var rng = (new Random()).Next(1, 101);
+
+            float rollToBeat;
             {
-                PanicRoll = 0; //make this have some kind of chance to happen
+                rollToBeat = Math.Min((int)panicModifiers, (int)RogueTechPanicSystem.Settings.MaxPanicResistTotal);
             }
-            PanicRoll = UnityEngine.Random.Range(PanicRoll, 20); // actual roll
-            //we get this far, we reduce total to under the max panic chance
-            total = Math.Min(total, (int)RogueTechPanicSystem.Settings.MaxPanicResistTotal);
-            int rngRoll = UnityEngine.Random.Range(total, 20);
-            if (rngRoll <= PanicRoll)
+
+            if (rng <= rollToBeat)
             {
                 Logger.Debug($"Failed panic save, debuffed!");
                 ApplyPanicDebuff(mech, index);
@@ -689,7 +687,9 @@ namespace RogueTechPanicSystem
         public bool KnockedDownCannotEject = true;
 
         public bool ConsiderEjectingWithNoWeaps = true;
+        public bool ConsiderEjectingWhenAlone = true;
         public float MaxEjectChance = 50;
+        public float EjectChanceMultiplier = 5;
 
         public float BaseEjectionResist = 10;
         public float GutsEjectionResistPerPoint = 2;

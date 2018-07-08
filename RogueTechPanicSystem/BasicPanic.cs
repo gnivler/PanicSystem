@@ -280,15 +280,18 @@ namespace RogueTechPanicSystem
                 if (Holder.TrackedPilots[index].pilotStatus == PanicStatus.Unsettled)
                 {
                     __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
-                                                                   new ShowActorInfoSequence(mech, $"Unsettled", FloatieMessage.MessageNature.Buff, true)));
+                                                                   new ShowActorInfoSequence(mech, $"Unsettled",
+                                                                   FloatieMessage.MessageNature.Buff, true)));
                     __instance.StatCollection.ModifyStat("Panic Turn: Unsettled Aim", -1,
-                        "AccuracyModifier", StatCollection.StatOperation.Float_Add, RogueTechPanicSystem.Settings.UnsettledAttackModifier, -1, true);
+                                                         "AccuracyModifier", StatCollection.StatOperation.Float_Add,
+                                                         RogueTechPanicSystem.Settings.UnsettledAttackModifier, -1, true);
                 }
 
                 else if (Holder.TrackedPilots[index].pilotStatus == PanicStatus.Stressed)
                 {
                     __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
-                                                                  (new ShowActorInfoSequence(mech, $"Stressed", FloatieMessage.MessageNature.Buff, true)));
+                                                                  (new ShowActorInfoSequence(mech, $"Stressed",
+                                                                  FloatieMessage.MessageNature.Buff, true)));
                     __instance.StatCollection.ModifyStat("Panic Turn: Stressed Aim", -1, "AccuracyModifier", 
                                                          StatCollection.StatOperation.Float_Add,
                                                          RogueTechPanicSystem.Settings.StressedAimModifier);
@@ -300,7 +303,7 @@ namespace RogueTechPanicSystem
                 else //now normal
                 {
                     __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
-                                                                  (new ShowActorInfoSequence(mech, $"Confident", FloatieMessage.MessageNature.Buff, true)));
+                                                                  (new ShowActorInfoSequence(mech, "Confident", FloatieMessage.MessageNature.Buff, true)));
                 }
             }
             Holder.SerializeActiveJson();
@@ -361,7 +364,6 @@ namespace RogueTechPanicSystem
                         return;
                     }
                 }
-
                 RollHelpers.ApplyPanicDebuff(__instance, index);
             }
         }

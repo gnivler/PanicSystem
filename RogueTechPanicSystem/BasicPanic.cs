@@ -409,16 +409,16 @@ namespace RogueTechPanicSystem
             {
                 var settings = RogueTechPanicSystem.Settings;
                 float mininumDamagePercentRequired = settings.MinimumArmourDamagePercentageRequired;  // default is 10%
-                float totalArmor = 0, maxArmor = 0;
-                maxArmor = GetTotalMechArmour(mech, maxArmor);
-                totalArmor = GetCurrentMechArmour(mech, totalArmor);
-                float currentArmorPercent = totalArmor / maxArmor * 100;
-                float percentOfCurrentArmorDamaged = attackSequence.attackArmorDamage / currentArmorPercent;
+                float armorPercent = (mech.SummaryArmorCurrent / mech.SummaryArmorMax) * 100;
+                float percentOfCurrentArmorDamaged = attackSequence.attackArmorDamage / armorPercent * 100;
                 Logger.Debug($"{attackSequence.attacker.DisplayName} attacking {mech.DisplayName} for {attackSequence.attackArmorDamage} to armour.");
-                Logger.Debug($"{mech.DisplayName} has {currentArmorPercent.ToString("0.0")}% armor ({totalArmor}/{maxArmor}).  The attack does {(attackSequence.attackArmorDamage / totalArmor * 100).ToString("0.0")}% damage.");
-                if (attackSequence.attackArmorDamage / totalArmor * 100 >= mininumDamagePercentRequired)
+                Logger.Debug($"{mech.DisplayName} has {armorPercent.ToString("0.0")}% armor ({mech.SummaryArmorCurrent}/{mech.SummaryArmorMax})." +
+                             $"  The attack does {(attackSequence.attackArmorDamage / mech.SummaryArmorCurrent * 100).ToString("0.0")}% damage.");
+                if (attackSequence.attackArmorDamage / mech.SummaryArmorCurrent * 100 >= mininumDamagePercentRequired)
                 {
                     Logger.Debug($"Big hit causes panic.");
+                    mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
+                                                             new ShowActorInfoSequence(mech, $"Big hit causes panic!", FloatieMessage.MessageNature.Debuff, true)));
                     return true;
                 }
             }
@@ -569,37 +569,6 @@ namespace RogueTechPanicSystem
             return false;
         }
 
-        private static float GetCurrentMechArmour(Mech mech, float totalArmor)
-        {
-            totalArmor += mech.GetCurrentArmor(ArmorLocation.Head);
-            totalArmor += mech.GetCurrentArmor(ArmorLocation.CenterTorso);
-            totalArmor += mech.GetCurrentArmor(ArmorLocation.CenterTorsoRear);
-            totalArmor += mech.GetCurrentArmor(ArmorLocation.LeftTorso);
-            totalArmor += mech.GetCurrentArmor(ArmorLocation.LeftTorsoRear);
-            totalArmor += mech.GetCurrentArmor(ArmorLocation.RightTorso);
-            totalArmor += mech.GetCurrentArmor(ArmorLocation.RightTorsoRear);
-            totalArmor += mech.GetCurrentArmor(ArmorLocation.RightArm);
-            totalArmor += mech.GetCurrentArmor(ArmorLocation.LeftArm);
-            totalArmor += mech.GetCurrentArmor(ArmorLocation.RightLeg);
-            totalArmor += mech.GetCurrentArmor(ArmorLocation.LeftLeg);
-            return totalArmor;
-        }
-
-        private static float GetTotalMechArmour(Mech mech, float maxArmor)
-        {
-            maxArmor += mech.GetMaxArmor(ArmorLocation.CenterTorso);
-            maxArmor += mech.GetMaxArmor(ArmorLocation.LeftArm);
-            maxArmor += mech.GetMaxArmor(ArmorLocation.CenterTorsoRear);
-            maxArmor += mech.GetMaxArmor(ArmorLocation.Head);
-            maxArmor += mech.GetMaxArmor(ArmorLocation.LeftTorso);
-            maxArmor += mech.GetMaxArmor(ArmorLocation.RightTorso);
-            maxArmor += mech.GetMaxArmor(ArmorLocation.RightTorsoRear);
-            maxArmor += mech.GetMaxArmor(ArmorLocation.LeftTorsoRear);
-            maxArmor += mech.GetMaxArmor(ArmorLocation.RightArm);
-            maxArmor += mech.GetMaxArmor(ArmorLocation.LeftLeg);
-            maxArmor += mech.GetMaxArmor(ArmorLocation.RightLeg);
-            return maxArmor;
-        }
 
         public static void ApplyPanicDebuff(Mech mech, int index)
         {

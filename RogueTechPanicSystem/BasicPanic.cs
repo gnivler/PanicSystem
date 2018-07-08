@@ -158,7 +158,7 @@ namespace RogueTechPanicSystem
                 return false;
             }
 
-            var rng = (new Random()).NextDouble();
+            var rng = (new Random()).Next(1, 101);
             float rollToBeat;
             if (!IsEarlyPanic)
             {

@@ -537,9 +537,13 @@ namespace RogueTechPanicSystem
                 panicModifiers -= (mech.Combat.LocalPlayerTeam.Morale - medianMorale) / 2;
             }
             
-            if ((panicModifiers <= 0) || !RogueTechPanicSystem.Settings.AtLeastOneChanceToPanic)
+            if ((panicModifiers <= 0) && !RogueTechPanicSystem.Settings.AtLeastOneChanceToPanic)
             {
                 return false;
+            }
+            else if (panicModifiers <= 0)
+            {
+                panicModifiers = RogueTechPanicSystem.Settings.AtLeastOneChanceToPanicPercentage;
             }
 
             var rng = (new Random()).Next(1, 101);
@@ -662,6 +666,7 @@ namespace RogueTechPanicSystem
         //rolls out of 20
         //max guts and tactics almost prevents any panicking (or being the player character, by default)
         public bool AtLeastOneChanceToPanic = true;
+        public int AtLeastOneChanceToPanicPercentage = 10;
         public bool AlwaysGatedChanges = true;
         public float MaxPanicResistTotal = 15; //at least 20% chance to panic if you can't nullify the whole thing
         public bool LosingLimbAlwaysPanics = false;

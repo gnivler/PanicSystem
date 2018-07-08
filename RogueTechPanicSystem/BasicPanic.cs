@@ -123,21 +123,9 @@ namespace RogueTechPanicSystem
             // legs
             if (mech.RightLegDamageLevel == LocationDamageLevel.Destroyed || mech.LeftLegDamageLevel == LocationDamageLevel.Destroyed)
             {
-                float legPercent;
-                if (mech.LeftLegDamageLevel == LocationDamageLevel.Destroyed)
-                {
-                    legPercent = (mech.RightLegStructure + mech.RightLegArmor) / (mech.GetMaxStructure(ChassisLocations.RightLeg) + mech.GetMaxArmor(ArmorLocation.RightLeg));
-                }
-                else
-                {
-                    legPercent = (mech.LeftLegStructure + mech.LeftLegArmor) / (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg));
-                }
-
-                if (legPercent < 1)
-                {
-                    lowestHealthLethalLocation = Math.Min(legPercent, lowestHealthLethalLocation);
-                    ejectModifiers += Settings.LeggedMaxModifier * (1 - legPercent);
-                }
+                var LegPercentRight = 1 - (mech.RightLegStructure + mech.RightLegArmor) / (mech.GetMaxStructure(ChassisLocations.RightLeg) + mech.GetMaxArmor(ArmorLocation.RightLeg));
+                var LegPercentLeft = 1 - (mech.LeftLegStructure + mech.LeftLegArmor) / (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg));
+                ejectModifiers += Settings.LeggedMaxModifier * (LegPercentRight + LegPercentLeft);
             }
 
             // next shot like that could kill
@@ -157,11 +145,13 @@ namespace RogueTechPanicSystem
             {
                 ejectModifiers += Settings.AloneModifier;
             }
+
             var modifiers = (ejectModifiers - Settings.BaseEjectionResist - (Settings.GutsEjectionResistPerPoint * guts) - (Settings.TacticsEjectionResistPerPoint * tactics)) * 5;
             if (mech.team == mech.Combat.LocalPlayerTeam)
             {
                 MoraleConstantsDef moraleDef = mech.Combat.Constants.GetActiveMoraleDef(mech.Combat);
-                modifiers -= Math.Max(mech.Combat.LocalPlayerTeam.Morale - moraleDef.CanUseInspireLevel, 0);
+                float  medianMorale = 25;
+                modifiers -= medianMorale;
             }
             if (modifiers < 0)
             {
@@ -278,7 +268,6 @@ namespace RogueTechPanicSystem
             }
 
             //reset panic values to account for panic level changes if we get this far, and we recovered.
-
             if (Holder.TrackedPilots[index].ChangedRecently)
             {
                 Holder.TrackedPilots[index].ChangedRecently = false;
@@ -346,29 +335,33 @@ namespace RogueTechPanicSystem
             {
                 return;
             }
-            int index = PanicHelpers.GetTrackedPilotIndex(__instance);
 
+            // G  TODO refactor or improve
+            int index = PanicHelpers.GetTrackedPilotIndex(__instance);
             if (RogueTechPanicSystem.Settings.LosingLimbAlwaysPanics)
             {
-                if (index < 0)
-                {
-                    Holder.TrackedPilots.Add(new PanicTracker(__instance)); //add a new tracker to tracked pilot, then we run it all over again;
-                    index = PanicHelpers.GetTrackedPilotIndex(__instance);
-                    if (index < 0)
-                    {
-                        return;
-                    }
-                }
-
                 if (Holder.TrackedPilots[index].trackedMech != __instance.GUID)
                 {
                     return;
                 }
 
-                if (Holder.TrackedPilots[index].trackedMech == __instance.GUID && Holder.TrackedPilots[index].ChangedRecently && RogueTechPanicSystem.Settings.AlwaysGatedChanges)
+                if (Holder.TrackedPilots[index].trackedMech == __instance.GUID &&
+                    Holder.TrackedPilots[index].ChangedRecently &&
+                    RogueTechPanicSystem.Settings.AlwaysGatedChanges)
                 {
                     return;
                 }
+
+                if (index < 0)
+                {
+                    Holder.TrackedPilots.Add(new PanicTracker(__instance)); //add a new tracker to tracked pilot, then we run it all over again;
+                    index = PanicHelpers.GetTrackedPilotIndex(__instance);
+                    if (index < 0)  // G  Why does this matter?
+                    {
+                        return;
+                    }
+                }
+
                 RollHelpers.ApplyPanicDebuff(__instance, index);
             }
         }

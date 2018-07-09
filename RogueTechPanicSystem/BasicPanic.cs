@@ -4,7 +4,6 @@ using Harmony;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 
@@ -181,7 +180,6 @@ namespace RogueTechPanicSystem
             return rng < rollToBeat;
         }
 
-
         //[HarmonyPatch(typeof(AttackStackSequence), "OnAttackComplete", null)]
         //public static class AttackStackSequence_OnAttackComplete_Patch
         //{
@@ -216,9 +214,9 @@ namespace RogueTechPanicSystem
         {
             public static void Prefix(AttackStackSequence __instance, MessageCenterMessage message)
             {
-                Logger.Debug("OnAttackComplete!");
+                //Logger.Debug("OnAttackComplete!");
                 AttackCompleteMessage attackCompleteMessage = message as AttackCompleteMessage;
-                Logger.Debug($"set message to {attackCompleteMessage}!");
+                //Logger.Debug($"set message to {attackCompleteMessage}!");
 
                 bool hasReasonToPanic = false;
                 bool panicStarted = false;
@@ -347,7 +345,8 @@ namespace RogueTechPanicSystem
             }
         }
 
-        [HarmonyPatch(typeof(GameInstance), "LaunchContract")]
+        [HarmonyPatch(typeof(GameInstance), "LaunchContract", new Type[] { typeof(Contract), typeof(string) })]
+
         public static class BattleTech_GameInstance_LaunchContract_Patch
         {
             static void Postfix()

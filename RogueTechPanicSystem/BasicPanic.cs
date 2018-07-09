@@ -433,27 +433,16 @@ namespace RogueTechPanicSystem
                 }
                 if (!attackSequence.attackDidDamage)
                 {
-                    Logger.Debug($"No damage.");
+                    Logger.Debug($"No damage, no panic.");
                     return false;
                 }
-                if (attackSequence.attackStructureDamage > 0)
+                if (attackSequence.attackStructureDamage == 0 || attackSequence.attackArmorDamage / (GetCurrentMechArmour(mech) + attackSequence.attackArmorDamage) * 100 < RogueTechPanicSystem.Settings.MinimumArmourDamagePercentageRequired)
                 {
-                    Logger.Debug($"{mech.DisplayName} suffers structure damage from {attackSequence.attacker.DisplayName}.");
-                    return true;
-                }
-                else
-                {
-                    var settings = RogueTechPanicSystem.Settings;
-                    float mininumDamagePercentRequired = settings.MinimumArmourDamagePercentageRequired;  // default is 10%
-                    Logger.Debug($"{attackSequence.attacker.DisplayName} attacking {mech.DisplayName} for {attackSequence.attackArmorDamage} to armour.");
-                    if (attackSequence.attackArmorDamage / GetCurrentMechArmour(mech) * 100 >= mininumDamagePercentRequired)
-                    {
-                        Logger.Debug($"Big hit causes panic.");
-                        return true;
-                    }
-                }
+                    Logger.Debug($"No structural damage and not enough armor damage. No panic.");
+                    return false;
+                } 
 
-                Logger.Debug($"Attack yields no reason to panic.  Considering other factors...");
+                Logger.Debug($"Attack causes a panic check.");
 
                 //dZ Get rid of garbage.
                 Pilot pilot = mech.GetPilot();
@@ -602,7 +591,7 @@ namespace RogueTechPanicSystem
 
                 var rng = (new Random()).Next(1, 101);
                 Logger.Debug("rng");
-                Logger.Debug(panicModifiers);
+                Logger.Debug(rng);
 
                 float rollToBeat;
                 {

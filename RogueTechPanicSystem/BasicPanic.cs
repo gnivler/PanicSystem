@@ -216,8 +216,10 @@ namespace RogueTechPanicSystem
         {
             public static void Prefix(AttackStackSequence __instance, MessageCenterMessage message)
             {
-
+                Logger.Debug("OnAttackComplete!");
                 AttackCompleteMessage attackCompleteMessage = message as AttackCompleteMessage;
+                Logger.Debug($"set message to {attackCompleteMessage}!");
+
                 bool hasReasonToPanic = false;
                 bool panicStarted = false;
                 Mech mech = null;

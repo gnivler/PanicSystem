@@ -5,7 +5,7 @@ namespace RogueTechPanicSystem
 {
     public static class PanicHelpers
     {
-        public static bool IsPanicking(Mech mech, ref bool IsEarlyPanic)
+        public static bool IsPanicking(Mech mech, ref bool panicStarted)
         {
             if (mech == null || mech.IsDead || (mech.IsFlaggedForDeath && mech.HasHandledDeath))
                 return false;
@@ -46,7 +46,7 @@ namespace RogueTechPanicSystem
                     if (CanEarlyPanic(mech, i))
                     {
                         Logger.Debug($"In early panic.");
-                        IsEarlyPanic = true;
+                        panicStarted = true;
                         return true;
                     }
                 }

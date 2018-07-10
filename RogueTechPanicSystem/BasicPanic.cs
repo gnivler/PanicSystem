@@ -576,19 +576,13 @@ namespace RogueTechPanicSystem
                     Logger.Debug(panicModifiers);
                 }
 
-                if ((panicModifiers <= 0) && !RogueTechPanicSystem.Settings.AtLeastOneChanceToPanic)
-                {
-                    Logger.Debug("One Chance");
-                    Logger.Debug(panicModifiers);
-                    return false;
-                }
-                else if (panicModifiers <= 0)
+                if ((panicModifiers < RogueTechPanicSystem.Settings.AtLeastOneChanceToPanicPercentage) && RogueTechPanicSystem.Settings.AtLeastOneChanceToPanic)
                 {
                     panicModifiers = RogueTechPanicSystem.Settings.AtLeastOneChanceToPanicPercentage;
                     Logger.Debug("One Chance");
                     Logger.Debug(panicModifiers);
                 }
-
+                
                 var rng = (new Random()).Next(1, 101);
                 Logger.Debug("rng");
                 Logger.Debug(rng);

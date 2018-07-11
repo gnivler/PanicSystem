@@ -433,27 +433,16 @@ namespace RogueTechPanicSystem
                 }
                 if (!attackSequence.attackDidDamage)
                 {
-                    Logger.Debug($"No damage.");
+                    Logger.Debug($"No damage, no panic.");
                     return false;
                 }
-                if (attackSequence.attackStructureDamage > 0)
+                if (attackSequence.attackStructureDamage == 0 || attackSequence.attackArmorDamage / (GetCurrentMechArmour(mech) + attackSequence.attackArmorDamage) * 100 < RogueTechPanicSystem.Settings.MinimumArmourDamagePercentageRequired)
                 {
-                    Logger.Debug($"{mech.DisplayName} suffers structure damage from {attackSequence.attacker.DisplayName}.");
-                    return true;
-                }
-                else
-                {
-                    var settings = RogueTechPanicSystem.Settings;
-                    float mininumDamagePercentRequired = settings.MinimumArmourDamagePercentageRequired;  // default is 10%
-                    Logger.Debug($"{attackSequence.attacker.DisplayName} attacking {mech.DisplayName} for {attackSequence.attackArmorDamage} to armour.");
-                    if (attackSequence.attackArmorDamage / GetCurrentMechArmour(mech) * 100 >= mininumDamagePercentRequired)
-                    {
-                        Logger.Debug($"Big hit causes panic.");
-                        return true;
-                    }
-                }
+                    Logger.Debug($"No structural damage and not enough armor damage. No panic.");
+                    return false;
+                } 
 
-                Logger.Debug($"Attack yields no reason to panic.  Considering other factors...");
+                Logger.Debug($"Attack causes a panic check.");
 
                 //dZ Get rid of garbage.
                 Pilot pilot = mech.GetPilot();
@@ -492,23 +481,31 @@ namespace RogueTechPanicSystem
                     if (pilotHealthPercent < 1)
                     {
                         panicModifiers += RogueTechPanicSystem.Settings.PilotHealthMaxModifier * (1 - pilotHealthPercent);
+                        Logger.Debug("Health");
+                        Logger.Debug(panicModifiers);
                     }
                 }
                 if (mech.IsUnsteady)
                 {
                     panicModifiers += RogueTechPanicSystem.Settings.UnsteadyModifier;
+                    Logger.Debug("Unsteady");
+                    Logger.Debug(panicModifiers);
                 }
                 // Head
                 var headHealthPercent = (mech.HeadArmor + mech.HeadStructure) / (mech.GetMaxArmor(ArmorLocation.Head) + mech.GetMaxStructure(ChassisLocations.Head));
                 if (headHealthPercent < 1)
                 {
                     panicModifiers += RogueTechPanicSystem.Settings.HeadDamageMaxModifier * (1 - headHealthPercent);
+                    Logger.Debug("Head Health");
+                    Logger.Debug(panicModifiers);
                 }
                 // CT
                 var ctPercent = (mech.CenterTorsoFrontArmor + mech.CenterTorsoStructure + mech.CenterTorsoRearArmor) / (mech.GetMaxArmor(ArmorLocation.CenterTorso) + mech.GetMaxStructure(ChassisLocations.CenterTorso));
                 if (ctPercent < 1)
                 {
                     panicModifiers += RogueTechPanicSystem.Settings.CTDamageMaxModifier * (1 - ctPercent);
+                    Logger.Debug("CT");
+                    Logger.Debug(panicModifiers);
                     lowestRemaining = Math.Min(mech.CenterTorsoStructure, lowestRemaining);
                 }
                 // side torsos
@@ -516,11 +513,15 @@ namespace RogueTechPanicSystem
                 if (ltStructurePercent < 1)
                 {
                     panicModifiers += RogueTechPanicSystem.Settings.SideTorsoInternalDamageMaxModifier * (1 - ltStructurePercent);
+                    Logger.Debug("LT");
+                    Logger.Debug(panicModifiers);
                 }
                 var rtStructurePercent = mech.RightTorsoStructure / mech.GetMaxStructure(ChassisLocations.RightTorso);
                 if (rtStructurePercent < 1)
                 {
                     panicModifiers += RogueTechPanicSystem.Settings.SideTorsoInternalDamageMaxModifier * (1 - rtStructurePercent);
+                    Logger.Debug("RT");
+                    Logger.Debug(panicModifiers);
                 }
 
                 // dZ Check legs independently. Code here significantly improved.
@@ -529,6 +530,8 @@ namespace RogueTechPanicSystem
                 if ((LegPercentRight + LegPercentLeft) < 2)
                 {
                     panicModifiers += RogueTechPanicSystem.Settings.LeggedMaxModifier * (LegPercentRight + LegPercentLeft);
+                    Logger.Debug("Legs");
+                    Logger.Debug(panicModifiers);
                     var LegCheck = LegPercentRight * (mech.GetMaxStructure(ChassisLocations.RightLeg) + mech.GetMaxArmor(ArmorLocation.RightLeg)) + LegPercentLeft * (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg));
                     lowestRemaining = Math.Min(LegCheck, lowestRemaining);
                     lowestRemaining = Math.Min(LegCheck, lowestRemaining);
@@ -538,6 +541,8 @@ namespace RogueTechPanicSystem
                 if (lowestRemaining <= attackSequence.cumulativeDamage)
                 {
                     panicModifiers += RogueTechPanicSystem.Settings.NextShotLikeThatCouldKill;
+                    Logger.Debug("Big Shot");
+                    Logger.Debug(panicModifiers);
                 }
 
                 // weaponless
@@ -545,15 +550,21 @@ namespace RogueTechPanicSystem
                     w.DamageLevel == ComponentDamageLevel.Destroyed || w.DamageLevel == ComponentDamageLevel.NonFunctional))
                 {
                     panicModifiers += RogueTechPanicSystem.Settings.WeaponlessModifier;
+                    Logger.Debug("Weaponless");
+                    Logger.Debug(panicModifiers);
                 }
 
                 // alone
                 if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m == mech as AbstractActor))
                 {
                     panicModifiers += RogueTechPanicSystem.Settings.AloneModifier;
+                    Logger.Debug("Alone");
+                    Logger.Debug(panicModifiers);
                 }
                 //straight up add guts, tactics, and morale to this as negative values
                 panicModifiers -= total;
+                Logger.Debug("Guts and Tactics");
+                Logger.Debug(panicModifiers);
                 if (mech.team == mech.Combat.LocalPlayerTeam)
 
                 //dZ - Inputtable morale is superior.
@@ -561,32 +572,39 @@ namespace RogueTechPanicSystem
                     float medianMorale = 25;
                     MoraleConstantsDef moraleDef = mech.Combat.Constants.GetActiveMoraleDef(mech.Combat);
                     panicModifiers -= (mech.Combat.LocalPlayerTeam.Morale - medianMorale) / 2;
+                    Logger.Debug("Morale");
+                    Logger.Debug(panicModifiers);
                 }
 
-                if ((panicModifiers <= 0) && !RogueTechPanicSystem.Settings.AtLeastOneChanceToPanic)
-                {
-                    return false;
-                }
-                else if (panicModifiers <= 0)
+                if ((panicModifiers < RogueTechPanicSystem.Settings.AtLeastOneChanceToPanicPercentage) && RogueTechPanicSystem.Settings.AtLeastOneChanceToPanic)
                 {
                     panicModifiers = RogueTechPanicSystem.Settings.AtLeastOneChanceToPanicPercentage;
+                    Logger.Debug("One Chance");
+                    Logger.Debug(panicModifiers);
                 }
-
+                
                 var rng = (new Random()).Next(1, 101);
+                Logger.Debug("rng");
+                Logger.Debug(rng);
 
                 float rollToBeat;
                 {
                     rollToBeat = Math.Min((int)panicModifiers, (int)RogueTechPanicSystem.Settings.MaxPanicResistTotal);
+                    Logger.Debug("RollToBeat");
+                    Logger.Debug(rollToBeat);
                 }
 
                 if (rng <= rollToBeat)
+
                 {
                     Logger.Debug($"Failed panic save, debuffed!");
                     ApplyPanicDebuff(mech, index);
+                    Logger.Debug(panicModifiers);
                     return true;
                 }
                 mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Resisted Morale Check!", FloatieMessage.MessageNature.Buff, true)));
                 Logger.Debug($"No reason to panic.");
+                Logger.Debug(panicModifiers);
                 return false;
             }
 

@@ -1,19 +1,20 @@
 {
-    "Name": "BasicPanicSystem",
+  "Name": "RogueTechBasicPanicSystem",
 
-    "Enabled":  true,
-    "Version": "2.0",
-    "Description": "Adds basic panic system, based on mpstark's Punchin' Out.",
-    "Author": "RealityMachina, forked from mpstark's work - Modified by donZappo and gnivler",
-    "Website": "https://github.com/RealityMachina/PunchinOut",
+  "Enabled": true,
 
-    "DLL": "RogueTechPanicSystem.dll",
-    
-    "Settings": {
+  "Version": "2.0",
+  "Description": "Adds basic panic system, based on mpstark's Punchin' Out.",
+  "Author": "RealityMachina, forked from mpstark's work - Modified by donZappo and gnivler",
+  "Website": "https://github.com/RealityMachina/PunchinOut",
+
+  "DLL": "RogueTechPanicSystem.dll",
+
+  "Settings": {
     "PlayerCharacterAlwaysResists": false,
     "PlayerTeamCanPanic": true,
     "EnemiesCanPanic": true,
-        
+
     "PlayerLightsConsiderEjectingEarly": false,
     "EnemyLightsConsiderEjectingEarly": true,
     "LightMechEarlyPanicThreshold": 2,
@@ -29,48 +30,45 @@
     "PlayerAssaultsConsiderEjectingEarly": false,
     "EnemyAssaultsConsiderEjectingEarly": false,
     "AssaultMechEarlyPanicThreshold": 2,
-        
-		"MaxEjectChanceWhenEarly": 10,
-        
-		"MinimumArmourDamagePercentageRequired": 10,
-    "AtLeastOneChanceToPanic": false,
-		"AtLeastOneChanceToPanicPercentage" : 10,
+
+    "MaxEjectChanceWhenEarly": 10,
+
+    "MinimumArmourDamagePercentageRequired": 10,
+    "AtLeastOneChanceToPanic": true,
+    "AtLeastOneChanceToPanicPercentage": 10,
     "AlwaysGatedChanges": false,
     "MaxPanicResistTotal": 100,
     "LosingLimbAlwaysPanics": false,
-        
-		"UnsettledAttackModifier": 1,
-		"StressedAimModifier": 1,
-		"StressedToHitModifier": -1,
-		"PanickedAimModifier": 2,
+
+    "UnsettledAttackModifier": 1,
+    "StressedAimModifier": 1,
+    "StressedToHitModifier": -1,
+    "PanickedAimModifier": 2,
     "PanickedToHitModifier": -2,
 
     "MinimumHealthToAlwaysEjectRoll": 1,
     "MaxEjectChance": 50,
-		// EjectChanceMultiplier is the factor by which all the eject resistances and bonuses are muliplied. 
-		"EjectChanceMultiplier" : 2,
+    "EjectChanceMultiplier": 1,
     "GutsTenAlwaysResists": false,
     "ComboTenAlwaysResists": false,
     "TacticsTenAlwaysResists": false,
     "KnockedDownCannotEject": false,
-		
+
     "ConsiderEjectingWithNoWeaps": false,
-		"ConsiderEjectingWhenAlone" : false,
+    "ConsiderEjectingWhenAlone": false,
 
-    "BaseEjectionResist": 5,
+    "BaseEjectionResist": 50,
     "GutsEjectionResistPerPoint": 2,
-    "TacticsEjectionResistPerPoint": 1,
-    "UnsteadyModifier": 5,
-    "PilotHealthMaxModifier": 10,
+    "TacticsEjectionResistPerPoint": 0,
 
-    "HeadDamageMaxModifier": 10,
-    "CTDamageMaxModifier": 10,
-    "SideTorsoInternalDamageMaxModifier": 10,
+    "UnsteadyModifier": 10,
+    "PilotHealthMaxModifier": 15,
+    "HeadDamageMaxModifier": 15,
+    "CTDamageMaxModifier": 35,
+    "SideTorsoInternalDamageMaxModifier": 25,
     "LeggedMaxModifier": 10,
-
-    "NextShotLikeThatCouldKill": 15,
-        
-    "WeaponlessModifier": 15,
-    "AloneModifier": 20
-    }
+    "NextShotLikeThatCouldKill": 20,
+    "WeaponlessModifier": 10,
+    "AloneModifier": 10
+  }
 }

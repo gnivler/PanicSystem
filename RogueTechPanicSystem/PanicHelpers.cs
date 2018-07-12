@@ -5,7 +5,7 @@ namespace RogueTechPanicSystem
 {
     public static class PanicHelpers
     {
-        public static bool IsPanicking(Mech mech, ref bool IsEarlyPanic)
+        public static bool IsPanicking(Mech mech, ref bool panicStarted)
         {
             if (mech == null || mech.IsDead || (mech.IsFlaggedForDeath && mech.HasHandledDeath))
                 return false;
@@ -28,7 +28,7 @@ namespace RogueTechPanicSystem
                     return true;
                 }
 
-                if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m.GUID == mech.GUID))
+                if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m.GUID == mech.GUID) && RogueTechPanicSystem.Settings.ConsiderEjectingWhenAlone)
                 {
                     Logger.Debug($"Panicking due to being the last alive.");
                     return true;
@@ -46,11 +46,10 @@ namespace RogueTechPanicSystem
                     if (CanEarlyPanic(mech, i))
                     {
                         Logger.Debug($"In early panic.");
-                        IsEarlyPanic = true;
+                        panicStarted = true;
                         return true;
                     }
                 }
-
             }
             Logger.Debug($"Not panicking.");
             return false;

@@ -51,7 +51,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BasicPanic.cs" />
+    <Compile Include="RogueTechPanicSystem.cs" />
     <Compile Include="Holder.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="PanicHelpers.cs" />
@@ -64,4 +64,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent></PostBuildEvent>
+  </PropertyGroup>
 </Project>

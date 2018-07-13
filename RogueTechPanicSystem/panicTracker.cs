@@ -1,6 +1,6 @@
-﻿using BattleTech;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using BattleTech;
 
 namespace RogueTechPanicSystem
 {
@@ -32,14 +32,9 @@ namespace RogueTechPanicSystem
 
     public class MetaTracker
     {
-        public List<PanicTracker> TrackedPilots { get; set; }
-        public DateTime SaveGameTimeStamp { get; set; }
-        public string SimGameGUID { get; set; }
-
-        public MetaTracker()
-        {
-            //do nothing for this is when we deserialize/serialize objects
-        }
+        public List<PanicTracker> TrackedPilots { get; private set; }
+        public DateTime SaveGameTimeStamp { get; private set; }
+        public string SimGameGUID { get; private set; }
 
         public void SetGameGUID(string GUID)
         {

@@ -12,7 +12,7 @@ namespace RogueTechPanicSystem
             using (StreamWriter writer = new StreamWriter(filePath, true))
             {
                 writer.WriteLine("Message :" + ex.Message + "<br/>" + Environment.NewLine + "StackTrace :" + ex.StackTrace +
-                   "" + Environment.NewLine + "Date :" + DateTime.Now.ToString());
+                   "" + Environment.NewLine + "Date :" + DateTime.Now);
                 writer.WriteLine(Environment.NewLine + "-----------------------------------------------------------------------------" + Environment.NewLine);
             }
         }

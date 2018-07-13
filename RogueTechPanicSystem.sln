@@ -5,6 +5,11 @@ VisualStudioVersion = 15.0.27703.2000
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RogueTechPanicSystem", "RogueTechPanicSystem\RogueTechPanicSystem.csproj", "{D8483027-7E80-4E31-B5B7-F7C4A1A78600}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{7BD1A144-9F32-4EBC-A0E3-5E452C160B74}"
+	ProjectSection(SolutionItems) = preProject
+		..\ScorchedEarth\ScorchedEarth\.editorconfig = ..\ScorchedEarth\ScorchedEarth\.editorconfig
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

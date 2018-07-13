@@ -1,7 +1,7 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using Newtonsoft.Json;
 
 // HUGE thanks to RealityMachina and mpstark for their work, outstanding.
 namespace RogueTechPanicSystem
@@ -9,8 +9,8 @@ namespace RogueTechPanicSystem
     public static class Holder
     {
         public static List<PanicTracker> TrackedPilots;
-        public static List<MetaTracker> metaTrackers;
-        private static int CurrentIndex = -1;
+        private static List<MetaTracker> _metaTrackers;
+        private static int _currentIndex = -1;
         public static string ActiveJsonPath; //store current tracker here
         public static string StorageJsonPath; //store our meta trackers here
         public static string ModDirectory;
@@ -26,19 +26,19 @@ namespace RogueTechPanicSystem
 
             if(index > -1)
             {
-                if(metaTrackers[index].TrackedPilots != null) //part where everything seems to fall apart?
+                if(_metaTrackers[index].TrackedPilots != null) //part where everything seems to fall apart?
                 {
-                    TrackedPilots = metaTrackers[index].TrackedPilots;
+                    TrackedPilots = _metaTrackers[index].TrackedPilots;
                 }
-                CurrentIndex = index;
+                _currentIndex = index;
             }
-            else if(metaTrackers != null)//we were unable to find a tracker, add our own
+            else if(_metaTrackers != null)//we were unable to find a tracker, add our own
             {
                 MetaTracker tracker = new MetaTracker();
 
                 tracker.SetTrackedPilots(TrackedPilots);
-                metaTrackers.Add(tracker);
-                CurrentIndex = metaTrackers.Count - 1; // -1 due to zero-based arrays
+                _metaTrackers.Add(tracker);
+                _currentIndex = _metaTrackers.Count - 1; // -1 due to zero-based arrays
 
             }
         }
@@ -46,26 +46,26 @@ namespace RogueTechPanicSystem
         public static void SyncNewCampaign() //fired when player starts a new campaign
         {
             DeserializeStorageJson();
-            if (metaTrackers != null)//we were unable to find a tracker, add our own
+            if (_metaTrackers != null)//we were unable to find a tracker, add our own
             {
                 MetaTracker tracker = new MetaTracker();
 
                 tracker.SetTrackedPilots(TrackedPilots);
-                metaTrackers.Add(tracker);
-                CurrentIndex = metaTrackers.Count - 1; // -1 due to zero-based arrays
+                _metaTrackers.Add(tracker);
+                _currentIndex = _metaTrackers.Count - 1; // -1 due to zero-based arrays
 
             }
         }
 
         public static int FindTrackerByTime(DateTime previousSaveTime)
         {
-            if(metaTrackers == null)
+            if(_metaTrackers == null)
             {
                 return -1;
             }
-            for(int i = 0; i < metaTrackers.Count; i++)
+            for(int i = 0; i < _metaTrackers.Count; i++)
             {
-                if(metaTrackers[i].SaveGameTimeStamp == previousSaveTime)
+                if(_metaTrackers[i].SaveGameTimeStamp == previousSaveTime)
                 {
                     return i;
                 }
@@ -75,42 +75,43 @@ namespace RogueTechPanicSystem
 
         public static void SerializeStorageJson(string GUID, DateTime dateTime) //fired when a save game is made
         {
-            if(metaTrackers == null)
+            if(_metaTrackers == null)
             {
-                metaTrackers = new List<MetaTracker>();
+                _metaTrackers = new List<MetaTracker>();
             }
-            else if (CurrentIndex > -1)
+            else if (_currentIndex > -1)
             {
-                int index = CurrentIndex;
-                if(metaTrackers[index] != null)
+                int index = _currentIndex;
+                if(_metaTrackers[index] != null)
                 {
-                    metaTrackers[index].SetTrackedPilots(TrackedPilots); //have our meta tracker get the latest data
+                    _metaTrackers[index].SetTrackedPilots(TrackedPilots); //have our meta tracker get the latest data
                 }
                 if(dateTime != null)
                 {
-                    metaTrackers[index].SetSaveGameTime(dateTime);
+                    _metaTrackers[index].SetSaveGameTime(dateTime);
                 }
                 if (GUID != null) //set GUID if it's applicable
                 {
-                    if(metaTrackers[index].SimGameGUID != GUID)
+                    if(_metaTrackers[index].SimGameGUID != GUID)
                     {
-                        metaTrackers[index].SetGameGUID(GUID);
+                        _metaTrackers[index].SetGameGUID(GUID);
                     }
                 }
             }
             try
             {
-                if (metaTrackers != null)
+                if (_metaTrackers != null)
                 {
-                    File.WriteAllText(StorageJsonPath, JsonConvert.SerializeObject(metaTrackers));
+                    File.WriteAllText(StorageJsonPath, JsonConvert.SerializeObject(_metaTrackers));
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                return;
+                Logger.LogError(e);
             }
         }
-        public static void DeserializeStorageJson() //fired when we're close to using the json data
+
+        private static void DeserializeStorageJson() //fired when we're close to using the json data
         {
             List<MetaTracker> trackers;
             try
@@ -121,14 +122,7 @@ namespace RogueTechPanicSystem
             {
                 trackers = null;
             }
-            if(trackers == null)
-            {
-                metaTrackers = new List<MetaTracker>();
-            }
-            else
-            {
-                metaTrackers = trackers;
-            }
+            _metaTrackers = trackers ?? new List<MetaTracker>();
         }
 
         public static void SerializeActiveJson()
@@ -140,9 +134,9 @@ namespace RogueTechPanicSystem
                     File.WriteAllText(ActiveJsonPath, JsonConvert.SerializeObject(TrackedPilots));
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                return;
+                Logger.LogError(e);
             }
         }
 
@@ -160,14 +154,7 @@ namespace RogueTechPanicSystem
                 {
                     panicTrackers = null;
                 }
-                if (panicTrackers == null)
-                {
-                    TrackedPilots = new List<PanicTracker>();
-                }
-                else
-                {
-                    TrackedPilots = panicTrackers;
-                }
+                TrackedPilots = panicTrackers ?? new List<PanicTracker>();
             }
         }
     }

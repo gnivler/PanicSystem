@@ -4,37 +4,42 @@ using Harmony;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
-using static RogueTechPanicSystem.RogueTechPanicSystem;
 
 // HUGE thanks to RealityMachina and mpstark for their work, outstanding.
 namespace RogueTechPanicSystem
 {
     [UsedImplicitly]
-    [SuppressMessage("ReSharper", "InconsistentNaming")]
     public static class RogueTechPanicSystem
     {
-        internal static ModSettings Settings;
+        internal static RollHelpers.ModSettings Settings;
 
         public static void Init(string modDir, string modSettings)
         {
             var harmony = HarmonyInstance.Create("de.group.RogueTechPanicSystem");
             harmony.PatchAll(Assembly.GetExecutingAssembly());
-            Holder.ModDirectory = Path.Combine(Path.GetDirectoryName(VersionManifestUtilities.MANIFEST_FILEPATH), @"..\..\..\Mods\RogueTechPanicSystem");
-            Holder.ActiveJsonPath = Path.Combine(Holder.ModDirectory, "RogueTechPanicSystem.json");
-            Holder.StorageJsonPath = Path.Combine(Holder.ModDirectory, "RogueTechPanicSystemStorage.json");
+            Holder.ModDirectory = modDir;
+            Holder.ActiveJsonPath = Path.Combine(modDir, "RogueTechPanicSystem.json");
+            Holder.StorageJsonPath = Path.Combine(modDir, "RogueTechPanicSystemStorage.json");
             try
             {
-                Settings = JsonConvert.DeserializeObject<ModSettings>(modSettings);
+                Settings = JsonConvert.DeserializeObject<RollHelpers.ModSettings>(modSettings);
             }
             catch (Exception)
             {
-                Settings = new ModSettings();
+                Settings = new RollHelpers.ModSettings();
             }
         }
-        public static bool RollForEjectionResult(Mech mech, AttackDirector.AttackSequence attackSequence, bool IsEarlyPanic)
+
+        /// <summary>
+        /// G returning anything true implies an ejection save will be required
+        /// </summary>
+        /// <param name="mech"></param>
+        /// <param name="attackSequence"></param>
+        /// <param name="panicStarted"></param>
+        /// <returns></returns>
+        public static bool RollForEjectionResult(Mech mech, AttackDirector.AttackSequence attackSequence, bool panicStarted)
         {
             if (mech == null || mech.IsDead || (mech.IsFlaggedForDeath && !mech.HasHandledDeath))
                 return false;
@@ -48,53 +53,59 @@ namespace RogueTechPanicSystem
                 return false;
 
             Pilot pilot = mech.GetPilot();
+            if (pilot == null)
+                return false;
+
             var weapons = mech.Weapons;
             var guts = mech.SkillGuts;
             var tactics = mech.SkillTactics;
             var total = guts + tactics;
-            float lowestRemaining = mech.CenterTorsoStructure + mech.CenterTorsoFrontArmor;
-            float ejectModifiers = 0;
 
             // guts 10 makes you immune, player character cannot be forced to eject
-            if ((guts >= 10 && Settings.GutsTenAlwaysResists) || (pilot != null && pilot.IsPlayerCharacter && Settings.PlayerCharacterAlwaysResists))
+            if ((guts == 10 && Settings.GutsTenAlwaysResists) ||
+                (Settings.PlayerCharacterAlwaysResists && pilot.IsPlayerCharacter))
                 return false;
 
             // tactics 10 makes you immune, or combination of guts and tactics makes you immune.
-            if ((tactics >= 10 && Settings.TacticsTenAlwaysResists) || (total >= 10 && Settings.ComboTenAlwaysResists))
+            if ((tactics == 10 && Settings.TacticsTenAlwaysResists) ||
+                (total >= 10 && Settings.ComboTenAlwaysResists))
                 return false;
 
             // pilots that cannot eject or be headshot shouldn't eject
-            if (!mech.CanBeHeadShot || (pilot != null && !pilot.CanEject))
+            if (!mech.CanBeHeadShot || !pilot.CanEject)
                 return false;
 
-            // pilot health
-            if (pilot != null)
-            {
-                float pilotHealthPercent = 1 - ((float)pilot.Injuries / pilot.Health);
+            // start building ejectModifiers
+            float lowestHealthLethalLocation = float.MaxValue;
+            float ejectModifiers = 0;
 
-                if (pilotHealthPercent < 1)
-                {
-                    ejectModifiers += Settings.PilotHealthMaxModifier * (1 - pilotHealthPercent);
-                }
+            // pilot health
+            float pilotHealthPercent = 1 - ((float)pilot.Injuries / pilot.Health);
+            if (pilotHealthPercent < 1)
+            {
+                ejectModifiers += Settings.PilotHealthMaxModifier * (1 - pilotHealthPercent);
             }
 
             if (mech.IsUnsteady)
             {
                 ejectModifiers += Settings.UnsteadyModifier;
             }
+
             // Head
             var headHealthPercent = (mech.HeadArmor + mech.HeadStructure) / (mech.GetMaxArmor(ArmorLocation.Head) + mech.GetMaxStructure(ChassisLocations.Head));
             if (headHealthPercent < 1)
             {
                 ejectModifiers += Settings.HeadDamageMaxModifier * (1 - headHealthPercent);
             }
-            // CT
-            var ctPercent = (mech.CenterTorsoFrontArmor + mech.CenterTorsoStructure) / (mech.GetMaxArmor(ArmorLocation.CenterTorso) + mech.GetMaxStructure(ChassisLocations.CenterTorso));
+
+            // CT                                                                                   
+            var ctPercent = (mech.CenterTorsoFrontArmor + mech.CenterTorsoStructure + mech.CenterTorsoRearArmor) / (mech.GetMaxArmor(ArmorLocation.CenterTorso) + mech.GetMaxStructure(ChassisLocations.CenterTorso));
             if (ctPercent < 1)
             {
                 ejectModifiers += Settings.CTDamageMaxModifier * (1 - ctPercent);
-                lowestRemaining = Math.Min(mech.CenterTorsoStructure, lowestRemaining);
+                lowestHealthLethalLocation = Math.Min(mech.CenterTorsoStructure, lowestHealthLethalLocation);
             }
+
             // side torsos
             var ltStructurePercent = mech.LeftTorsoStructure / mech.GetMaxStructure(ChassisLocations.LeftTorso);
             if (ltStructurePercent < 1)
@@ -106,56 +117,52 @@ namespace RogueTechPanicSystem
             {
                 ejectModifiers += Settings.SideTorsoInternalDamageMaxModifier * (1 - rtStructurePercent);
             }
+
             // legs
-            if (mech.RightLegDamageLevel == LocationDamageLevel.Destroyed || mech.LeftLegDamageLevel == LocationDamageLevel.Destroyed)
+            var LegPercentRight = 1 - (mech.RightLegStructure + mech.RightLegArmor) / (mech.GetMaxStructure(ChassisLocations.RightLeg) + mech.GetMaxArmor(ArmorLocation.RightLeg));
+            var LegPercentLeft = 1 - (mech.LeftLegStructure + mech.LeftLegArmor) / (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg));
+            if ((LegPercentRight + LegPercentLeft) < 2)
             {
-                float legPercent;
-
-                if (mech.LeftLegDamageLevel == LocationDamageLevel.Destroyed)
-                {
-                    legPercent = (mech.RightLegStructure + mech.RightLegArmor) / (mech.GetMaxStructure(ChassisLocations.RightLeg) + mech.GetMaxArmor(ArmorLocation.RightLeg));
-                }
-                else
-                {
-                    legPercent = (mech.LeftLegStructure + mech.LeftLegArmor) / (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg));
-                }
-
-                if (legPercent < 1)
-                {
-                    lowestRemaining = Math.Min(legPercent * (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg)), lowestRemaining);
-                    ejectModifiers += Settings.LeggedMaxModifier * (1 - legPercent);
-                }
+                ejectModifiers += Settings.LeggedMaxModifier * (LegPercentRight + LegPercentLeft);
+                var LegCheck = LegPercentRight * (mech.GetMaxStructure(ChassisLocations.RightLeg) + mech.GetMaxArmor(ArmorLocation.RightLeg)) + LegPercentLeft * (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg));
+                lowestHealthLethalLocation = Math.Min(LegCheck, lowestHealthLethalLocation);
+                lowestHealthLethalLocation = Math.Min(LegCheck, lowestHealthLethalLocation);
             }
-            // next shot could kill
-            if (lowestRemaining <= attackSequence.cumulativeDamage)
+
+            // next shot like that could kill or leg
+            if (lowestHealthLethalLocation <= attackSequence.cumulativeDamage)
             {
                 ejectModifiers += Settings.NextShotLikeThatCouldKill;
             }
+
             // weaponless
-            if (weapons.TrueForAll(w =>
-                w.DamageLevel == ComponentDamageLevel.Destroyed || w.DamageLevel == ComponentDamageLevel.NonFunctional))
+            if (weapons.TrueForAll(w => w.DamageLevel == ComponentDamageLevel.Destroyed))
             {
                 ejectModifiers += Settings.WeaponlessModifier;
             }
+
             // alone
-            if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m == mech as AbstractActor))
+            if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m == mech as AbstractActor || m.IsDead))
             {
                 ejectModifiers += Settings.AloneModifier;
             }
-            var modifiers = (ejectModifiers - Settings.BaseEjectionResist - (Settings.GutsEjectionResistPerPoint * guts) - (Settings.TacticsEjectionResistPerPoint * tactics)) * 5;
+
+            //dZ Because this is how it should be. Make this changeable. 
+            var modifiers = (ejectModifiers - Settings.BaseEjectionResist - (Settings.GutsEjectionResistPerPoint * guts) - (Settings.TacticsEjectionResistPerPoint * tactics)) * RogueTechPanicSystem.Settings.EjectChanceMultiplier;
             if (mech.team == mech.Combat.LocalPlayerTeam)
             {
                 MoraleConstantsDef moraleDef = mech.Combat.Constants.GetActiveMoraleDef(mech.Combat);
-                modifiers -= Math.Max(mech.Combat.LocalPlayerTeam.Morale - moraleDef.CanUseInspireLevel, 0);
+                float medianMorale = 25;
+                modifiers -= (mech.Combat.LocalPlayerTeam.Morale - medianMorale) / 2;
             }
             if (modifiers < 0)
             {
                 return false;
             }
 
-            var rng = (new Random()).Next(100);
+            var rng = (new Random()).Next(1, 101);
             float rollToBeat;
-            if (!IsEarlyPanic)
+            if (!panicStarted)
             {
                 rollToBeat = Math.Min(modifiers, Settings.MaxEjectChance);
             }
@@ -165,531 +172,592 @@ namespace RogueTechPanicSystem
             }
 
             mech.Combat.MessageCenter.PublishMessage(!(rng < rollToBeat)
-                ? new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Guts/Tactics Check Passed {Math.Floor(rollToBeat)}%", FloatieMessage.MessageNature.Buff, true))
-                : new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Punchin' Out! {Math.Floor(rollToBeat)}%", FloatieMessage.MessageNature.Debuff, true)));
+                ? new AddSequenceToStackMessage(new ShowActorInfoSequence(
+                    mech, $"{Math.Floor(rollToBeat)}% save SUCCESS for Guts & Tactics", FloatieMessage.MessageNature.Buff, true))
+                : new AddSequenceToStackMessage(new ShowActorInfoSequence(
+                    mech, $"{Math.Floor(rollToBeat)}% save FAILED: Punchin' Out!!", FloatieMessage.MessageNature.Debuff, true)));
 
             return rng < rollToBeat;
         }
-    }
 
-    [HarmonyPatch(typeof(AttackStackSequence), "OnAttackComplete")]
-    public static class AttackStackSequence_OnAttackComplete_Patch
-    {
-        public static void Prefix(AttackStackSequence __instance, MessageCenterMessage message)
+        //[HarmonyPatch(typeof(AttackStackSequence), "OnAttackComplete", null)]
+        //public static class AttackStackSequence_OnAttackComplete_Patch
+        //{
+        //    public static void Prefix(AttackStackSequence __instance, MessageCenterMessage message)
+        //    {
+        //        AttackCompleteMessage attackCompleteMessage = message as AttackCompleteMessage;
+        //        bool hasReasonToPanic = false;
+        //        Mech mech = null;
+        //        if (attackCompleteMessage == null || attackCompleteMessage.stackItemUID != __instance.SequenceGUID)
+        //        {
+        //            return;
+        //        }
+        //        if (__instance.directorSequences[0].target is Mech)
+        //        {
+        //            mech = __instance.directorSequences[0].target as Mech;
+        //            RollHelpers.ShouldPanic(mech, attackCompleteMessage.attackSequence);
+        //        }
+        //        if (mech == null || mech.GUID == null || attackCompleteMessage == null)
+        //        {
+        //            return;
+        //        }
+        //        Holder.SerializeActiveJson();
+        //        if (PanicHelpers.IsPanicking(mech, ref hasReasonToPanic) && RollForEjectionResult(mech, attackCompleteMessage.attackSequence, hasReasonToPanic))
+        //        {
+        //            mech.EjectPilot(mech.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
+        //        }
+        //    }
+        //}
+
+        [HarmonyPatch(typeof(AttackStackSequence), "OnAttackComplete")]
+        public static class AttackStackSequence_OnAttackComplete_Patch
         {
-            AttackCompleteMessage attackCompleteMessage = message as AttackCompleteMessage;
-            bool ShouldPanic = false;
-            bool IsEarlyPanic = false;
-            Mech mech = null;
+            public static void Prefix(AttackStackSequence __instance, MessageCenterMessage message)
+            {
+                //Logger.Debug("OnAttackComplete!");
+                AttackCompleteMessage attackCompleteMessage = message as AttackCompleteMessage;
+                //Logger.Debug($"set message to {attackCompleteMessage}!");
 
-            if (attackCompleteMessage == null || attackCompleteMessage.stackItemUID != __instance.SequenceGUID)
-                return;
-            if (__instance.directorSequences[0].target is Mech)
-            {
-                mech = __instance.directorSequences[0].target as Mech;
-                ShouldPanic = RollHelpers.ShouldPanic(mech, attackCompleteMessage.attackSequence);
-            }
-            if (mech == null || mech.GUID == null || attackCompleteMessage == null)
-            {
-                return;
-            }
-
-            Holder.SerializeActiveJson();
-            if (PanicHelpers.IsPanicking(mech, ref IsEarlyPanic) && RollForEjectionResult(mech, attackCompleteMessage.attackSequence, IsEarlyPanic))
-            {
-                mech.EjectPilot(mech.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
+                bool hasReasonToPanic = false;
+                bool panicStarted = false;
+                Mech mech = null;
+                if (attackCompleteMessage == null || attackCompleteMessage.stackItemUID != __instance.SequenceGUID)
+                {
+                    return;
+                }
+                if (__instance.directorSequences[0].target is Mech)
+                {
+                    mech = __instance.directorSequences[0].target as Mech;
+                    hasReasonToPanic = RollHelpers.ShouldPanic(mech, attackCompleteMessage.attackSequence);
+                }
+                if (mech == null || mech.GUID == null || attackCompleteMessage == null)
+                {
+                    return;
+                }
+                Holder.SerializeActiveJson();
+                if (PanicHelpers.IsPanicking(mech, ref panicStarted) && RollForEjectionResult(mech, attackCompleteMessage.attackSequence, panicStarted))
+                {
+                    mech.EjectPilot(mech.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
+                }
             }
         }
-    }
 
-    [HarmonyPatch(typeof(AbstractActor), "OnNewRound")]
-    public static class AbstractActor_BeginNewRound_Patch
-    {
-        public static void Prefix(AbstractActor __instance)
+        [HarmonyPatch(typeof(AbstractActor), "OnNewRound")]
+        public static class AbstractActor_BeginNewRound_Patch
         {
-            if (!(__instance is Mech mech) || mech.IsDead || (mech.IsFlaggedForDeath && mech.HasHandledDeath))
+            public static void Prefix(AbstractActor __instance)
             {
-                return;
-            }
+                if (!(__instance is Mech mech) || mech.IsDead || (mech.IsFlaggedForDeath && mech.HasHandledDeath))
+                {
+                    return;
+                }
 
-            bool FoundPilot = false;
-            Pilot pilot = mech.GetPilot();
-            int index = -1;
+                bool FoundPilot = false;
+                Pilot pilot = mech.GetPilot();
+                int index = -1;
 
-            if (pilot == null)
-            {
-                return;
-            }
+                if (pilot == null)
+                {
+                    return;
+                }
 
-            index = PanicHelpers.GetTrackedPilotIndex(mech);
-            if (index > -1)
-            {
-
-                FoundPilot = true;
-            }
-            if (!FoundPilot)
-            {
-                PanicTracker panicTracker = new PanicTracker(mech);
-
-                Holder.TrackedPilots.Add(panicTracker); //add a new tracker to tracked pilot, then we run it all over again;;
                 index = PanicHelpers.GetTrackedPilotIndex(mech);
                 if (index > -1)
                 {
                     FoundPilot = true;
                 }
-                else
-                {
-                    return;
-                }
-            }
-            PanicStatus originalStatus = Holder.TrackedPilots[index].pilotStatus;
-            if (FoundPilot && !Holder.TrackedPilots[index].ChangedRecently)
-            {
-                if (Holder.TrackedPilots[index].pilotStatus == PanicStatus.Fatigued)
-                {
-                    Holder.TrackedPilots[index].pilotStatus = PanicStatus.Normal;
-                }
-                if (Holder.TrackedPilots[index].pilotStatus == PanicStatus.Stressed)
-                {
-                    Holder.TrackedPilots[index].pilotStatus = PanicStatus.Fatigued;
-                }
-                if (Holder.TrackedPilots[index].pilotStatus == PanicStatus.Panicked)
-                {
-                    Holder.TrackedPilots[index].pilotStatus = PanicStatus.Stressed;
-                }
-            }
-            //reset panic values to account for panic level changes if we get this far, and we recovered.
 
-            if (Holder.TrackedPilots[index].ChangedRecently)
-            {
-                Holder.TrackedPilots[index].ChangedRecently = false;
-            }
-            else if (Holder.TrackedPilots[index].pilotStatus != originalStatus)
-            {
-                __instance.StatCollection.ModifyStat<float>("Panic Turn Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f, -1, true);
-                __instance.StatCollection.ModifyStat<float>("Panic Turn Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f, -1, true);
-
-                if (Holder.TrackedPilots[index].pilotStatus == PanicStatus.Fatigued)
+                if (!FoundPilot)
                 {
-                    __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Recovered To Fatigued!", FloatieMessage.MessageNature.Buff, true)));
-                    __instance.StatCollection.ModifyStat<float>("Panic Turn: Fatigued Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, RogueTechPanicSystem.Settings.FatiguedAimModifier, -1, true);
-                }
-
-                else if (Holder.TrackedPilots[index].pilotStatus == PanicStatus.Stressed)
-                {
-                    __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Recovered To Stressed!", FloatieMessage.MessageNature.Buff, true)));
-                    __instance.StatCollection.ModifyStat<float>("Panic Turn: Stressed Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, RogueTechPanicSystem.Settings.StressedAimModifier, -1, true);
-                    __instance.StatCollection.ModifyStat<float>("Panic Turn: Stressed Defence", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, RogueTechPanicSystem.Settings.StressedToHitModifier, -1, true);
-                }
-
-                else //now normal
-                {
-                    __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Recovered To Normal!", FloatieMessage.MessageNature.Buff, true)));
-                }
-            }
-            Holder.SerializeActiveJson();
-        }
-    }
-
-    [HarmonyPatch(typeof(BattleTech.GameInstance), "LaunchContract", new Type[] { typeof(Contract), typeof(string) })]
-    public static class BattleTech_GameInstance_LaunchContract_Patch
-    {
-        static void Postfix()
-        {
-            // reset on new contracts
-            Holder.Reset();
-        }
-    }
-
-    [HarmonyPatch(typeof(AAR_SalvageScreen), "OnCompleted")]
-    public static class Battletech_SalvageScreen_Patch
-    {
-        static void Postfix()
-        {
-            Holder.Reset(); //don't keep data we don't need after a mission
-        }
-    }
-
-    [HarmonyPatch(typeof(Mech), "OnLocationDestroyed")]
-    public static class Battletech_Mech_LocationDestroyed_Patch
-    {
-        static void Postfix(Mech __instance)
-        {
-            if (__instance == null || __instance.IsDead || (__instance.IsFlaggedForDeath && __instance.HasHandledDeath))
-            {
-                return;
-            }
-            int index = PanicHelpers.GetTrackedPilotIndex(__instance);
-
-            if (RogueTechPanicSystem.Settings.LosingLimbAlwaysPanics)
-            {
-                if (index < 0)
-                {
-                    Holder.TrackedPilots.Add(new PanicTracker(__instance)); //add a new tracker to tracked pilot, then we run it all over again;
-                    index = PanicHelpers.GetTrackedPilotIndex(__instance);
-                    if (index < 0)
+                    PanicTracker panicTracker = new PanicTracker(mech);
+                    Holder.TrackedPilots.Add(panicTracker); //add a new tracker to tracked pilot, then we run it all over again;;
+                    index = PanicHelpers.GetTrackedPilotIndex(mech);
+                    if (index > -1)
+                    {
+                        FoundPilot = true;
+                    }
+                    else
                     {
                         return;
                     }
                 }
 
-                if (Holder.TrackedPilots[index].trackedMech != __instance.GUID)
+                PanicStatus originalStatus = Holder.TrackedPilots[index].pilotStatus;
+                if (FoundPilot && !Holder.TrackedPilots[index].ChangedRecently)
                 {
-                    return;
+                    switch (Holder.TrackedPilots[index].pilotStatus)
+                    {
+                        case PanicStatus.Unsettled:
+                            Holder.TrackedPilots[index].pilotStatus = PanicStatus.Normal;
+                            break;
+                        case PanicStatus.Stressed:
+                            Holder.TrackedPilots[index].pilotStatus = PanicStatus.Unsettled;
+                            break;
+                        case PanicStatus.Panicked:
+                            Holder.TrackedPilots[index].pilotStatus = PanicStatus.Stressed;
+                            break;
+                        default:
+                            break;
+                    }
+
                 }
 
-                if (Holder.TrackedPilots[index].trackedMech == __instance.GUID && Holder.TrackedPilots[index].ChangedRecently && RogueTechPanicSystem.Settings.AlwaysGatedChanges)
+                //reset panic values to account for panic level changes if we get this far, and we recovered.
+                if (Holder.TrackedPilots[index].ChangedRecently)
                 {
-                    return;
+                    Holder.TrackedPilots[index].ChangedRecently = false;
                 }
-                RollHelpers.ApplyPanicDebuff(__instance, index);
+                else if (Holder.TrackedPilots[index].pilotStatus != originalStatus)
+                {
+                    __instance.StatCollection.ModifyStat("Panic Turn Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f);
+                    __instance.StatCollection.ModifyStat("Panic Turn Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f);
+
+                    if (Holder.TrackedPilots[index].pilotStatus == PanicStatus.Unsettled)
+                    {
+                        __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
+                                                                       new ShowActorInfoSequence(mech, $"Unsettled",
+                                                                       FloatieMessage.MessageNature.Buff, true)));
+                        __instance.StatCollection.ModifyStat("Panic Turn: Unsettled Aim", -1,
+                                                             "AccuracyModifier", StatCollection.StatOperation.Float_Add,
+                                                             RogueTechPanicSystem.Settings.UnsettledAttackModifier, -1, true);
+                    }
+
+                    else if (Holder.TrackedPilots[index].pilotStatus == PanicStatus.Stressed)
+                    {
+                        __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
+                                                                      (new ShowActorInfoSequence(mech, $"Stressed",
+                                                                      FloatieMessage.MessageNature.Buff, true)));
+                        __instance.StatCollection.ModifyStat("Panic Turn: Stressed Aim", -1, "AccuracyModifier",
+                                                             StatCollection.StatOperation.Float_Add,
+                                                             RogueTechPanicSystem.Settings.StressedAimModifier);
+                        __instance.StatCollection.ModifyStat("Panic Turn: Stressed Defence", -1, "ToHitThisActor",
+                                                             StatCollection.StatOperation.Float_Add,
+                                                             RogueTechPanicSystem.Settings.StressedToHitModifier);
+                    }
+
+                    else //now normal
+                    {
+                        __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
+                                                                      (new ShowActorInfoSequence(mech, "Confident", FloatieMessage.MessageNature.Buff, true)));
+                    }
+                }
+                Holder.SerializeActiveJson();
             }
         }
-    }
 
-    public static class RollHelpers
-    {
-        public static bool ShouldPanic(Mech mech, AttackDirector.AttackSequence attackSequence)
+        [HarmonyPatch(typeof(GameInstance), "LaunchContract", new Type[] { typeof(Contract), typeof(string) })]
+
+        public static class BattleTech_GameInstance_LaunchContract_Patch
         {
-            Logger.Debug($"------ START ------");
-            if (mech == null || mech.IsDead || (mech.IsFlaggedForDeath && mech.HasHandledDeath))
+            static void Postfix()
             {
-                Logger.Debug($"{mech.DisplayName} incapacitated by {attackSequence.attacker.DisplayName}.");
-                return false;
+                // reset on new contracts
+                Holder.Reset();
             }
-            if (attackSequence == null)
+        }
+
+        [HarmonyPatch(typeof(AAR_SalvageScreen), "OnCompleted")]
+        public static class Battletech_SalvageScreen_Patch
+        {
+            static void Postfix()
             {
-                Logger.Debug($"No attack.");
-                return false;
+                Holder.Reset(); //don't keep data we don't need after a mission
             }
-            // credit to jo and thanks!
-            if (mech.team.IsLocalPlayer && !RogueTechPanicSystem.Settings.PlayerTeamCanPanic)
+        }
+
+        [HarmonyPatch(typeof(Mech), "OnLocationDestroyed")]
+        public static class Battletech_Mech_LocationDestroyed_Patch
+        {
+            static void Postfix(Mech __instance)
             {
-                Logger.Debug($"Players can't panic.");
-                return false;
-            }
-            else if (!mech.team.IsLocalPlayer && !RogueTechPanicSystem.Settings.EnemiesCanPanic)
-            {
-                Logger.Debug($"AI can't panic.");
-                return false;
-            }
-            if (!attackSequence.attackDidDamage)
-            {
-                Logger.Debug($"No damage.");
-                return false;
-            }
-            if (attackSequence.attackStructureDamage > 0)
-            {
-                Logger.Debug($"{mech.DisplayName} suffers structure damage from {attackSequence.attacker.DisplayName}.");
-                return true;
-            }
-            else
-            {
-                var settings = RogueTechPanicSystem.Settings;
-                float mininumDamagePercentRequired = settings.MinimumArmourDamagePercentageRequired;  // default is 10%
-                float totalArmor = 0, maxArmor = 0;
-                maxArmor = GetTotalMechArmour(mech, maxArmor);
-                totalArmor = GetCurrentMechArmour(mech, totalArmor);
-                float currentArmorPercent = totalArmor / maxArmor * 100;
-                float percentOfCurrentArmorDamaged = attackSequence.attackArmorDamage / currentArmorPercent;
-                Logger.Debug($"{attackSequence.attacker.DisplayName} attacking {mech.DisplayName} for {attackSequence.attackArmorDamage} to armour.");
-                Logger.Debug($"{mech.DisplayName} has {currentArmorPercent.ToString("0.0")}% armor ({totalArmor}/{maxArmor}).  The attack does {(attackSequence.attackArmorDamage / totalArmor * 100).ToString("0.0")}% damage.");
-                if (attackSequence.attackArmorDamage / totalArmor * 100 >= mininumDamagePercentRequired)
+                if (__instance == null || __instance.IsDead || (__instance.IsFlaggedForDeath && __instance.HasHandledDeath))
                 {
-                    Logger.Debug($"Big hit causes panic.");
-                    return true;
+                    return;
+                }
+
+                // G  TODO refactor or improve
+                int index = PanicHelpers.GetTrackedPilotIndex(__instance);
+                if (RogueTechPanicSystem.Settings.LosingLimbAlwaysPanics)
+                {
+                    if (Holder.TrackedPilots[index].trackedMech != __instance.GUID)
+                    {
+                        return;
+                    }
+
+                    if (Holder.TrackedPilots[index].trackedMech == __instance.GUID &&
+                        Holder.TrackedPilots[index].ChangedRecently &&
+                        RogueTechPanicSystem.Settings.AlwaysGatedChanges)
+                    {
+                        return;
+                    }
+
+                    if (index < 0)
+                    {
+                        Holder.TrackedPilots.Add(new PanicTracker(__instance)); //add a new tracker to tracked pilot, then we run it all over again;
+                        index = PanicHelpers.GetTrackedPilotIndex(__instance);
+                        if (index < 0)  // G  Why does this matter?
+                        {
+                            return;
+                        }
+                    }
+                    RollHelpers.ApplyPanicDebuff(__instance, index);
                 }
             }
+        }
 
-            Logger.Debug($"Attack yields no reason to panic.  Considering other factors...");
-
-            int PanicRoll = 0;
-            Pilot pilot = mech.GetPilot();
-            var weapons = mech.Weapons;
-            var guts = mech.SkillGuts;
-            var tactics = mech.SkillTactics;
-            var total = guts + tactics;
-            int index = -1;
-            index = PanicHelpers.GetTrackedPilotIndex(mech);
-            float lowestRemaining = mech.CenterTorsoStructure + mech.CenterTorsoFrontArmor;
-            float panicModifiers = 0;
-
-            if (index < 0)
+        public static class RollHelpers
+        {
+            public static bool ShouldPanic(Mech mech, AttackDirector.AttackSequence attackSequence)
             {
-                Holder.TrackedPilots.Add(new PanicTracker(mech)); //add a new tracker to tracked pilot, then we run it all over again;
+                Logger.Debug($"------ START ------");
+                if (mech == null || mech.IsDead || (mech.IsFlaggedForDeath && mech.HasHandledDeath))
+                {
+                    Logger.Debug($"{mech.DisplayName} incapacitated by {attackSequence.attacker.DisplayName}.");
+                    return false;
+                }
+                if (attackSequence == null)
+                {
+                    Logger.Debug($"No attack.");
+                    return false;
+                }
+                // credit to jo and thanks!
+                if (mech.team.IsLocalPlayer && !RogueTechPanicSystem.Settings.PlayerTeamCanPanic)
+                {
+                    Logger.Debug($"Players can't panic.");
+                    return false;
+                }
+                else if (!mech.team.IsLocalPlayer && !RogueTechPanicSystem.Settings.EnemiesCanPanic)
+                {
+                    Logger.Debug($"AI can't panic.");
+                    return false;
+                }
+                if (!attackSequence.attackDidDamage)
+                {
+                    Logger.Debug($"No damage, no panic.");
+                    return false;
+                }
+                if (attackSequence.attackStructureDamage == 0 || attackSequence.attackArmorDamage / (GetCurrentMechArmour(mech) + attackSequence.attackArmorDamage) * 100 < RogueTechPanicSystem.Settings.MinimumArmourDamagePercentageRequired)
+                {
+                    Logger.Debug($"No structural damage and not enough armor damage. No panic.");
+                    return false;
+                } 
+
+                Logger.Debug($"Attack causes a panic check.");
+
+                //dZ Get rid of garbage.
+                Pilot pilot = mech.GetPilot();
+                var weapons = mech.Weapons;
+                var guts = mech.SkillGuts * RogueTechPanicSystem.Settings.GutsEjectionResistPerPoint;
+                var tactics = mech.SkillTactics * RogueTechPanicSystem.Settings.TacticsEjectionResistPerPoint;
+                var total = guts + tactics;
+                int index = -1;
                 index = PanicHelpers.GetTrackedPilotIndex(mech);
+                float lowestRemaining = mech.CenterTorsoStructure + mech.CenterTorsoFrontArmor + mech.CenterTorsoRearArmor;
+                float panicModifiers = 0;
+
                 if (index < 0)
+                {
+                    Holder.TrackedPilots.Add(new PanicTracker(mech)); //add a new tracker to tracked pilot, then we run it all over again;
+                    index = PanicHelpers.GetTrackedPilotIndex(mech);
+                    if (index < 0)
+                    {
+                        return false;
+                    }
+                }
+                if (Holder.TrackedPilots[index].trackedMech != mech.GUID)
                 {
                     return false;
                 }
-            }
-            if (Holder.TrackedPilots[index].trackedMech != mech.GUID)
-            {
-                return false;
-            }
-            if (Holder.TrackedPilots[index].trackedMech == mech.GUID &&
-                Holder.TrackedPilots[index].ChangedRecently && RogueTechPanicSystem.Settings.AlwaysGatedChanges)
-            {
-                return false;
-            }
-            // pilot health
-            if (pilot != null)
-            {
-                float pilotHealthPercent = 1 - ((float)pilot.Injuries / pilot.Health);
-
-                if (pilotHealthPercent < 1)
+                if (Holder.TrackedPilots[index].trackedMech == mech.GUID &&
+                    Holder.TrackedPilots[index].ChangedRecently && RogueTechPanicSystem.Settings.AlwaysGatedChanges)
                 {
-                    panicModifiers += RogueTechPanicSystem.Settings.PilotHealthMaxModifier * (1 - pilotHealthPercent);
+                    return false;
                 }
-            }
-            if (mech.IsUnsteady)
-            {
-                panicModifiers += RogueTechPanicSystem.Settings.UnsteadyModifier;
-            }
-            // Head
-            var headHealthPercent = (mech.HeadArmor + mech.HeadStructure) / (mech.GetMaxArmor(ArmorLocation.Head) + mech.GetMaxStructure(ChassisLocations.Head));
-            if (headHealthPercent < 1)
-            {
-                panicModifiers += RogueTechPanicSystem.Settings.HeadDamageMaxModifier * (1 - headHealthPercent);
-            }
-            // CT
-            var ctPercent = (mech.CenterTorsoFrontArmor + mech.CenterTorsoStructure) / (mech.GetMaxArmor(ArmorLocation.CenterTorso) + mech.GetMaxStructure(ChassisLocations.CenterTorso));
-            if (ctPercent < 1)
-            {
-                panicModifiers += RogueTechPanicSystem.Settings.CTDamageMaxModifier * (1 - ctPercent);
-                lowestRemaining = Math.Min(mech.CenterTorsoStructure, lowestRemaining);
-            }
-            // side torsos
-            var ltStructurePercent = mech.LeftTorsoStructure / mech.GetMaxStructure(ChassisLocations.LeftTorso);
-            if (ltStructurePercent < 1)
-            {
-                panicModifiers += RogueTechPanicSystem.Settings.SideTorsoInternalDamageMaxModifier * (1 - ltStructurePercent);
-            }
-            var rtStructurePercent = mech.RightTorsoStructure / mech.GetMaxStructure(ChassisLocations.RightTorso);
-            if (rtStructurePercent < 1)
-            {
-                panicModifiers += RogueTechPanicSystem.Settings.SideTorsoInternalDamageMaxModifier * (1 - rtStructurePercent);
-            }
-            // legs
-            if (mech.RightLegDamageLevel == LocationDamageLevel.Destroyed || mech.LeftLegDamageLevel == LocationDamageLevel.Destroyed)
-            {
-                float legPercent;
-
-                if (mech.LeftLegDamageLevel == LocationDamageLevel.Destroyed)
+                // pilot health
+                if (pilot != null)
                 {
-                    legPercent = (mech.RightLegStructure + mech.RightLegArmor) / (mech.GetMaxStructure(ChassisLocations.RightLeg) + mech.GetMaxArmor(ArmorLocation.RightLeg));
+                    float pilotHealthPercent = 1 - ((float)pilot.Injuries / pilot.Health);
+
+                    if (pilotHealthPercent < 1)
+                    {
+                        panicModifiers += RogueTechPanicSystem.Settings.PilotHealthMaxModifier * (1 - pilotHealthPercent);
+                        Logger.Debug("Health");
+                        Logger.Debug(panicModifiers);
+                    }
+                }
+                if (mech.IsUnsteady)
+                {
+                    panicModifiers += RogueTechPanicSystem.Settings.UnsteadyModifier;
+                    Logger.Debug("Unsteady");
+                    Logger.Debug(panicModifiers);
+                }
+                // Head
+                var headHealthPercent = (mech.HeadArmor + mech.HeadStructure) / (mech.GetMaxArmor(ArmorLocation.Head) + mech.GetMaxStructure(ChassisLocations.Head));
+                if (headHealthPercent < 1)
+                {
+                    panicModifiers += RogueTechPanicSystem.Settings.HeadDamageMaxModifier * (1 - headHealthPercent);
+                    Logger.Debug("Head Health");
+                    Logger.Debug(panicModifiers);
+                }
+                // CT
+                var ctPercent = (mech.CenterTorsoFrontArmor + mech.CenterTorsoStructure + mech.CenterTorsoRearArmor) / (mech.GetMaxArmor(ArmorLocation.CenterTorso) + mech.GetMaxStructure(ChassisLocations.CenterTorso));
+                if (ctPercent < 1)
+                {
+                    panicModifiers += RogueTechPanicSystem.Settings.CTDamageMaxModifier * (1 - ctPercent);
+                    Logger.Debug("CT");
+                    Logger.Debug(panicModifiers);
+                    lowestRemaining = Math.Min(mech.CenterTorsoStructure, lowestRemaining);
+                }
+                // side torsos
+                var ltStructurePercent = mech.LeftTorsoStructure / mech.GetMaxStructure(ChassisLocations.LeftTorso);
+                if (ltStructurePercent < 1)
+                {
+                    panicModifiers += RogueTechPanicSystem.Settings.SideTorsoInternalDamageMaxModifier * (1 - ltStructurePercent);
+                    Logger.Debug("LT");
+                    Logger.Debug(panicModifiers);
+                }
+                var rtStructurePercent = mech.RightTorsoStructure / mech.GetMaxStructure(ChassisLocations.RightTorso);
+                if (rtStructurePercent < 1)
+                {
+                    panicModifiers += RogueTechPanicSystem.Settings.SideTorsoInternalDamageMaxModifier * (1 - rtStructurePercent);
+                    Logger.Debug("RT");
+                    Logger.Debug(panicModifiers);
+                }
+
+                // dZ Check legs independently. Code here significantly improved.
+                var LegPercentRight = 1 - (mech.RightLegStructure + mech.RightLegArmor) / (mech.GetMaxStructure(ChassisLocations.RightLeg) + mech.GetMaxArmor(ArmorLocation.RightLeg));
+                var LegPercentLeft = 1 - (mech.LeftLegStructure + mech.LeftLegArmor) / (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg));
+                if ((LegPercentRight + LegPercentLeft) < 2)
+                {
+                    panicModifiers += RogueTechPanicSystem.Settings.LeggedMaxModifier * (LegPercentRight + LegPercentLeft);
+                    Logger.Debug("Legs");
+                    Logger.Debug(panicModifiers);
+                    var LegCheck = LegPercentRight * (mech.GetMaxStructure(ChassisLocations.RightLeg) + mech.GetMaxArmor(ArmorLocation.RightLeg)) + LegPercentLeft * (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg));
+                    lowestRemaining = Math.Min(LegCheck, lowestRemaining);
+                    lowestRemaining = Math.Min(LegCheck, lowestRemaining);
+                }
+
+                // next shot could kill or leg
+                if (lowestRemaining <= attackSequence.cumulativeDamage)
+                {
+                    panicModifiers += RogueTechPanicSystem.Settings.NextShotLikeThatCouldKill;
+                    Logger.Debug("Big Shot");
+                    Logger.Debug(panicModifiers);
+                }
+
+                // weaponless
+                if (weapons.TrueForAll(w =>
+                    w.DamageLevel == ComponentDamageLevel.Destroyed || w.DamageLevel == ComponentDamageLevel.NonFunctional))
+                {
+                    panicModifiers += RogueTechPanicSystem.Settings.WeaponlessModifier;
+                    Logger.Debug("Weaponless");
+                    Logger.Debug(panicModifiers);
+                }
+
+                // alone
+                if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m == mech as AbstractActor))
+                {
+                    panicModifiers += RogueTechPanicSystem.Settings.AloneModifier;
+                    Logger.Debug("Alone");
+                    Logger.Debug(panicModifiers);
+                }
+                //straight up add guts, tactics, and morale to this as negative values
+                panicModifiers -= total;
+                Logger.Debug("Guts and Tactics");
+                Logger.Debug(panicModifiers);
+                if (mech.team == mech.Combat.LocalPlayerTeam)
+
+                //dZ - Inputtable morale is superior.
+                {
+                    float medianMorale = 25;
+                    MoraleConstantsDef moraleDef = mech.Combat.Constants.GetActiveMoraleDef(mech.Combat);
+                    panicModifiers -= (mech.Combat.LocalPlayerTeam.Morale - medianMorale) / 2;
+                    Logger.Debug("Morale");
+                    Logger.Debug(panicModifiers);
+                }
+
+                if ((panicModifiers < RogueTechPanicSystem.Settings.AtLeastOneChanceToPanicPercentage) && RogueTechPanicSystem.Settings.AtLeastOneChanceToPanic)
+                {
+                    panicModifiers = RogueTechPanicSystem.Settings.AtLeastOneChanceToPanicPercentage;
+                    Logger.Debug("One Chance");
+                    Logger.Debug(panicModifiers);
+                }
+                
+                var rng = (new Random()).Next(1, 101);
+                Logger.Debug("rng");
+                Logger.Debug(rng);
+
+                float rollToBeat;
+                {
+                    rollToBeat = Math.Min((int)panicModifiers, (int)RogueTechPanicSystem.Settings.MaxPanicResistTotal);
+                    Logger.Debug("RollToBeat");
+                    Logger.Debug(rollToBeat);
+                }
+
+                if (rng <= rollToBeat)
+
+                {
+                    Logger.Debug($"Failed panic save, debuffed!");
+                    ApplyPanicDebuff(mech, index);
+                    Logger.Debug(panicModifiers);
+                    return true;
+                }
+                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Resisted Morale Check!", FloatieMessage.MessageNature.Buff, true)));
+                Logger.Debug($"No reason to panic.");
+                Logger.Debug(panicModifiers);
+                return false;
+            }
+
+            private static float GetCurrentMechArmour(Mech mech)
+            {
+                float totalArmor = 0;
+                totalArmor += mech.GetCurrentArmor(ArmorLocation.Head);
+                totalArmor += mech.GetCurrentArmor(ArmorLocation.CenterTorso);
+                totalArmor += mech.GetCurrentArmor(ArmorLocation.CenterTorsoRear);
+                totalArmor += mech.GetCurrentArmor(ArmorLocation.LeftTorso);
+                totalArmor += mech.GetCurrentArmor(ArmorLocation.LeftTorsoRear);
+                totalArmor += mech.GetCurrentArmor(ArmorLocation.RightTorso);
+                totalArmor += mech.GetCurrentArmor(ArmorLocation.RightTorsoRear);
+                totalArmor += mech.GetCurrentArmor(ArmorLocation.RightArm);
+                totalArmor += mech.GetCurrentArmor(ArmorLocation.LeftArm);
+                totalArmor += mech.GetCurrentArmor(ArmorLocation.RightLeg);
+                totalArmor += mech.GetCurrentArmor(ArmorLocation.LeftLeg);
+                return totalArmor;
+            }
+
+            private static float GetTotalMechArmour(Mech mech)
+            {
+                float maxArmor = 0;
+                maxArmor += mech.GetMaxArmor(ArmorLocation.CenterTorso);
+                maxArmor += mech.GetMaxArmor(ArmorLocation.LeftArm);
+                maxArmor += mech.GetMaxArmor(ArmorLocation.CenterTorsoRear);
+                maxArmor += mech.GetMaxArmor(ArmorLocation.Head);
+                maxArmor += mech.GetMaxArmor(ArmorLocation.LeftTorso);
+                maxArmor += mech.GetMaxArmor(ArmorLocation.RightTorso);
+                maxArmor += mech.GetMaxArmor(ArmorLocation.RightTorsoRear);
+                maxArmor += mech.GetMaxArmor(ArmorLocation.LeftTorsoRear);
+                maxArmor += mech.GetMaxArmor(ArmorLocation.RightArm);
+                maxArmor += mech.GetMaxArmor(ArmorLocation.LeftLeg);
+                maxArmor += mech.GetMaxArmor(ArmorLocation.RightLeg);
+                return maxArmor;
+            }
+
+            public static void ApplyPanicDebuff(Mech mech, int index)
+            {
+                if (Holder.TrackedPilots[index].trackedMech == mech.GUID && Holder.TrackedPilots[index].pilotStatus == PanicStatus.Normal)
+                {
+                    mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Unsettled!", FloatieMessage.MessageNature.Debuff, true)));
+                    Holder.TrackedPilots[index].pilotStatus = PanicStatus.Unsettled;
+                    mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f, -1, true);
+                    mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f, -1, true);
+                    mech.StatCollection.ModifyStat<float>("Panic Attack: Unsettled Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, RogueTechPanicSystem.Settings.UnsettledAttackModifier, -1, true);
+
+                }
+                else if (Holder.TrackedPilots[index].trackedMech == mech.GUID && Holder.TrackedPilots[index].pilotStatus == PanicStatus.Unsettled)
+                {
+                    mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Stressed!", FloatieMessage.MessageNature.Debuff, true)));
+                    Holder.TrackedPilots[index].pilotStatus = PanicStatus.Stressed;
+                    mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f, -1, true);
+                    mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f, -1, true);
+                    mech.StatCollection.ModifyStat<float>("Panic Attack: Stressed Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, RogueTechPanicSystem.Settings.StressedAimModifier, -1, true);
+                    mech.StatCollection.ModifyStat<float>("Panic Attack: Stressed Defence", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, RogueTechPanicSystem.Settings.StressedToHitModifier, -1, true);
+                }
+                else if (Holder.TrackedPilots[index].trackedMech == mech.GUID && Holder.TrackedPilots[index].pilotStatus == PanicStatus.Stressed)
+                {
+                    mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Panicked!", FloatieMessage.MessageNature.Debuff, true)));
+                    Holder.TrackedPilots[index].pilotStatus = PanicStatus.Panicked;
+                    mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f, -1, true);
+                    mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f, -1, true);
+                    mech.StatCollection.ModifyStat<float>("Panic Attack: Panicking Aim!", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, RogueTechPanicSystem.Settings.PanickedAimModifier, -1, true);
+                    mech.StatCollection.ModifyStat<float>("Panic Attack: Panicking Defence!", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, RogueTechPanicSystem.Settings.PanickedToHitModifier, -1, true);
                 }
                 else
                 {
-                    legPercent = (mech.LeftLegStructure + mech.LeftLegArmor) / (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg));
+                    mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Failed Panic Check!", FloatieMessage.MessageNature.Debuff, true)));
                 }
-
-                if (legPercent < 1)
-                {
-                    lowestRemaining = Math.Min(legPercent * (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg)), lowestRemaining);
-                    panicModifiers += RogueTechPanicSystem.Settings.LeggedMaxModifier * (1 - legPercent);
-                }
+                Holder.TrackedPilots[index].ChangedRecently = true;
             }
 
-            // next shot could kill
-            if (lowestRemaining <= attackSequence.cumulativeDamage)
+
+            internal class ModSettings
             {
-                panicModifiers += RogueTechPanicSystem.Settings.NextShotLikeThatCouldKill;
-            }
+                public bool PlayerCharacterAlwaysResists = true;
+                public bool PlayerTeamCanPanic = true;
+                public bool EnemiesCanPanic = true;
+                public bool DebugEnabled = false;
 
-            // weaponless
-            if (weapons.TrueForAll(w =>
-                w.DamageLevel == ComponentDamageLevel.Destroyed || w.DamageLevel == ComponentDamageLevel.NonFunctional))
-            {
-                panicModifiers += RogueTechPanicSystem.Settings.WeaponlessModifier;
-            }
+                //new mechanics for considering when to eject based on mech class
+                public bool PlayerLightsConsiderEjectingEarly = false;
+                public bool EnemyLightsConsiderEjectingEarly = true;
+                public PanicStatus LightMechEarlyPanicThreshold = PanicStatus.Unsettled;
 
-            // alone
-            if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m == mech as AbstractActor))
-            {
-                panicModifiers += RogueTechPanicSystem.Settings.AloneModifier;
-            }
-            //straight up add guts, tactics, and morale to this as negative values
-            panicModifiers -= total;
-            if (mech.team == mech.Combat.LocalPlayerTeam)
-            {
-                MoraleConstantsDef moraleDef = mech.Combat.Constants.GetActiveMoraleDef(mech.Combat);
-                panicModifiers -= Math.Max(mech.Combat.LocalPlayerTeam.Morale - moraleDef.CanUseInspireLevel, 0) / (float)2;
-            }
+                public bool PlayerMediumsConsiderEjectingEarly = false;
+                public bool EnemyMediumsConsiderEjectingEarly = false;
+                public PanicStatus MediumMechEarlyPanicThreshold = PanicStatus.Stressed;
 
-            //reduce modifiers by 5 to account change to D20 roll instead of D100 roll, then min it t0 20 or modified floor
-            panicModifiers /= 5;
+                public bool PlayerHeaviesConsiderEjectingEarly = false;
+                public bool EnemyHeaviesConsiderEjectingEarly = false;
+                public PanicStatus HeavyMechEarlyPanicThreshold = PanicStatus.Stressed;
 
-            PanicRoll = PanicRoll + (int)panicModifiers;
+                public bool PlayerAssaultsConsiderEjectingEarly = false;
+                public bool EnemyAssaultsConsiderEjectingEarly = false;
+                public PanicStatus AssaultMechEarlyPanicThreshold = PanicStatus.Stressed;
 
-            if ((total >= 20 || PanicRoll <= 0) && !RogueTechPanicSystem.Settings.AtLeastOneChanceToPanic)
-            {
-                return false;
-            }
+                public float MaxEjectChanceWhenEarly = 10;
 
-            PanicRoll = Math.Min(PanicRoll, 20);
-            if (PanicRoll < 0)
-            {
-                PanicRoll = 0; //make this have some kind of chance to happen
+                //minmum armour and structure damage
+                public float MinimumArmourDamagePercentageRequired = 10; //if no structure damage, a Mech must lost a bit of its armour before it starts worrying
+
+                //general panic roll
+                //rolls out of 20
+                //max guts and tactics almost prevents any panicking (or being the player character, by default)
+                public bool AtLeastOneChanceToPanic = true;
+                public int AtLeastOneChanceToPanicPercentage = 10;
+                public bool AlwaysGatedChanges = true;
+                public float MaxPanicResistTotal = 15; //at least 20% chance to panic if you can't nullify the whole thing
+                public bool LosingLimbAlwaysPanics = false;
+                //Unsettled debuffs
+                //+1 difficulty to attacks
+                public float UnsettledAttackModifier = 1;
+
+                //stressed debuffs
+                //+2 difficulty to attacks
+                //-1 difficulty to being hit
+
+                public float StressedAimModifier = 2;
+                public float StressedToHitModifier = -1;
+                //ejection
+                //+4 difficulty to attacks
+                //-2 difficulty to being hit
+                public float PanickedAimModifier = 4;
+                public float PanickedToHitModifier = -2;
+                public bool GutsTenAlwaysResists = false;
+                public bool ComboTenAlwaysResists = false;
+                public bool TacticsTenAlwaysResists = false;
+                public int MinimumHealthToAlwaysEjectRoll = 1;
+                public bool KnockedDownCannotEject = true;
+
+                public bool ConsiderEjectingWithNoWeaps = true;
+                public bool ConsiderEjectingWhenAlone = true;
+                public float MaxEjectChance = 50;
+                public float EjectChanceMultiplier = 5;
+
+                public float BaseEjectionResist = 10;
+                public float GutsEjectionResistPerPoint = 2;
+                public float TacticsEjectionResistPerPoint = 1;
+                public float UnsteadyModifier = 5;
+                public float PilotHealthMaxModifier = 10;
+
+                public float HeadDamageMaxModifier = 10;
+                public float CTDamageMaxModifier = 10;
+                public float SideTorsoInternalDamageMaxModifier = 10;
+                public float LeggedMaxModifier = 10;
+
+                public float NextShotLikeThatCouldKill = 15;
+
+                public float WeaponlessModifier = 15;
+                public float AloneModifier = 20;
             }
-            PanicRoll = UnityEngine.Random.Range(PanicRoll, 20); // actual roll
-            //we get this far, we reduce total to under the max panic chance
-            total = Math.Min(total, (int)RogueTechPanicSystem.Settings.MaxPanicResistTotal);
-            int rngRoll = UnityEngine.Random.Range(total, 20);
-            if (rngRoll <= PanicRoll)
-            {
-                Logger.Debug($"Failed panic save, debuffed!");
-                ApplyPanicDebuff(mech, index);
-                return true;
-            }
-            mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Resisted Morale Check!", FloatieMessage.MessageNature.Buff, true)));
-            Logger.Debug($"No reason to panic.");
-            return false;
         }
-
-        private static float GetCurrentMechArmour(Mech mech, float totalArmor)
-        {
-            totalArmor += mech.GetCurrentArmor(ArmorLocation.Head);
-            totalArmor += mech.GetCurrentArmor(ArmorLocation.CenterTorso);
-            totalArmor += mech.GetCurrentArmor(ArmorLocation.CenterTorsoRear);
-            totalArmor += mech.GetCurrentArmor(ArmorLocation.LeftTorso);
-            totalArmor += mech.GetCurrentArmor(ArmorLocation.LeftTorsoRear);
-            totalArmor += mech.GetCurrentArmor(ArmorLocation.RightTorso);
-            totalArmor += mech.GetCurrentArmor(ArmorLocation.RightTorsoRear);
-            totalArmor += mech.GetCurrentArmor(ArmorLocation.RightArm);
-            totalArmor += mech.GetCurrentArmor(ArmorLocation.LeftArm);
-            totalArmor += mech.GetCurrentArmor(ArmorLocation.RightLeg);
-            totalArmor += mech.GetCurrentArmor(ArmorLocation.LeftLeg);
-            return totalArmor;
-        }
-
-        private static float GetTotalMechArmour(Mech mech, float maxArmor)
-        {
-            maxArmor += mech.GetMaxArmor(ArmorLocation.CenterTorso);
-            maxArmor += mech.GetMaxArmor(ArmorLocation.LeftArm);
-            maxArmor += mech.GetMaxArmor(ArmorLocation.CenterTorsoRear);
-            maxArmor += mech.GetMaxArmor(ArmorLocation.Head);
-            maxArmor += mech.GetMaxArmor(ArmorLocation.LeftTorso);
-            maxArmor += mech.GetMaxArmor(ArmorLocation.RightTorso);
-            maxArmor += mech.GetMaxArmor(ArmorLocation.RightTorsoRear);
-            maxArmor += mech.GetMaxArmor(ArmorLocation.LeftTorsoRear);
-            maxArmor += mech.GetMaxArmor(ArmorLocation.RightArm);
-            maxArmor += mech.GetMaxArmor(ArmorLocation.LeftLeg);
-            maxArmor += mech.GetMaxArmor(ArmorLocation.RightLeg);
-            return maxArmor;
-        }
-
-        public static void ApplyPanicDebuff(Mech mech, int index)
-        {
-            if (Holder.TrackedPilots[index].trackedMech == mech.GUID && Holder.TrackedPilots[index].pilotStatus == PanicStatus.Normal)
-            {
-                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Fatigued!", FloatieMessage.MessageNature.Debuff, true)));
-                Holder.TrackedPilots[index].pilotStatus = PanicStatus.Fatigued;
-                mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f, -1, true);
-                mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f, -1, true);
-                mech.StatCollection.ModifyStat<float>("Panic Attack: Fatigued Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, RogueTechPanicSystem.Settings.FatiguedAimModifier, -1, true);
-
-            }
-            else if (Holder.TrackedPilots[index].trackedMech == mech.GUID && Holder.TrackedPilots[index].pilotStatus == PanicStatus.Fatigued)
-            {
-                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Stressed!", FloatieMessage.MessageNature.Debuff, true)));
-                Holder.TrackedPilots[index].pilotStatus = PanicStatus.Stressed;
-                mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f, -1, true);
-                mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f, -1, true);
-                mech.StatCollection.ModifyStat<float>("Panic Attack: Stressed Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, RogueTechPanicSystem.Settings.StressedAimModifier, -1, true);
-                mech.StatCollection.ModifyStat<float>("Panic Attack: Stressed Defence", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, RogueTechPanicSystem.Settings.StressedToHitModifier, -1, true);
-            }
-            else if (Holder.TrackedPilots[index].trackedMech == mech.GUID && Holder.TrackedPilots[index].pilotStatus == PanicStatus.Stressed)
-            {
-                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Panicked!", FloatieMessage.MessageNature.Debuff, true)));
-                Holder.TrackedPilots[index].pilotStatus = PanicStatus.Panicked;
-                mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f, -1, true);
-                mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f, -1, true);
-                mech.StatCollection.ModifyStat<float>("Panic Attack: Panicking Aim!", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, RogueTechPanicSystem.Settings.PanickedAimModifier, -1, true);
-                mech.StatCollection.ModifyStat<float>("Panic Attack: Panicking Defence!", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, RogueTechPanicSystem.Settings.PanickedToHitModifier, -1, true);
-            }
-            else
-            {
-                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Failed Panic Check!", FloatieMessage.MessageNature.Debuff, true)));
-            }
-            Holder.TrackedPilots[index].ChangedRecently = true;
-        }
-    }
-
-    internal class ModSettings
-    {
-        public bool PlayerCharacterAlwaysResists = true;
-        public bool PlayerTeamCanPanic = true;
-        public bool EnemiesCanPanic = true;
-        public bool DebugEnabled = false;
-
-        //new mechanics for considering when to eject based on mech class
-        public bool PlayerLightsConsiderEjectingEarly = false;
-        public bool EnemyLightsConsiderEjectingEarly = true;
-        public PanicStatus LightMechEarlyPanicThreshold = PanicStatus.Fatigued;
-
-        public bool PlayerMediumsConsiderEjectingEarly = false;
-        public bool EnemyMediumsConsiderEjectingEarly = false;
-        public PanicStatus MediumMechEarlyPanicThreshold = PanicStatus.Stressed;
-
-        public bool PlayerHeaviesConsiderEjectingEarly = false;
-        public bool EnemyHeaviesConsiderEjectingEarly = false;
-        public PanicStatus HeavyMechEarlyPanicThreshold = PanicStatus.Stressed;
-
-        public bool PlayerAssaultsConsiderEjectingEarly = false;
-        public bool EnemyAssaultsConsiderEjectingEarly = false;
-        public PanicStatus AssaultMechEarlyPanicThreshold = PanicStatus.Stressed;
-
-        public float MaxEjectChanceWhenEarly = 10;
-
-        //minmum armour and structure damage
-        public float MinimumArmourDamagePercentageRequired = 10; //if no structure damage, a Mech must lost a bit of its armour before it starts worrying
-
-        //general panic roll
-        //rolls out of 20
-        //max guts and tactics almost prevents any panicking (or being the player character, by default)
-        public bool AtLeastOneChanceToPanic = true;
-        public bool AlwaysGatedChanges = true;
-        public float MaxPanicResistTotal = 15; //at least 20% chance to panic if you can't nullify the whole thing
-        public bool LosingLimbAlwaysPanics = false;
-        //fatigued debuffs
-        //+1 difficulty to attacks
-        public float FatiguedAimModifier = 1;
-
-        //stressed debuffs
-        //+2 difficulty to attacks
-        //-1 difficulty to being hit
-
-        public float StressedAimModifier = 2;
-        public float StressedToHitModifier = -1;
-        //ejection
-        //+4 difficulty to attacks
-        //-2 difficulty to being hit
-        public float PanickedAimModifier = 4;
-        public float PanickedToHitModifier = -2;
-        public bool GutsTenAlwaysResists = false;
-        public bool ComboTenAlwaysResists = false;
-        public bool TacticsTenAlwaysResists = false;
-        public int MinimumHealthToAlwaysEjectRoll = 1;
-        public bool KnockedDownCannotEject = true;
-
-        public bool ConsiderEjectingWithNoWeaps = true;
-        public float MaxEjectChance = 50;
-
-        public float BaseEjectionResist = 10;
-        public float GutsEjectionResistPerPoint = 2;
-        public float TacticsEjectionResistPerPoint = 1;
-        public float UnsteadyModifier = 5;
-        public float PilotHealthMaxModifier = 10;
-
-        public float HeadDamageMaxModifier = 10;
-        public float CTDamageMaxModifier = 10;
-        public float SideTorsoInternalDamageMaxModifier = 10;
-        public float LeggedMaxModifier = 10;
-
-        public float NextShotLikeThatCouldKill = 15;
-
-        public float WeaponlessModifier = 15;
-        public float AloneModifier = 20;
     }
 }

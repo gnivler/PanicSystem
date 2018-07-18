@@ -7,8 +7,8 @@
     <ProjectGuid>{D8483027-7E80-4E31-B5B7-F7C4A1A78600}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>RogueTechPanicSystem</RootNamespace>
-    <AssemblyName>RogueTechPanicSystem</AssemblyName>
+    <RootNamespace>PanicSystem</RootNamespace>
+    <AssemblyName>PanicSystem</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>

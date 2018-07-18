@@ -9,11 +9,10 @@ namespace PanicSystem
         static string filePath = $"{Holder.ModDirectory}/Log.txt";
         public static void LogError(Exception ex)
         {
-            using (StreamWriter writer = new StreamWriter(filePath, true))
+            using (var writer = new StreamWriter(filePath, true))
             {
-                writer.WriteLine("Message :" + ex.Message + "<br/>" + Environment.NewLine + "StackTrace :" + ex.StackTrace +
-                   "" + Environment.NewLine + "Date :" + DateTime.Now.ToString());
-                writer.WriteLine(Environment.NewLine + "-----------------------------------------------------------------------------" + Environment.NewLine);
+                writer.WriteLine($"{DateTime.Now.ToShortTimeString()} Message: {ex.Message}\nStack Trace: {ex.StackTrace}");
+                writer.WriteLine(new string(c: '-', count: 80));
             }
         }
 
@@ -21,7 +20,7 @@ namespace PanicSystem
         {
             // idea 'borrowed' from jo
             if (!PanicSystem.Settings.DebugEnabled) return;
-            using (StreamWriter writer = new StreamWriter(filePath, true))
+            using (var writer = new StreamWriter(filePath, true))
             {
                 writer.WriteLine($"{DateTime.Now.ToShortTimeString()} {line}");
             }

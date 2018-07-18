@@ -7,7 +7,7 @@ namespace PanicSystem
 {
     public enum PanicStatus
     {
-        Normal,
+        Confident,
         Unsettled,
         Stressed,
         Panicked
@@ -26,7 +26,7 @@ namespace PanicSystem
         public PanicTracker(Mech mech)
         {
             trackedMech = mech.GUID;
-            pilotStatus = PanicStatus.Normal;
+            pilotStatus = PanicStatus.Confident;
             ChangedRecently = false;
         }
     }

@@ -11,7 +11,7 @@ namespace PanicSystem
     {
         public static void Reset()
         {
-            TrackedPilots = new List<PanicTracker>();
+            trackedPilots = new List<PanicTracker>();
         }
 
         public static void Resync(DateTime previousSaveTime) //fired before a save deserializes itself through a patch on GameInstanceSave's PostDeserialization
@@ -21,9 +21,9 @@ namespace PanicSystem
 
             if(index > -1)
             {
-                if(MetaTrackers[index].TrackedPilots != null) //part where everything seems to fall apart?
+                if(MetaTrackers[index].trackedPilots != null) //part where everything seems to fall apart?
                 {
-                    TrackedPilots = MetaTrackers[index].TrackedPilots;
+                    trackedPilots = MetaTrackers[index].trackedPilots;
                 }
                 CurrentIndex = index;
             }
@@ -31,7 +31,7 @@ namespace PanicSystem
             {
                 MetaTracker tracker = new MetaTracker();
 
-                tracker.SetTrackedPilots(TrackedPilots);
+                tracker.SetTrackedPilots(trackedPilots);
                 MetaTrackers.Add(tracker);
                 CurrentIndex = MetaTrackers.Count - 1; // -1 due to zero-based arrays
 
@@ -45,7 +45,7 @@ namespace PanicSystem
             {
                 MetaTracker tracker = new MetaTracker();
 
-                tracker.SetTrackedPilots(TrackedPilots);
+                tracker.SetTrackedPilots(trackedPilots);
                 MetaTrackers.Add(tracker);
                 CurrentIndex = MetaTrackers.Count - 1; // -1 due to zero-based arrays
 
@@ -79,7 +79,7 @@ namespace PanicSystem
                 int index = CurrentIndex;
                 if(MetaTrackers[index] != null)
                 {
-                    MetaTrackers[index].SetTrackedPilots(TrackedPilots); //have our meta tracker get the latest data
+                    MetaTrackers[index].SetTrackedPilots(trackedPilots); //have our meta tracker get the latest data
                 }
                 if(dateTime != null)
                 {
@@ -131,9 +131,9 @@ namespace PanicSystem
         {
             try
             {
-                if (TrackedPilots != null)
+                if (trackedPilots != null)
                 {
-                    File.WriteAllText(ActiveJsonPath, JsonConvert.SerializeObject(TrackedPilots));
+                    File.WriteAllText(ActiveJsonPath, JsonConvert.SerializeObject(trackedPilots));
                 }
             }
             catch (Exception)
@@ -144,7 +144,7 @@ namespace PanicSystem
 
         public static void DeserializeActiveJson()
         {
-            if (TrackedPilots == null) //we only need to deserialize if we have nothing here: this way resets should work properly
+            if (trackedPilots == null) //we only need to deserialize if we have nothing here: this way resets should work properly
             {
                 // read all text, then deserialize into an object
                 List<PanicTracker> panicTrackers;
@@ -158,11 +158,11 @@ namespace PanicSystem
                 }
                 if (panicTrackers == null)
                 {
-                    TrackedPilots = new List<PanicTracker>();
+                    trackedPilots = new List<PanicTracker>();
                 }
                 else
                 {
-                    TrackedPilots = panicTrackers;
+                    trackedPilots = panicTrackers;
                 }
             }
         }

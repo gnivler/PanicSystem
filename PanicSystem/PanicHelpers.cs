@@ -1,11 +1,12 @@
 ﻿using BattleTech;
+using static PanicSystem.PanicSystem;
 
 // HUGE thanks to RealityMachina and mpstark for their work, outstanding.
 namespace PanicSystem
 {
     public static class PanicHelpers
     {
-        public static bool IsPanicking(Mech mech, ref bool panicStarted)
+        public static bool IsLastStrawPanicking(Mech mech, ref bool panicStarted)
         {
             if (mech == null || mech.IsDead || (mech.IsFlaggedForDeath && mech.HasHandledDeath))
                 return false;
@@ -36,8 +37,8 @@ namespace PanicSystem
 
                 if (i > -1)
                 {
-                    if (Holder.TrackedPilots[i].trackedMech == mech.GUID &&
-                        Holder.TrackedPilots[i].pilotStatus == PanicStatus.Panicked)
+                    if (trackedPilots[i].trackedMech == mech.GUID &&
+                        trackedPilots[i].pilotStatus == PanicStatus.Panicked)
                     {
                         Logger.Debug($"Panicking due to health.");
                         return true;
@@ -57,13 +58,13 @@ namespace PanicSystem
 
         private static bool CanEarlyPanic(Mech mech, int i)
         {
-            if (Holder.TrackedPilots[i].trackedMech == mech.GUID)
+            if (trackedPilots[i].trackedMech == mech.GUID)
             {
                 if (mech.team.IsLocalPlayer)
                 {
                     if (PanicSystem.Settings.PlayerLightsConsiderEjectingEarly && mech.weightClass == WeightClass.LIGHT)
                     {
-                        if (Holder.TrackedPilots[i].pilotStatus >= PanicSystem.Settings.LightMechEarlyPanicThreshold)
+                        if (trackedPilots[i].pilotStatus >= PanicSystem.Settings.LightMechEarlyPanicThreshold)
                         {
                             Logger.Debug($"Panicking early.");
                             return true;
@@ -72,7 +73,7 @@ namespace PanicSystem
 
                     else if (PanicSystem.Settings.PlayerMediumsConsiderEjectingEarly && mech.weightClass == WeightClass.MEDIUM)
                     {
-                        if (Holder.TrackedPilots[i].pilotStatus >= PanicSystem.Settings.MediumMechEarlyPanicThreshold)
+                        if (trackedPilots[i].pilotStatus >= PanicSystem.Settings.MediumMechEarlyPanicThreshold)
                         {
                             Logger.Debug($"Panicking early.");
                             return true;
@@ -81,7 +82,7 @@ namespace PanicSystem
 
                     else if (PanicSystem.Settings.PlayerHeaviesConsiderEjectingEarly && mech.weightClass == WeightClass.HEAVY)
                     {
-                        if (Holder.TrackedPilots[i].pilotStatus >= PanicSystem.Settings.HeavyMechEarlyPanicThreshold)
+                        if (trackedPilots[i].pilotStatus >= PanicSystem.Settings.HeavyMechEarlyPanicThreshold)
                         {
                             Logger.Debug($"Panicking early.");
                             return true;
@@ -90,7 +91,7 @@ namespace PanicSystem
 
                     else if (PanicSystem.Settings.PlayerAssaultsConsiderEjectingEarly && mech.weightClass == WeightClass.ASSAULT)
                     {
-                        if (Holder.TrackedPilots[i].pilotStatus >= PanicSystem.Settings.AssaultMechEarlyPanicThreshold)
+                        if (trackedPilots[i].pilotStatus >= PanicSystem.Settings.AssaultMechEarlyPanicThreshold)
                         {
                             Logger.Debug($"Panicking early.");
                             return true;
@@ -101,7 +102,7 @@ namespace PanicSystem
                 {
                     if (PanicSystem.Settings.EnemyLightsConsiderEjectingEarly && mech.weightClass == WeightClass.LIGHT)
                     {
-                        if (Holder.TrackedPilots[i].pilotStatus >= PanicSystem.Settings.LightMechEarlyPanicThreshold)
+                        if (trackedPilots[i].pilotStatus >= PanicSystem.Settings.LightMechEarlyPanicThreshold)
                         {
                             Logger.Debug($"Panicking early.");
                             return true;
@@ -110,7 +111,7 @@ namespace PanicSystem
 
                     else if (PanicSystem.Settings.EnemyMediumsConsiderEjectingEarly && mech.weightClass == WeightClass.MEDIUM)
                     {
-                        if (Holder.TrackedPilots[i].pilotStatus >= PanicSystem.Settings.MediumMechEarlyPanicThreshold)
+                        if (trackedPilots[i].pilotStatus >= PanicSystem.Settings.MediumMechEarlyPanicThreshold)
                         {
                             Logger.Debug($"Panicking early.");
                             return true;
@@ -119,7 +120,7 @@ namespace PanicSystem
 
                     else if (PanicSystem.Settings.EnemyHeaviesConsiderEjectingEarly && mech.weightClass == WeightClass.HEAVY)
                     {
-                        if (Holder.TrackedPilots[i].pilotStatus >= PanicSystem.Settings.HeavyMechEarlyPanicThreshold)
+                        if (trackedPilots[i].pilotStatus >= PanicSystem.Settings.HeavyMechEarlyPanicThreshold)
                         {
                             Logger.Debug($"Panicking early.");
                             return true;
@@ -128,7 +129,7 @@ namespace PanicSystem
 
                     else if (PanicSystem.Settings.EnemyAssaultsConsiderEjectingEarly && mech.weightClass == WeightClass.ASSAULT)
                     {
-                        if (Holder.TrackedPilots[i].pilotStatus >= PanicSystem.Settings.AssaultMechEarlyPanicThreshold)
+                        if (trackedPilots[i].pilotStatus >= PanicSystem.Settings.AssaultMechEarlyPanicThreshold)
                         {
                             Logger.Debug($"Panicking early.");
                             return true;
@@ -147,15 +148,15 @@ namespace PanicSystem
                 return -1;
             }
 
-            if (Holder.TrackedPilots == null)
+            if (trackedPilots == null)
             {
                 Holder.DeserializeActiveJson();
             }
 
-            for (int i = 0; i < Holder.TrackedPilots.Count; i++)
+            for (int i = 0; i < trackedPilots.Count; i++)
             {
 
-                if (Holder.TrackedPilots[i].trackedMech == mech.GUID)
+                if (trackedPilots[i].trackedMech == mech.GUID)
                 {
                     return i;
                 }

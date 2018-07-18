@@ -1,0 +1,74 @@
+{
+  "Name": "RogueTechBasicPanicSystem",
+
+  "Enabled": true,
+
+  "Version": "2.0",
+  "Description": "Adds basic panic system, based on mpstark's Punchin' Out.",
+  "Author": "RealityMachina, forked from mpstark's work - Modified by donZappo and gnivler",
+  "Website": "https://github.com/RealityMachina/PunchinOut",
+
+  "DLL": "RogueTechPanicSystem.dll",
+
+  "Settings": {
+    "PlayerCharacterAlwaysResists": false,
+    "PlayerTeamCanPanic": true,
+    "EnemiesCanPanic": true,
+
+    "PlayerLightsConsiderEjectingEarly": false,
+    "EnemyLightsConsiderEjectingEarly": true,
+    "LightMechEarlyPanicThreshold": 2,
+
+    "PlayerMediumsConsiderEjectingEarly": false,
+    "EnemyMediumsConsiderEjectingEarly": false,
+    "MediumMechEarlyPanicThreshold": 2,
+
+    "PlayerHeaviesConsiderEjectingEarly": false,
+    "EnemyHeaviesConsiderEjectingEarly": false,
+    "HeavyMechEarlyPanicThreshold": 2,
+
+    "PlayerAssaultsConsiderEjectingEarly": false,
+    "EnemyAssaultsConsiderEjectingEarly": false,
+    "AssaultMechEarlyPanicThreshold": 2,
+
+    "MaxEjectChanceWhenEarly": 10,
+
+    "MinimumArmourDamagePercentageRequired": 10,
+    "AtLeastOneChanceToPanic": true,
+    "AtLeastOneChanceToPanicPercentage": 10,
+    "AlwaysGatedChanges": false,
+    "MaxPanicResistTotal": 100,
+    "LosingLimbAlwaysPanics": false,
+
+    "UnsettledAttackModifier": 1,
+    "StressedAimModifier": 1,
+    "StressedToHitModifier": -1,
+    "PanickedAimModifier": 2,
+    "PanickedToHitModifier": -2,
+
+    "MinimumHealthToAlwaysEjectRoll": 1,
+    "MaxEjectChance": 50,
+    "EjectChanceMultiplier": 1,
+    "GutsTenAlwaysResists": false,
+    "ComboTenAlwaysResists": false,
+    "TacticsTenAlwaysResists": false,
+    "KnockedDownCannotEject": false,
+
+    "ConsiderEjectingWithNoWeaps": false,
+    "ConsiderEjectingWhenAlone": false,
+
+    "BaseEjectionResist": 50,
+    "GutsEjectionResistPerPoint": 2,
+    "TacticsEjectionResistPerPoint": 0,
+
+    "UnsteadyModifier": 10,
+    "PilotHealthMaxModifier": 15,
+    "HeadDamageMaxModifier": 15,
+    "CTDamageMaxModifier": 35,
+    "SideTorsoInternalDamageMaxModifier": 25,
+    "LeggedMaxModifier": 10,
+    "NextShotLikeThatCouldKill": 20,
+    "WeaponlessModifier": 10,
+    "AloneModifier": 10
+  }
+}

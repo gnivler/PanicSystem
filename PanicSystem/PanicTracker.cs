@@ -15,8 +15,8 @@ namespace PanicSystem
 
     public class PanicTracker
     {
-        public PanicStatus pilotStatus;
-        public string trackedMech;
+        public PanicStatus PilotStatus;
+        public string TrackedMech;
         public bool ChangedRecently;
 
         public PanicTracker()
@@ -42,7 +42,7 @@ namespace PanicSystem
             //do nothing for this is when we deserialize/serialize objects
         }
 
-        public void SetGameGUID(string GUID)
+        public void SetGameGUID(string guid)
         {
             SimGameGUID = GUID;
         }

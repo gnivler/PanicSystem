@@ -149,6 +149,10 @@ namespace RogueTechPanicSystem
 
             //dZ Because this is how it should be. Make this changeable. 
             var modifiers = (ejectModifiers - Settings.BaseEjectionResist - (Settings.GutsEjectionResistPerPoint * guts) - (Settings.TacticsEjectionResistPerPoint * tactics)) * RogueTechPanicSystem.Settings.EjectChanceMultiplier;
+
+            if (pilot.pilotDef.PilotTags.Contains("pilot_dependable"))
+                modifiers -= Settings.DependableModifier;
+
             if (mech.team == mech.Combat.LocalPlayerTeam)
             {
                 MoraleConstantsDef moraleDef = mech.Combat.Constants.GetActiveMoraleDef(mech.Combat);
@@ -563,6 +567,11 @@ namespace RogueTechPanicSystem
                 }
                 //straight up add guts, tactics, and morale to this as negative values
                 panicModifiers -= total;
+
+                if (pilot.pilotDef.PilotTags.Contains("pilot_brave"))
+                    panicModifiers -= Settings.BraveModifier;
+
+
                 Logger.Debug("Guts and Tactics");
                 Logger.Debug(panicModifiers);
                 if (mech.team == mech.Combat.LocalPlayerTeam)
@@ -719,6 +728,8 @@ namespace RogueTechPanicSystem
                 //Unsettled debuffs
                 //+1 difficulty to attacks
                 public float UnsettledAttackModifier = 1;
+                public float BraveModifier = 5;
+                public float DependableModifier = 5;
 
                 //stressed debuffs
                 //+2 difficulty to attacks

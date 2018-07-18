@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace RogueTechPanicSystem
+namespace PanicSystem
 {
     // code 'borrowed' from Morphyum
     public static class Logger
@@ -20,7 +20,7 @@ namespace RogueTechPanicSystem
         public static void Debug(object line)
         {
             // idea 'borrowed' from jo
-            if (!RogueTechPanicSystem.Settings.DebugEnabled) return;
+            if (!PanicSystem.Settings.DebugEnabled) return;
             using (StreamWriter writer = new StreamWriter(filePath, true))
             {
                 writer.WriteLine($"{DateTime.Now.ToShortTimeString()} {line}");

@@ -5,7 +5,7 @@ using Harmony;
 using System;
 
 // HUGE thanks to RealityMachina and mpstark for their work, outstanding.
-namespace RogueTechPanicSystem
+namespace PanicSystem
 {
     [HarmonyPatch(typeof(GameInstanceSave))]
     [HarmonyPatch(new Type[] { typeof(GameInstance), typeof(SaveReason) })]

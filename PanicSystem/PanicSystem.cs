@@ -278,19 +278,19 @@ namespace PanicSystem
                     }
                 }
 
-                PanicStatus originalStatus = trackedPilots[index].pilotStatus;
+                PanicStatus originalStatus = trackedPilots[index].PilotStatus;
                 if (foundPilot && !trackedPilots[index].ChangedRecently)
                 {
-                    switch (trackedPilots[index].pilotStatus)
+                    switch (trackedPilots[index].PilotStatus)
                     {
                         case PanicStatus.Unsettled:
-                            trackedPilots[index].pilotStatus = PanicStatus.Confident;
+                            trackedPilots[index].PilotStatus = PanicStatus.Confident;
                             break;
                         case PanicStatus.Stressed:
-                            trackedPilots[index].pilotStatus = PanicStatus.Unsettled;
+                            trackedPilots[index].PilotStatus = PanicStatus.Unsettled;
                             break;
                         case PanicStatus.Panicked:
-                            trackedPilots[index].pilotStatus = PanicStatus.Stressed;
+                            trackedPilots[index].PilotStatus = PanicStatus.Stressed;
                             break;
                     }
 
@@ -301,12 +301,12 @@ namespace PanicSystem
                 {
                     trackedPilots[index].ChangedRecently = false;
                 }
-                else if (trackedPilots[index].pilotStatus != originalStatus)
+                else if (trackedPilots[index].PilotStatus != originalStatus)
                 {
                     __instance.StatCollection.ModifyStat("Panic Turn Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f);
                     __instance.StatCollection.ModifyStat("Panic Turn Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f);
 
-                    if (trackedPilots[index].pilotStatus == PanicStatus.Unsettled)
+                    if (trackedPilots[index].PilotStatus == PanicStatus.Unsettled)
                     {
                         __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
                                                                        new ShowActorInfoSequence(mech, $"Unsettled",
@@ -316,7 +316,7 @@ namespace PanicSystem
                                                              Settings.UnsettledAttackModifier, -1, true);
                     }
 
-                    else if (trackedPilots[index].pilotStatus == PanicStatus.Stressed)
+                    else if (trackedPilots[index].PilotStatus == PanicStatus.Stressed)
                     {
                         __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
                                                                       (new ShowActorInfoSequence(mech, $"Stressed",
@@ -373,12 +373,12 @@ namespace PanicSystem
                 int index = PanicHelpers.GetTrackedPilotIndex(__instance);
                 if (Settings.LosingLimbAlwaysPanics)
                 {
-                    if (trackedPilots[index].trackedMech != __instance.GUID)
+                    if (trackedPilots[index].TrackedMech != __instance.GUID)
                     {
                         return;
                     }
 
-                    if (trackedPilots[index].trackedMech == __instance.GUID &&
+                    if (trackedPilots[index].TrackedMech == __instance.GUID &&
                         trackedPilots[index].ChangedRecently &&
                         Settings.AlwaysGatedChanges)
                     {
@@ -641,12 +641,12 @@ namespace PanicSystem
                     }
                 }
 
-                if (trackedPilots[index].trackedMech != mech.GUID)
+                if (trackedPilots[index].TrackedMech != mech.GUID)
                 {
                     return false;
                 }
 
-                if (trackedPilots[index].trackedMech == mech.GUID &&
+                if (trackedPilots[index].TrackedMech == mech.GUID &&
                     trackedPilots[index].ChangedRecently && Settings.AlwaysGatedChanges)
                 {
                     return false;
@@ -740,28 +740,28 @@ namespace PanicSystem
 
             public static void ApplyPanicDebuff(Mech mech, int index)
             {
-                if (trackedPilots[index].trackedMech == mech.GUID && trackedPilots[index].pilotStatus == PanicStatus.Confident)
+                if (trackedPilots[index].TrackedMech == mech.GUID && trackedPilots[index].PilotStatus == PanicStatus.Confident)
                 {
                     mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Unsettled!", FloatieMessage.MessageNature.Debuff, true)));
-                    trackedPilots[index].pilotStatus = PanicStatus.Unsettled;
+                    trackedPilots[index].PilotStatus = PanicStatus.Unsettled;
                     mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f, -1, true);
                     mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f, -1, true);
                     mech.StatCollection.ModifyStat<float>("Panic Attack: Unsettled Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, Settings.UnsettledAttackModifier, -1, true);
 
                 }
-                else if (trackedPilots[index].trackedMech == mech.GUID && trackedPilots[index].pilotStatus == PanicStatus.Unsettled)
+                else if (trackedPilots[index].TrackedMech == mech.GUID && trackedPilots[index].PilotStatus == PanicStatus.Unsettled)
                 {
                     mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Stressed!", FloatieMessage.MessageNature.Debuff, true)));
-                    trackedPilots[index].pilotStatus = PanicStatus.Stressed;
+                    trackedPilots[index].PilotStatus = PanicStatus.Stressed;
                     mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f, -1, true);
                     mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f, -1, true);
                     mech.StatCollection.ModifyStat<float>("Panic Attack: Stressed Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, Settings.StressedAimModifier, -1, true);
                     mech.StatCollection.ModifyStat<float>("Panic Attack: Stressed Defence", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, Settings.StressedToHitModifier, -1, true);
                 }
-                else if (trackedPilots[index].trackedMech == mech.GUID && trackedPilots[index].pilotStatus == PanicStatus.Stressed)
+                else if (trackedPilots[index].TrackedMech == mech.GUID && trackedPilots[index].PilotStatus == PanicStatus.Stressed)
                 {
                     mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Panicked!", FloatieMessage.MessageNature.Debuff, true)));
-                    trackedPilots[index].pilotStatus = PanicStatus.Panicked;
+                    trackedPilots[index].PilotStatus = PanicStatus.Panicked;
                     mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f, -1, true);
                     mech.StatCollection.ModifyStat<float>("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f, -1, true);
                     mech.StatCollection.ModifyStat<float>("Panic Attack: Panicking Aim!", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, Settings.PanickedAimModifier, -1, true);

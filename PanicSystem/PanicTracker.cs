@@ -15,8 +15,8 @@ namespace PanicSystem
 
     public class PanicTracker
     {
-        public PanicStatus pilotStatus;
-        public string trackedMech;
+        public PanicStatus PilotStatus;
+        public string TrackedMech;
         public bool ChangedRecently;
 
         public PanicTracker()
@@ -25,15 +25,15 @@ namespace PanicSystem
         }
         public PanicTracker(Mech mech)
         {
-            trackedMech = mech.GUID;
-            pilotStatus = PanicStatus.Confident;
+            TrackedMech = mech.GUID;
+            PilotStatus = PanicStatus.Confident;
             ChangedRecently = false;
         }
     }
 
     public class MetaTracker
     {
-        public List<PanicTracker> trackedPilots { get; set; }
+        public List<PanicTracker> TrackedPilots { get; set; }
         public DateTime SaveGameTimeStamp { get; set; }
         public string SimGameGUID { get; set; }
 
@@ -54,7 +54,7 @@ namespace PanicSystem
 
         public void SetTrackedPilots(List<PanicTracker> trackers)
         {
-            trackedPilots = trackers;
+            TrackedPilots = trackers;
         }
     }
 }

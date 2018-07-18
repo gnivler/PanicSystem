@@ -4,7 +4,6 @@ using static PanicSystem.PanicSystem;
 
 namespace PanicSystem
 {
-    // code 'borrowed' from Morphyum
     public static class Logger
     {
         static string _filePath = $"{ModDirectory}/Log.txt";
@@ -19,8 +18,7 @@ namespace PanicSystem
 
         public static void Debug(object line)
         {
-            // idea 'borrowed' from jo
-            if (!PanicSystem.Settings.DebugEnabled) return;
+            //if (!PanicSystem.Settings.DebugEnabled) return;
             using (var writer = new StreamWriter(_filePath, true))
             {
                 writer.WriteLine($"{DateTime.Now.ToShortTimeString()} {line}");

@@ -21,9 +21,9 @@ namespace PanicSystem
 
             if(index > -1)
             {
-                if(MetaTrackers[index].trackedPilots != null) //part where everything seems to fall apart?
+                if(MetaTrackers[index].TrackedPilots != null) //part where everything seems to fall apart?
                 {
-                    trackedPilots = MetaTrackers[index].trackedPilots;
+                    trackedPilots = MetaTrackers[index].TrackedPilots;
                 }
                 CurrentIndex = index;
             }

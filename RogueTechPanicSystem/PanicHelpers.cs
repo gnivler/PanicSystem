@@ -1,7 +1,7 @@
 ﻿using BattleTech;
 
 // HUGE thanks to RealityMachina and mpstark for their work, outstanding.
-namespace RogueTechPanicSystem
+namespace PanicSystem
 {
     public static class PanicHelpers
     {
@@ -17,18 +17,18 @@ namespace RogueTechPanicSystem
                 int i = GetTrackedPilotIndex(mech);
                 var weapons = mech.Weapons;
 
-                if (pilot != null && pilot.Health - pilot.Injuries <= RogueTechPanicSystem.Settings.MinimumHealthToAlwaysEjectRoll && !pilot.LethalInjuries)
+                if (pilot != null && pilot.Health - pilot.Injuries <= PanicSystem.Settings.MinimumHealthToAlwaysEjectRoll && !pilot.LethalInjuries)
                 {
                     Logger.Debug($"Panicking due to health.");
                     return true;
                 }
-                if (weapons.TrueForAll(w => w.DamageLevel == ComponentDamageLevel.Destroyed || w.DamageLevel == ComponentDamageLevel.NonFunctional) && RogueTechPanicSystem.Settings.ConsiderEjectingWithNoWeaps)
+                if (weapons.TrueForAll(w => w.DamageLevel == ComponentDamageLevel.Destroyed || w.DamageLevel == ComponentDamageLevel.NonFunctional) && PanicSystem.Settings.ConsiderEjectingWithNoWeaps)
                 {
                     Logger.Debug($"Panicking due to components being affected.");
                     return true;
                 }
 
-                if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m.GUID == mech.GUID) && RogueTechPanicSystem.Settings.ConsiderEjectingWhenAlone)
+                if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m.GUID == mech.GUID) && PanicSystem.Settings.ConsiderEjectingWhenAlone)
                 {
                     Logger.Debug($"Panicking due to being the last alive.");
                     return true;
@@ -61,36 +61,36 @@ namespace RogueTechPanicSystem
             {
                 if (mech.team.IsLocalPlayer)
                 {
-                    if (RogueTechPanicSystem.Settings.PlayerLightsConsiderEjectingEarly && mech.weightClass == WeightClass.LIGHT)
+                    if (PanicSystem.Settings.PlayerLightsConsiderEjectingEarly && mech.weightClass == WeightClass.LIGHT)
                     {
-                        if (Holder.TrackedPilots[i].pilotStatus >= RogueTechPanicSystem.Settings.LightMechEarlyPanicThreshold)
+                        if (Holder.TrackedPilots[i].pilotStatus >= PanicSystem.Settings.LightMechEarlyPanicThreshold)
                         {
                             Logger.Debug($"Panicking early.");
                             return true;
                         }
                     }
 
-                    else if (RogueTechPanicSystem.Settings.PlayerMediumsConsiderEjectingEarly && mech.weightClass == WeightClass.MEDIUM)
+                    else if (PanicSystem.Settings.PlayerMediumsConsiderEjectingEarly && mech.weightClass == WeightClass.MEDIUM)
                     {
-                        if (Holder.TrackedPilots[i].pilotStatus >= RogueTechPanicSystem.Settings.MediumMechEarlyPanicThreshold)
+                        if (Holder.TrackedPilots[i].pilotStatus >= PanicSystem.Settings.MediumMechEarlyPanicThreshold)
                         {
                             Logger.Debug($"Panicking early.");
                             return true;
                         }
                     }
 
-                    else if (RogueTechPanicSystem.Settings.PlayerHeaviesConsiderEjectingEarly && mech.weightClass == WeightClass.HEAVY)
+                    else if (PanicSystem.Settings.PlayerHeaviesConsiderEjectingEarly && mech.weightClass == WeightClass.HEAVY)
                     {
-                        if (Holder.TrackedPilots[i].pilotStatus >= RogueTechPanicSystem.Settings.HeavyMechEarlyPanicThreshold)
+                        if (Holder.TrackedPilots[i].pilotStatus >= PanicSystem.Settings.HeavyMechEarlyPanicThreshold)
                         {
                             Logger.Debug($"Panicking early.");
                             return true;
                         }
                     }
 
-                    else if (RogueTechPanicSystem.Settings.PlayerAssaultsConsiderEjectingEarly && mech.weightClass == WeightClass.ASSAULT)
+                    else if (PanicSystem.Settings.PlayerAssaultsConsiderEjectingEarly && mech.weightClass == WeightClass.ASSAULT)
                     {
-                        if (Holder.TrackedPilots[i].pilotStatus >= RogueTechPanicSystem.Settings.AssaultMechEarlyPanicThreshold)
+                        if (Holder.TrackedPilots[i].pilotStatus >= PanicSystem.Settings.AssaultMechEarlyPanicThreshold)
                         {
                             Logger.Debug($"Panicking early.");
                             return true;
@@ -99,36 +99,36 @@ namespace RogueTechPanicSystem
                 }
                 else
                 {
-                    if (RogueTechPanicSystem.Settings.EnemyLightsConsiderEjectingEarly && mech.weightClass == WeightClass.LIGHT)
+                    if (PanicSystem.Settings.EnemyLightsConsiderEjectingEarly && mech.weightClass == WeightClass.LIGHT)
                     {
-                        if (Holder.TrackedPilots[i].pilotStatus >= RogueTechPanicSystem.Settings.LightMechEarlyPanicThreshold)
+                        if (Holder.TrackedPilots[i].pilotStatus >= PanicSystem.Settings.LightMechEarlyPanicThreshold)
                         {
                             Logger.Debug($"Panicking early.");
                             return true;
                         }
                     }
 
-                    else if (RogueTechPanicSystem.Settings.EnemyMediumsConsiderEjectingEarly && mech.weightClass == WeightClass.MEDIUM)
+                    else if (PanicSystem.Settings.EnemyMediumsConsiderEjectingEarly && mech.weightClass == WeightClass.MEDIUM)
                     {
-                        if (Holder.TrackedPilots[i].pilotStatus >= RogueTechPanicSystem.Settings.MediumMechEarlyPanicThreshold)
+                        if (Holder.TrackedPilots[i].pilotStatus >= PanicSystem.Settings.MediumMechEarlyPanicThreshold)
                         {
                             Logger.Debug($"Panicking early.");
                             return true;
                         }
                     }
 
-                    else if (RogueTechPanicSystem.Settings.EnemyHeaviesConsiderEjectingEarly && mech.weightClass == WeightClass.HEAVY)
+                    else if (PanicSystem.Settings.EnemyHeaviesConsiderEjectingEarly && mech.weightClass == WeightClass.HEAVY)
                     {
-                        if (Holder.TrackedPilots[i].pilotStatus >= RogueTechPanicSystem.Settings.HeavyMechEarlyPanicThreshold)
+                        if (Holder.TrackedPilots[i].pilotStatus >= PanicSystem.Settings.HeavyMechEarlyPanicThreshold)
                         {
                             Logger.Debug($"Panicking early.");
                             return true;
                         }
                     }
 
-                    else if (RogueTechPanicSystem.Settings.EnemyAssaultsConsiderEjectingEarly && mech.weightClass == WeightClass.ASSAULT)
+                    else if (PanicSystem.Settings.EnemyAssaultsConsiderEjectingEarly && mech.weightClass == WeightClass.ASSAULT)
                     {
-                        if (Holder.TrackedPilots[i].pilotStatus >= RogueTechPanicSystem.Settings.AssaultMechEarlyPanicThreshold)
+                        if (Holder.TrackedPilots[i].pilotStatus >= PanicSystem.Settings.AssaultMechEarlyPanicThreshold)
                         {
                             Logger.Debug($"Panicking early.");
                             return true;

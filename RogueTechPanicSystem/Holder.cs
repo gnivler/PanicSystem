@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 
 // HUGE thanks to RealityMachina and mpstark for their work, outstanding.
-namespace RogueTechPanicSystem
+namespace PanicSystem
 {
     public static class Holder
     {

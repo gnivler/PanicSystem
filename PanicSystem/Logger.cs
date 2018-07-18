@@ -1,12 +1,13 @@
 ﻿using System;
 using System.IO;
+using static PanicSystem.PanicSystem;
 
 namespace PanicSystem
 {
     // code 'borrowed' from Morphyum
     public static class Logger
     {
-        static string filePath = $"{Holder.ModDirectory}/Log.txt";
+        static string filePath = $"{ModDirectory}/Log.txt";
         public static void LogError(Exception ex)
         {
             using (var writer = new StreamWriter(filePath, true))

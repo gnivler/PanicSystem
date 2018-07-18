@@ -2,23 +2,18 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using static PanicSystem.PanicSystem;
 
 // HUGE thanks to RealityMachina and mpstark for their work, outstanding.
 namespace PanicSystem
 {
     public static class Holder
     {
-        public static List<PanicTracker> TrackedPilots;
-        public static List<MetaTracker> metaTrackers;
-        private static int CurrentIndex = -1;
-        public static string ActiveJsonPath; //store current tracker here
-        public static string StorageJsonPath; //store our meta trackers here
-        public static string ModDirectory;
-
         public static void Reset()
         {
             TrackedPilots = new List<PanicTracker>();
         }
+
         public static void Resync(DateTime previousSaveTime) //fired before a save deserializes itself through a patch on GameInstanceSave's PostDeserialization
         {
             DeserializeStorageJson();
@@ -110,6 +105,7 @@ namespace PanicSystem
                 return;
             }
         }
+
         public static void DeserializeStorageJson() //fired when we're close to using the json data
         {
             List<MetaTracker> trackers;

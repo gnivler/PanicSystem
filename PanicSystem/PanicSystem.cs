@@ -4,9 +4,11 @@ using Harmony;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using static PanicSystem.Holder;
+
 
 // HUGE thanks to RealityMachina and mpstark for their work, outstanding.
 namespace PanicSystem
@@ -15,6 +17,14 @@ namespace PanicSystem
     public static class PanicSystem
     {
         internal static ModSettings Settings;
+        public static string ActiveJsonPath; //store current tracker here
+        public static string StorageJsonPath; //store our meta trackers here
+        public static string ModDirectory;
+
+        public static List<PanicTracker> TrackedPilots;
+        public static List<MetaTracker> metaTrackers;
+        public static int CurrentIndex = -1;
+
 
         public static void Init(string modDir, string modSettings)
         {

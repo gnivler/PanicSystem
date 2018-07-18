@@ -1,14 +1,14 @@
 {
-  "Name": "RogueTechBasicPanicSystem",
+  "Name": "PanicSystem",
 
   "Enabled": true,
 
   "Version": "2.0",
   "Description": "Adds basic panic system, based on mpstark's Punchin' Out.",
   "Author": "RealityMachina, forked from mpstark's work - Modified by donZappo and gnivler",
-  "Website": "https://github.com/RealityMachina/PunchinOut",
+  "Website": "https://github.com/gnivler/PanicSystem",
 
-  "DLL": "RogueTechPanicSystem.dll",
+  "DLL": "PanicSystem.dll",
 
   "Settings": {
     "PlayerCharacterAlwaysResists": false,

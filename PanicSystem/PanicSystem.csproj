@@ -52,12 +52,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Controller.cs" />
-    <Compile Include="PanicHelpers.cs" />
     <Compile Include="PanicSystem.cs" />
     <Compile Include="PanicTracker.cs" />
     <Compile Include="Patches.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SaveGamePatcher.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\mod.json" />

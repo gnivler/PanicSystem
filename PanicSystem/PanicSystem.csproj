@@ -51,7 +51,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Holder.cs" />
+    <Compile Include="Controller.cs" />
     <Compile Include="PanicHelpers.cs" />
     <Compile Include="PanicSystem.cs" />
     <Compile Include="PanicTracker.cs" />

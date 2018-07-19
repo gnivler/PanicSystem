@@ -2,7 +2,7 @@
 using BattleTech;
 using BattleTech.UI;
 using Harmony;
-using static PanicSystem.Holder;
+using static PanicSystem.Controller;
 using static PanicSystem.PanicSystem;
 
 namespace PanicSystem

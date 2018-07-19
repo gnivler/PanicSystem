@@ -12,7 +12,7 @@ namespace PanicSystem
     {
         static void Postfix(GameInstanceSave __instance)
         {
-            Holder.SerializeStorageJson(__instance.InstanceGUID, __instance.SaveTime);
+            Controller.SerializeStorageJson(__instance.InstanceGUID, __instance.SaveTime);
         }
     }
 
@@ -21,7 +21,7 @@ namespace PanicSystem
     {
         static void Prefix(GameInstanceSave save)
         {
-            Holder.Resync(save.SaveTime);
+            Controller.Resync(save.SaveTime);
         }
     }
 
@@ -30,7 +30,7 @@ namespace PanicSystem
     {
         static void Postfix(SimGameState __instance) //we're doing a new campaign, so we need to sync the json with the new addition
         {
-            Holder.SyncNewCampaign();
+            Controller.SyncNewCampaign();
         }
     }
 }

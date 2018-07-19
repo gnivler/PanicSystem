@@ -7,7 +7,7 @@ using static PanicSystem.PanicSystem;
 // HUGE thanks to RealityMachina and mpstark for their work, outstanding.
 namespace PanicSystem
 {
-    public static class Holder
+    public static class Controller
     {
         public static void Reset()
         {

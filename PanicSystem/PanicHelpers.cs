@@ -150,7 +150,7 @@ namespace PanicSystem
 
             if (TrackedPilots == null)
             {
-                Holder.DeserializeActiveJson();
+                Controller.DeserializeActiveJson();
             }
 
             for (int i = 0; i < TrackedPilots.Count; i++)

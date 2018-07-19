@@ -301,9 +301,7 @@ namespace PanicSystem
             return false;
         }
 
-        private static float CheckFinalStraws(Mech mech, AttackDirector.AttackSequence attackSequence,
-            float lowestRemaining,
-            float panicModifiers, List<Weapon> weapons)
+        private static float CheckFinalStraws(Mech mech, AttackDirector.AttackSequence attackSequence, float lowestRemaining, float panicModifiers, List<Weapon> weapons)
         {
             // next shot could kill or leg
             if (lowestRemaining <= attackSequence.cumulativeDamage)

@@ -18,6 +18,7 @@ namespace PanicSystem
             {
                 AttackCompleteMessage attackCompleteMessage = message as AttackCompleteMessage;
 
+                bool panicStarted = false;
                 bool hasReasonToPanic = false;
                 Mech mech = null;
                 if (attackCompleteMessage == null || attackCompleteMessage.stackItemUID != __instance.SequenceGUID)
@@ -37,8 +38,9 @@ namespace PanicSystem
                 }
 
                 SerializeActiveJson();
-                if (IsLastStrawPanicking(mech, ref hasReasonToPanic) &&
-                    RollForEjectionResult(mech, attackCompleteMessage.attackSequence, hasReasonToPanic))
+                if (IsLastStrawPanicking(mech, ref panicStarted) &&
+                    RollForEjectionResult(mech, attackCompleteMessage.attackSequence, panicStarted) &&
+                    hasReasonToPanic)
                 {
                     var combat = Traverse.Create(__instance).Property("Combat").GetValue<CombatGameState>();
                     var effectsTargeting = combat.EffectManager.GetAllEffectsTargeting(mech);

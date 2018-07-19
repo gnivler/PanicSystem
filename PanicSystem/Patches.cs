@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 using BattleTech;
 using BattleTech.UI;
 using Harmony;
@@ -10,16 +7,16 @@ using static PanicSystem.PanicSystem;
 
 namespace PanicSystem
 {
-    class Patches
+    public class Patches
     {
         [HarmonyPatch(typeof(AttackStackSequence), "OnAttackComplete")]
         public static class AttackStackSequence_OnAttackComplete_Patch
         {
             public static void Prefix(AttackStackSequence __instance, MessageCenterMessage message)
             {
-                PanicSystem.Logger.Debug("OnAttackComplete!");
+                Logger.Debug("OnAttackComplete!");
                 AttackCompleteMessage attackCompleteMessage = message as AttackCompleteMessage;
-                PanicSystem.Logger.Debug($"set message to {attackCompleteMessage}!");
+                Logger.Debug($"set message to {attackCompleteMessage}!");
 
                 bool hasReasonToPanic = false;
                 Mech mech = null;
@@ -30,8 +27,8 @@ namespace PanicSystem
 
                 if (__instance.directorSequences[0].target is Mech)
                 {
-                    mech = __instance.directorSequences[0].target as Mech;
-                    hasReasonToPanic = PanicSystem.RollHelpers.ShouldPanic(mech, attackCompleteMessage.attackSequence);
+                    mech = (Mech) __instance.directorSequences[0].target;
+                    hasReasonToPanic = ShouldPanic(mech, attackCompleteMessage.attackSequence);
                 }
 
                 if (mech == null || mech.GUID == null || attackCompleteMessage == null)
@@ -120,46 +117,34 @@ namespace PanicSystem
                 }
                 else if (TrackedPilots[index].PilotStatus != originalStatus)
                 {
-                    __instance.StatCollection.ModifyStat("Panic Turn Reset: Accuracy", -1, "AccuracyModifier",
-                        StatCollection.StatOperation.Set, 0f);
-                    __instance.StatCollection.ModifyStat("Panic Turn Reset: Mech To Hit", -1, "ToHitThisActor",
-                        StatCollection.StatOperation.Set, 0f);
+                    __instance.StatCollection.ModifyStat("Panic Turn Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f);
+                    __instance.StatCollection.ModifyStat("Panic Turn Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f);
 
                     if (TrackedPilots[index].PilotStatus == PanicStatus.Unsettled)
                     {
-                        __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
-                            new ShowActorInfoSequence(mech, $"Unsettled",
-                                FloatieMessage.MessageNature.Buff, true)));
-                        __instance.StatCollection.ModifyStat("Panic Turn: Unsettled Aim", -1,
-                            "AccuracyModifier", StatCollection.StatOperation.Float_Add,
-                            PanicSystem.Settings.UnsettledAttackModifier, -1, true);
+                        __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
+                                                                      (new ShowActorInfoSequence(mech, $"Unsettled", FloatieMessage.MessageNature.Debuff, true)));
+                        __instance.StatCollection.ModifyStat("Panic Turn: Unsettled Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, PanicSystem.Settings.UnsettledAttackModifier, -1, true);
                     }
 
                     else if (TrackedPilots[index].PilotStatus == PanicStatus.Stressed)
                     {
-                        __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
-                        (new ShowActorInfoSequence(mech, $"Stressed",
-                            FloatieMessage.MessageNature.Buff, true)));
-                        __instance.StatCollection.ModifyStat("Panic Turn: Stressed Aim", -1, "AccuracyModifier",
-                            StatCollection.StatOperation.Float_Add,
-                            PanicSystem.Settings.StressedAimModifier);
-                        __instance.StatCollection.ModifyStat("Panic Turn: Stressed Defence", -1, "ToHitThisActor",
-                            StatCollection.StatOperation.Float_Add,
-                            PanicSystem.Settings.StressedToHitModifier);
+                        __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage 
+                                                                      (new ShowActorInfoSequence(mech, $"Stressed", FloatieMessage.MessageNature.Debuff, true)));
+                        __instance.StatCollection.ModifyStat("Panic Turn: Stressed Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, PanicSystem.Settings.StressedAimModifier);
+                        __instance.StatCollection.ModifyStat("Panic Turn: Stressed Defence", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, PanicSystem.Settings.StressedToHitModifier);
                     }
 
                     else //now Confident
                     {
-                        __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
-                            (new ShowActorInfoSequence(mech, "Confident", FloatieMessage.MessageNature.Buff, true)));
+                        __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage (new ShowActorInfoSequence(mech, "Confident", FloatieMessage.MessageNature.Buff, true)));
                     }
                 }
                 SerializeActiveJson();
             }
         }
 
-        [HarmonyPatch(typeof(GameInstance), "LaunchContract", new Type[] { typeof(Contract), typeof(string) })]
-
+        [HarmonyPatch(typeof(GameInstance), "LaunchContract", new[] { typeof(Contract), typeof(string) })]
         public static class BattleTech_GameInstance_LaunchContract_Patch
         {
             static void Postfix()
@@ -214,7 +199,7 @@ namespace PanicSystem
                         }
                     }
 
-                    PanicSystem.RollHelpers.ApplyPanicDebuff(__instance, index);
+                    ApplyPanicDebuff(__instance, index);
                 }
             }
         }

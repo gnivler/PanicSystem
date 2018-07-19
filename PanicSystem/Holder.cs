@@ -1,7 +1,7 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using Newtonsoft.Json;
 using static PanicSystem.PanicSystem;
 
 // HUGE thanks to RealityMachina and mpstark for their work, outstanding.
@@ -102,7 +102,6 @@ namespace PanicSystem
             }
             catch (Exception)
             {
-                return;
             }
         }
 
@@ -138,7 +137,6 @@ namespace PanicSystem
             }
             catch (Exception)
             {
-                return;
             }
         }
 

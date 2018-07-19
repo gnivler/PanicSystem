@@ -1,5 +1,4 @@
 ﻿using BattleTech;
-using Harmony;
 using static PanicSystem.PanicSystem;
 
 // HUGE thanks to RealityMachina and mpstark for their work, outstanding.

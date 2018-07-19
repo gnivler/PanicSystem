@@ -23,6 +23,7 @@ A typical chain of events under this system is thus something like Confident at 
 
 Panic State|To Hit|To Hit Against
 -----------|------|--------------
+Confident|0|0
 Unsettled|+1|0
 Stressed| +2|-1
 Panicked| +3|-2

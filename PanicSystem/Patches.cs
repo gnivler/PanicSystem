@@ -39,8 +39,7 @@ namespace PanicSystem
 
                 SerializeActiveJson();
                 if (IsLastStrawPanicking(mech, ref panicStarted) &&
-                    RollForEjectionResult(mech, attackCompleteMessage.attackSequence, panicStarted) &&
-                    hasReasonToPanic)
+                    RollForEjectionResult(mech, attackCompleteMessage.attackSequence, panicStarted))
                 {
                     var combat = Traverse.Create(__instance).Property("Combat").GetValue<CombatGameState>();
                     var effectsTargeting = combat.EffectManager.GetAllEffectsTargeting(mech);

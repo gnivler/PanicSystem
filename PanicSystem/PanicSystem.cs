@@ -211,6 +211,8 @@ namespace PanicSystem
                 }
             }
 
+            ejectModifiers += Settings.LeggedMaxModifier * (leftLegHealth / 100 + rightLegHealth / 100);
+
             // next shot like that could kill or leg
             if (lowestHealthLethalLocation <= attackSequence.cumulativeDamage)
             {
@@ -271,6 +273,12 @@ namespace PanicSystem
             return rng < rollToBeat;
         }
 
+        /// <summary>
+        /// G returning anything true implies a panic condition was met
+        /// </summary>
+        /// <param name="mech"></param>
+        /// <param name="attackSequence"></param>
+        /// <returns></returns>
         public static bool ShouldPanic(Mech mech, AttackDirector.AttackSequence attackSequence)
         {
             Logger.Harmony($"------ START ------");
@@ -358,6 +366,15 @@ namespace PanicSystem
             return false;
         }
 
+        /// <summary>
+        /// G returning anything true implies a Final-Straw panic was met
+        /// </summary>
+        /// <param name="mech"></param>
+        /// <param name="attackSequence"></param>
+        /// <param name="lowestRemaining"></param>
+        /// <param name="panicModifiers"></param>
+        /// <param name="weapons"></param>
+        /// <returns></returns>
         private static float CheckFinalStraws(Mech mech, AttackDirector.AttackSequence attackSequence, float lowestRemaining, float panicModifiers, List<Weapon> weapons)
         {
             // next shot could kill or leg  (TODO legs aren't checked for lowest remaining

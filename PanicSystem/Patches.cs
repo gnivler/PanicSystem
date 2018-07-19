@@ -16,9 +16,7 @@ namespace PanicSystem
         {
             public static void Prefix(AttackStackSequence __instance, MessageCenterMessage message)
             {
-                Logger.Debug("OnAttackComplete!");
                 AttackCompleteMessage attackCompleteMessage = message as AttackCompleteMessage;
-                Logger.Debug($"set message to {attackCompleteMessage}!");
 
                 bool hasReasonToPanic = false;
                 Mech mech = null;
@@ -43,12 +41,11 @@ namespace PanicSystem
                     RollForEjectionResult(mech, attackCompleteMessage.attackSequence, hasReasonToPanic))
                 {
                     var combat = Traverse.Create(__instance).Property("Combat").GetValue<CombatGameState>();
-                    List<Effect> effectsTargeting = combat.EffectManager.GetAllEffectsTargeting(mech);
+                    var effectsTargeting = combat.EffectManager.GetAllEffectsTargeting(mech);
                     foreach (Effect effect in effectsTargeting)
                     {
                         mech.CancelEffect(effect);
                     }
-
                     mech.EjectPilot(mech.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
                 }
             }
@@ -211,7 +208,7 @@ namespace PanicSystem
         {
             static void Postfix(GameInstanceSave __instance)
             {
-                Controller.SerializeStorageJson(__instance.InstanceGUID, __instance.SaveTime);
+                SerializeStorageJson(__instance.InstanceGUID, __instance.SaveTime);
             }
         }
 
@@ -220,7 +217,7 @@ namespace PanicSystem
         {
             static void Prefix(GameInstanceSave save)
             {
-                Controller.Resync(save.SaveTime);
+                Resync(save.SaveTime);
             }
         }
 
@@ -229,9 +226,8 @@ namespace PanicSystem
         {
             static void Postfix(SimGameState __instance) //we're doing a new campaign, so we need to sync the json with the new addition
             {
-                Controller.SyncNewCampaign();
+                SyncNewCampaign();
             }
         }
-
     }
 }

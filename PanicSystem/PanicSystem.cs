@@ -25,7 +25,7 @@ namespace PanicSystem
         {
             FileLog.Reset();
             FileLog.Log($"{DateTime.Now.ToLongTimeString()} Harmony init");
-            Logger.Debug("Init()");
+            Logger.Harmony("Init()");
             var harmony = HarmonyInstance.Create("com.BattleTech.PanicSystem");
             harmony.PatchAll(Assembly.GetExecutingAssembly());
             ModDirectory = modDir;
@@ -41,6 +41,35 @@ namespace PanicSystem
                 Settings = new ModSettings();
             }
         }
+
+        public static class Logger
+        {
+            static readonly string FilePath = $"{ModDirectory}/Log.txt";
+            public static void LogError(Exception ex)
+            {
+                using (var writer = new StreamWriter(FilePath, true))
+                {
+                    writer.WriteLine($"{DateTime.Now.ToShortTimeString()} Message: {ex.Message}\nStack Trace: {ex.StackTrace}");
+                    writer.WriteLine(new string(c: '-', count: 80));
+                }
+            }
+
+            public static void Harmony(object line)
+            {
+                //if (!Settings.Debug) return;
+                FileLog.Log(line.ToString());
+            }
+
+            public static void Debug(object line)
+            {
+                if (!Settings.Debug) return;
+                using (var writer = new StreamWriter(FilePath, true))
+                {
+                    writer.WriteLine($"{DateTime.Now.ToShortTimeString()} {line}");
+                }
+            }
+        }
+
 
         /// <summary>
         /// G returning anything true implies an ejection save will be required
@@ -69,7 +98,7 @@ namespace PanicSystem
             var weapons = mech.Weapons;
             var guts = mech.SkillGuts;
             var tactics = mech.SkillTactics;
-            var total = guts + tactics;
+            var gutsAndTacticsSum = guts + tactics;
 
             // guts 10 makes you immune, player character cannot be forced to eject
             if ((guts == 10 && Settings.GutsTenAlwaysResists) ||
@@ -78,7 +107,7 @@ namespace PanicSystem
 
             // tactics 10 makes you immune, or combination of guts and tactics makes you immune.
             if ((tactics == 10 && Settings.TacticsTenAlwaysResists) ||
-                (total >= 10 && Settings.ComboTenAlwaysResists))
+                (gutsAndTacticsSum >= 10 && Settings.ComboTenAlwaysResists))
                 return false;
 
             // pilots that cannot eject or be headshot shouldn't eject
@@ -86,7 +115,7 @@ namespace PanicSystem
                 return false;
 
             // start building ejectModifiers
-            float lowestHealthLethalLocation = Single.MaxValue;
+            float lowestHealthLethalLocation = float.MaxValue;
             float ejectModifiers = 0;
 
             // pilot health
@@ -213,7 +242,7 @@ namespace PanicSystem
 
         public static bool ShouldPanic(Mech mech, AttackDirector.AttackSequence attackSequence)
         {
-            Logger.Debug($"------ START ------");
+            Logger.Harmony($"------ START ------");
 
             if (!CheckCanPanic(mech, attackSequence))
             {
@@ -253,62 +282,56 @@ namespace PanicSystem
             panicModifiers -= gutAndTacticsSum;
 
             if (pilot.pilotDef.PilotTags.Contains("pilot_brave"))
+            {
                 panicModifiers -= Settings.BraveModifier;
+            }
 
-            Logger.Debug("Guts and Tactics");
-            Logger.Debug(panicModifiers.ToString());
+            Logger.Harmony($"Guts and Tactics: {gutAndTacticsSum}.  Modifier: {panicModifiers}");
             if (mech.team == mech.Combat.LocalPlayerTeam)
 
-            //dZ - Inputtable morale is superior.
+            //dZ - Inputtable morale is superior.  TODO make this a configuration setting
             {
                 float medianMorale = 25;
                 MoraleConstantsDef moraleDef = mech.Combat.Constants.GetActiveMoraleDef(mech.Combat);
                 panicModifiers -= (mech.Combat.LocalPlayerTeam.Morale - medianMorale) / 2;
-                Logger.Debug("Morale");
-                Logger.Debug(panicModifiers.ToString());
+                Logger.Harmony($"Morale: {mech.Combat.LocalPlayerTeam.Morale}");
             }
 
             if ((panicModifiers < Settings.AtLeastOneChanceToPanicPercentage) && Settings.AtLeastOneChanceToPanic)
             {
                 panicModifiers = Settings.AtLeastOneChanceToPanicPercentage;
-                Logger.Debug("One Chance");
-                Logger.Debug(panicModifiers.ToString());
+                Logger.Harmony($"One Chance: {Settings.AtLeastOneChanceToPanicPercentage}");
             }
 
             var rng = (new Random()).Next(1, 101);
-            Logger.Debug("rng");
-            Logger.Debug(rng.ToString());
+            Logger.Harmony($"Rolled: {rng}");
 
             float rollToBeat;
             {
                 rollToBeat = Math.Min((int)panicModifiers, (int)Settings.MaxPanicResistTotal);
-                Logger.Debug("RollToBeat");
-                Logger.Debug(rollToBeat.ToString());
+                Logger.Harmony($"RollToBeat: {rollToBeat}");
             }
 
             if (rng <= rollToBeat)
             {
-                Logger.Debug($"Failed panic save, debuffed!");
+                Logger.Harmony($"Failed panic save, debuffed!  Modifiers: {panicModifiers}");  // maybe incorrect, maybe others
                 ApplyPanicDebuff(mech, index);
-                Logger.Debug(panicModifiers.ToString());
                 return true;
             }
 
             mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
                                                      new ShowActorInfoSequence(mech, $"Resisted panic check!", FloatieMessage.MessageNature.Buff, true)));
-            Logger.Debug($"No reason to panic.");
-            Logger.Debug(panicModifiers.ToString());
+            Logger.Harmony($"Resisted panic check.  Modifiers: {panicModifiers}");
             return false;
         }
 
         private static float CheckFinalStraws(Mech mech, AttackDirector.AttackSequence attackSequence, float lowestRemaining, float panicModifiers, List<Weapon> weapons)
         {
-            // next shot could kill or leg
+            // next shot could kill or leg  (TODO legs aren't checked for lowest remaining
             if (lowestRemaining <= attackSequence.cumulativeDamage)
             {
                 panicModifiers += Settings.NextShotLikeThatCouldKill;
-                Logger.Debug("Big Shot");
-                Logger.Debug(panicModifiers.ToString());
+                Logger.Harmony($"Next shot could kill {panicModifiers}");
             }
 
             // weaponless
@@ -317,18 +340,15 @@ namespace PanicSystem
                 w.DamageLevel == ComponentDamageLevel.NonFunctional))
             {
                 panicModifiers += Settings.WeaponlessModifier;
-                Logger.Debug("Weaponless");
-                Logger.Debug(panicModifiers.ToString());
+                Logger.Harmony($"Weaponless: {panicModifiers}");
             }
 
             // alone
             if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m == mech as AbstractActor))
             {
                 panicModifiers += Settings.AloneModifier;
-                Logger.Debug("Alone");
-                Logger.Debug(panicModifiers.ToString());
+                Logger.Harmony($"Alone: {panicModifiers}");
             }
-
             return panicModifiers;
         }
 
@@ -344,8 +364,7 @@ namespace PanicSystem
             if ((legPercentRight + legPercentLeft) < 2)
             {
                 panicModifiers += Settings.LeggedMaxModifier * (legPercentRight + legPercentLeft);
-                Logger.Debug("Legs");
-                Logger.Debug(panicModifiers.ToString());
+                Logger.Harmony($"Legs: {panicModifiers}");
                 var legCheck =
                     legPercentRight * (mech.GetMaxStructure(ChassisLocations.RightLeg) +
                                        mech.GetMaxArmor(ArmorLocation.RightLeg)) + legPercentLeft *
@@ -363,8 +382,7 @@ namespace PanicSystem
             if (rtStructurePercent < 1)
             {
                 panicModifiers += Settings.SideTorsoInternalDamageMaxModifier * (1 - rtStructurePercent);
-                Logger.Debug("RT");
-                Logger.Debug(panicModifiers.ToString());
+                Logger.Harmony($"RT: {panicModifiers}");
             }
 
             return panicModifiers;
@@ -376,8 +394,7 @@ namespace PanicSystem
             if (ltStructurePercent < 1)
             {
                 panicModifiers += Settings.SideTorsoInternalDamageMaxModifier * (1 - ltStructurePercent);
-                Logger.Debug("LT");
-                Logger.Debug(panicModifiers.ToString());
+                Logger.Harmony($"LT: {panicModifiers}");
             }
 
             return panicModifiers;
@@ -391,8 +408,7 @@ namespace PanicSystem
             if (ctPercent < 1)
             {
                 panicModifiers += Settings.CTDamageMaxModifier * (1 - ctPercent);
-                Logger.Debug("CT");
-                Logger.Debug(panicModifiers.ToString());
+                Logger.Harmony($"CT: {panicModifiers}");
                 lowestRemaining = Math.Min(mech.CenterTorsoStructure, lowestRemaining);
             }
 
@@ -407,8 +423,7 @@ namespace PanicSystem
             if (headHealthPercent < 1)
             {
                 panicModifiers += Settings.HeadDamageMaxModifier * (1 - headHealthPercent);
-                Logger.Debug("Head Health");
-                Logger.Debug(panicModifiers.ToString());
+                Logger.Harmony($"Head Health: {panicModifiers}");
             }
 
             return panicModifiers;
@@ -419,8 +434,8 @@ namespace PanicSystem
             if (mech.IsUnsteady)
             {
                 panicModifiers += Settings.UnsteadyModifier;
-                Logger.Debug("Unsteady");
-                Logger.Debug(panicModifiers.ToString());
+                Logger.Harmony("Unsteady");
+                Logger.Harmony(panicModifiers.ToString());
             }
 
             return panicModifiers;
@@ -435,8 +450,7 @@ namespace PanicSystem
                 if (pilotHealthPercent < 1)
                 {
                     panicModifiers += Settings.PilotHealthMaxModifier * (1 - pilotHealthPercent);
-                    Logger.Debug("Health");
-                    Logger.Debug(panicModifiers.ToString());
+                    Logger.Harmony($"Health: {panicModifiers}");
                 }
             }
 
@@ -447,8 +461,7 @@ namespace PanicSystem
         {
             if (index < 0)
             {
-                TrackedPilots.Add(
-                    new PanicTracker(mech)); //add a new tracker to tracked pilot, then we run it all over again;
+                TrackedPilots.Add(new PanicTracker(mech)); //add a new tracker to tracked pilot, then we run it all over again;
                 index = GetTrackedPilotIndex(mech);
                 if (index < 0)
                 {
@@ -474,20 +487,23 @@ namespace PanicSystem
         {
             if (!attackSequence.attackDidDamage)
             {
-                Logger.Debug($"No damage, no panic.");
+                Logger.Harmony($"No damage, no panic.");
                 return false;
             }
 
-            if (attackSequence.attackStructureDamage == 0 ||
-                attackSequence.attackArmorDamage / (GetCurrentMechArmour(mech) + attackSequence.attackArmorDamage) *
-                100 <
-                Settings.MinimumArmourDamagePercentageRequired)
+            if (attackSequence.attackStructureDamage > 0)
             {
-                Logger.Debug($"No structural damage and not enough armor damage. No panic.");
+                Logger.Harmony($"{attackSequence.attackStructureDamage} structural damage causes a panic check.");
+                return true;
+            }
+
+            if (attackSequence.attackArmorDamage / (GetCurrentMechArmour(mech) + attackSequence.attackArmorDamage) * 100 < Settings.MinimumArmourDamagePercentageRequired)
+            {
+                Logger.Harmony($"Not enough armor damage. No panic.");
                 return false;
             }
 
-            Logger.Debug($"Attack causes a panic check.");
+            Logger.Harmony($"{attackSequence.attackArmorDamage} damage attack causes a panic check.");
             return true;
         }
 
@@ -495,26 +511,26 @@ namespace PanicSystem
         {
             if (mech == null || mech.IsDead || (mech.IsFlaggedForDeath && mech.HasHandledDeath))
             {
-                Logger.Debug($"{mech.DisplayName} incapacitated by {attackSequence.attacker.DisplayName}.");
+                Logger.Harmony($"{mech.DisplayName} incapacitated by {attackSequence.attacker.DisplayName}.");
                 return false;
             }
 
             if (attackSequence == null)
             {
-                Logger.Debug($"No attack.");
+                Logger.Harmony($"No attack.");
                 return false;
             }
 
             // credit to jo and thanks!
             if (mech.team.IsLocalPlayer && !Settings.PlayerTeamCanPanic)
             {
-                Logger.Debug($"Players can't panic.");
+                Logger.Harmony($"Players can't panic.");
                 return false;
             }
 
             if (!mech.team.IsLocalPlayer && !Settings.EnemiesCanPanic)
             {
-                Logger.Debug($"AI can't panic.");
+                Logger.Harmony($"AI can't panic.");
                 return false;
             }
 
@@ -631,18 +647,18 @@ namespace PanicSystem
 
                 if (pilot != null && pilot.Health - pilot.Injuries <= PanicSystem.Settings.MinimumHealthToAlwaysEjectRoll && !pilot.LethalInjuries)
                 {
-                    Logger.Debug($"Panicking due to health.");
+                    Logger.Harmony($"Panicking due to health.");
                     return true;
                 }
                 if (weapons.TrueForAll(w => w.DamageLevel == ComponentDamageLevel.Destroyed || w.DamageLevel == ComponentDamageLevel.NonFunctional) && PanicSystem.Settings.ConsiderEjectingWithNoWeaps)
                 {
-                    Logger.Debug($"Panicking due to components being affected.");
+                    Logger.Harmony($"Panicking due to components being affected.");
                     return true;
                 }
 
                 if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m.GUID == mech.GUID) && PanicSystem.Settings.ConsiderEjectingWhenAlone)
                 {
-                    Logger.Debug($"Panicking due to being the last alive.");
+                    Logger.Harmony($"Panicking due to being the last alive.");
                     return true;
                 }
 
@@ -651,19 +667,19 @@ namespace PanicSystem
                     if (TrackedPilots[i].TrackedMech == mech.GUID &&
                         TrackedPilots[i].PilotStatus == PanicStatus.Panicked)
                     {
-                        Logger.Debug($"Panicking due to health.");
+                        Logger.Harmony($"Panicking due to health.");
                         return true;
                     }
 
                     if (CanEarlyPanic(mech, i))
                     {
-                        Logger.Debug($"In early panic.");
+                        Logger.Harmony($"Panicking at the last straw.");
                         panicStarted = true;
                         return true;
                     }
                 }
             }
-            Logger.Debug($"Not panicking.");
+            Logger.Harmony($"Not the last straw.");
             return false;
         }
 
@@ -677,7 +693,6 @@ namespace PanicSystem
                     {
                         if (TrackedPilots[i].PilotStatus >= PanicSystem.Settings.LightMechEarlyPanicThreshold)
                         {
-                            Logger.Debug($"Panicking early.");
                             return true;
                         }
                     }
@@ -686,7 +701,6 @@ namespace PanicSystem
                     {
                         if (TrackedPilots[i].PilotStatus >= PanicSystem.Settings.MediumMechEarlyPanicThreshold)
                         {
-                            Logger.Debug($"Panicking early.");
                             return true;
                         }
                     }
@@ -695,7 +709,6 @@ namespace PanicSystem
                     {
                         if (TrackedPilots[i].PilotStatus >= PanicSystem.Settings.HeavyMechEarlyPanicThreshold)
                         {
-                            Logger.Debug($"Panicking early.");
                             return true;
                         }
                     }
@@ -704,7 +717,6 @@ namespace PanicSystem
                     {
                         if (TrackedPilots[i].PilotStatus >= PanicSystem.Settings.AssaultMechEarlyPanicThreshold)
                         {
-                            Logger.Debug($"Panicking early.");
                             return true;
                         }
                     }
@@ -715,7 +727,6 @@ namespace PanicSystem
                     {
                         if (TrackedPilots[i].PilotStatus >= PanicSystem.Settings.LightMechEarlyPanicThreshold)
                         {
-                            Logger.Debug($"Panicking early.");
                             return true;
                         }
                     }
@@ -724,7 +735,6 @@ namespace PanicSystem
                     {
                         if (TrackedPilots[i].PilotStatus >= PanicSystem.Settings.MediumMechEarlyPanicThreshold)
                         {
-                            Logger.Debug($"Panicking early.");
                             return true;
                         }
                     }
@@ -733,7 +743,6 @@ namespace PanicSystem
                     {
                         if (TrackedPilots[i].PilotStatus >= PanicSystem.Settings.HeavyMechEarlyPanicThreshold)
                         {
-                            Logger.Debug($"Panicking early.");
                             return true;
                         }
                     }
@@ -742,38 +751,13 @@ namespace PanicSystem
                     {
                         if (TrackedPilots[i].PilotStatus >= PanicSystem.Settings.AssaultMechEarlyPanicThreshold)
                         {
-                            Logger.Debug($"Panicking early.");
                             return true;
                         }
                     }
                 }
             }
-            Logger.Debug($"Not panicking early.");
+            Logger.Harmony($"Not at last straw threshold for mech.");
             return false;
-        }
-
-        public static class Logger
-        {
-            static readonly string FilePath = $"{ModDirectory}/Log.txt";
-
-            public static void LogError(Exception ex)
-            {
-                using (var writer = new StreamWriter(FilePath, true))
-                {
-                    writer.WriteLine(
-                        $"{DateTime.Now.ToShortTimeString()} Message: {ex.Message}\nStack Trace: {ex.StackTrace}");
-                    writer.WriteLine(new string(c: '-', count: 80));
-                }
-            }
-
-            public static void Debug(object line)
-            {
-                if (!Settings.Debug) return;
-                using (var writer = new StreamWriter(FilePath, true))
-                {
-                    writer.WriteLine($"{DateTime.Now.ToShortTimeString()} {line}");
-                }
-            }
         }
 
         public class ModSettings
@@ -803,9 +787,7 @@ namespace PanicSystem
             public float MaxEjectChanceWhenEarly = 10;
 
             //minmum armour and structure damage
-            public float
-                MinimumArmourDamagePercentageRequired =
-                    10; //if no structure damage, a Mech must lost a bit of its armour before it starts worrying
+            public float MinimumArmourDamagePercentageRequired = 10; //if no structure damage, a Mech must lost a bit of its armour before it starts worrying
 
             //general panic roll
             //rolls out of 20

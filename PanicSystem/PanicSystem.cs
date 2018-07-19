@@ -80,40 +80,39 @@ namespace PanicSystem
         public static bool RollForEjectionResult(Mech mech, AttackDirector.AttackSequence attackSequence, bool panicStarted)
         {
             if (mech == null || mech.IsDead || (mech.IsFlaggedForDeath && !mech.HasHandledDeath))
+            {
                 return false;
+            }
+
+            if (!attackSequence.attackDidDamage)
+            {
+                return false;
+            }
 
             // knocked down mechs cannot eject
             if (mech.IsProne && Settings.KnockedDownCannotEject)
+            {
                 return false;
-
-            // have to do damage
-            if (!attackSequence.attackDidDamage)
-                return false;
+            }
 
             Pilot pilot = mech.GetPilot();
             if (pilot == null)
+            {
                 return false;
+            }
 
             var weapons = mech.Weapons;
             var guts = mech.SkillGuts;
             var tactics = mech.SkillTactics;
             var gutsAndTacticsSum = guts + tactics;
 
-            // guts 10 makes you immune, player character cannot be forced to eject
-            if ((guts == 10 && Settings.GutsTenAlwaysResists) ||
-                (Settings.PlayerCharacterAlwaysResists && pilot.IsPlayerCharacter))
+            if (!CheckImmunity(mech, guts, pilot, tactics, gutsAndTacticsSum))
+            {
                 return false;
-
-            // tactics 10 makes you immune, or combination of guts and tactics makes you immune.
-            if ((tactics == 10 && Settings.TacticsTenAlwaysResists) ||
-                (gutsAndTacticsSum >= 10 && Settings.ComboTenAlwaysResists))
-                return false;
-
-            // pilots that cannot eject or be headshot shouldn't eject
-            if (!mech.CanBeHeadShot || !pilot.CanEject)
-                return false;
+            }
 
             // start building ejectModifiers
+
             float lowestHealthLethalLocation = float.MaxValue;
             float ejectModifiers = 0;
 
@@ -148,7 +147,7 @@ namespace PanicSystem
                 lowestHealthLethalLocation = Math.Min(mech.CenterTorsoStructure, lowestHealthLethalLocation);
             }
 
-            // side torsos
+            // LT/RT
             var ltStructurePercent = mech.LeftTorsoStructure / mech.GetMaxStructure(ChassisLocations.LeftTorso);
             if (ltStructurePercent < 1)
             {
@@ -176,40 +175,11 @@ namespace PanicSystem
             //    lowestHealthLethalLocation = Math.Min(legCheck, lowestHealthLethalLocation);
             //}
 
-            var nearlyDestroyed = false;
             var leftLegHealth = mech.RightLegStructure + mech.RightLegArmor;
             var rightLegHealth = mech.LeftLegStructure + mech.LeftLegArmor;
 
             // check one then then the other, then inversely, to see if a shot can leg out the mech
-            if (leftLegHealth > 0)
-            {
-                Logger.Harmony($"Left leg intact.");
-                if (rightLegHealth <= 0)
-                {
-                    Logger.Harmony($"Right leg destroyed.");
-                    if (leftLegHealth - attackSequence.cumulativeDamage <= 0)
-                    {
-                        Logger.Harmony($"Can be legged out by another attack like that.");
-                        nearlyDestroyed = true;
-                        lowestHealthLethalLocation = leftLegHealth;
-                    }
-                }
-            }
-
-            if (rightLegHealth > 0)
-            {
-                Logger.Harmony($"Right leg intact.");
-                if (leftLegHealth <= 0)
-                {
-                    Logger.Harmony($"Left leg destroyed.");
-                    if (rightLegHealth - attackSequence.cumulativeDamage <= 0)
-                    {
-                        Logger.Harmony($"Can be legged out by another attack like that.");
-                        nearlyDestroyed = true;
-                        lowestHealthLethalLocation = rightLegHealth;
-                    }
-                }
-            }
+            lowestHealthLethalLocation = Math.Min(lowestHealthLethalLocation, GetLowestFinalLegHealth(attackSequence, leftLegHealth, rightLegHealth, lowestHealthLethalLocation));
 
             ejectModifiers += Settings.LeggedMaxModifier * (leftLegHealth / 100 + rightLegHealth / 100);
 
@@ -232,21 +202,20 @@ namespace PanicSystem
             }
 
             //dZ Because this is how it should be. Make this changeable. 
-            var modifiers =
-                (ejectModifiers - Settings.BaseEjectionResist - (Settings.GutsEjectionResistPerPoint * guts) -
-                 (Settings.TacticsEjectionResistPerPoint * tactics)) * Settings.EjectChanceMultiplier;
+            ejectModifiers = (ejectModifiers - Settings.BaseEjectionResist - (Settings.GutsEjectionResistPerPoint * guts) -
+                             (Settings.TacticsEjectionResistPerPoint * tactics)) * Settings.EjectChanceMultiplier;
 
             if (pilot.pilotDef.PilotTags.Contains("pilot_dependable"))
-                modifiers -= Settings.DependableModifier;
+            {
+                ejectModifiers -= Settings.TagDependableModifier;
+            }
 
             if (mech.team == mech.Combat.LocalPlayerTeam)
             {
-                MoraleConstantsDef moraleDef = mech.Combat.Constants.GetActiveMoraleDef(mech.Combat);
-                float medianMorale = 25;
-                modifiers -= (mech.Combat.LocalPlayerTeam.Morale - medianMorale) / 2;
+                ejectModifiers -= (mech.Combat.LocalPlayerTeam.Morale - Settings.MedianMorale) / 2;
             }
 
-            if (modifiers < 0)
+            if (ejectModifiers < 0)
             {
                 return false;
             }
@@ -255,22 +224,68 @@ namespace PanicSystem
             float rollToBeat;
             if (!panicStarted)
             {
-                rollToBeat = Math.Min(modifiers, Settings.MaxEjectChance);
+                rollToBeat = Math.Min(ejectModifiers, Settings.MaxEjectChance);
             }
             else
             {
-                rollToBeat = Math.Min(modifiers, Settings.MaxEjectChanceWhenEarlyEjectThresholdMet);
+                rollToBeat = Math.Min(ejectModifiers, Settings.MaxEjectChanceWhenEarlyEjectThresholdMet);
             }
 
             mech.Combat.MessageCenter.PublishMessage(!(rng < rollToBeat)
-                ? new AddSequenceToStackMessage(new ShowActorInfoSequence(
-                    mech, $"{Math.Floor(rollToBeat)}% save SUCCESS for Guts & Tactics",
-                    FloatieMessage.MessageNature.Buff, true))
-                : new AddSequenceToStackMessage(new ShowActorInfoSequence(
-                    mech, $"{Math.Floor(rollToBeat)}% save FAILED: Punchin' Out!!", FloatieMessage.MessageNature.Debuff,
-                    true)));
-
+                ? new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"{Math.Floor(rollToBeat)}% save SUCCESS for Guts & Tactics", FloatieMessage.MessageNature.Buff, true))
+                : new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"{Math.Floor(rollToBeat)}% save FAILED: Punchin' Out!!", FloatieMessage.MessageNature.Debuff, true)));
             return rng < rollToBeat;
+        }
+
+
+        private static float GetLowestFinalLegHealth(AttackDirector.AttackSequence attackSequence, float leftLegHealth, float rightLegHealth, float lowestHealthLethalLocation)
+        {
+            if (leftLegHealth > 0)
+            {
+                Logger.Harmony($"Left leg intact.");
+                if (rightLegHealth <= 0)
+                {
+                    Logger.Harmony($"Right leg destroyed.");
+                    if (leftLegHealth - attackSequence.cumulativeDamage <= 0)
+                    {
+                        Logger.Harmony($"Can be legged out by another attack like that. (left leg has {leftLegHealth} and the attack did {attackSequence.cumulativeDamage})");
+                        lowestHealthLethalLocation = leftLegHealth;
+                    }
+                }
+            }
+
+            if (rightLegHealth > 0)
+            {
+                Logger.Harmony($"Right leg intact.");
+                if (leftLegHealth <= 0)
+                {
+                    Logger.Harmony($"Left leg destroyed.");
+                    if (rightLegHealth - attackSequence.cumulativeDamage <= 0)
+                    {
+                        Logger.Harmony($"Can be legged out by another attack like that.  Right leg has {rightLegHealth} and the attack did {attackSequence.cumulativeDamage})");
+                        lowestHealthLethalLocation = rightLegHealth;
+                    }
+                }
+            }
+            return lowestHealthLethalLocation;
+        }
+
+        private static bool CheckImmunity(Mech mech, int guts, Pilot pilot, int tactics, int gutsAndTacticsSum)
+        {
+            // guts 10 makes you immune, player character cannot be forced to eject
+            if ((guts == 10 && Settings.GutsTenAlwaysResists) ||
+                (Settings.PlayerCharacterAlwaysResists && pilot.IsPlayerCharacter))
+                return false;
+
+            // tactics 10 makes you immune, or combination of guts and tactics makes you immune.
+            if ((tactics == 10 && Settings.TacticsTenAlwaysResists) ||
+                (gutsAndTacticsSum >= 10 && Settings.ComboTenAlwaysResists))
+                return false;
+
+            // pilots that cannot eject or be headshot shouldn't eject
+            if (!mech.CanBeHeadShot || !pilot.CanEject)
+                return false;
+            return true;
         }
 
         /// <summary>
@@ -301,8 +316,7 @@ namespace PanicSystem
             var gutAndTacticsSum = guts + tactics;
             int index = -1;
             index = GetTrackedPilotIndex(mech);
-            float lowestRemaining =
-                mech.CenterTorsoStructure + mech.CenterTorsoFrontArmor + mech.CenterTorsoRearArmor;
+            float lowestRemaining = float.MaxValue;
             float panicModifiers = 0;
 
             if (!CheckTrackedPilots(mech, ref index))
@@ -329,11 +343,9 @@ namespace PanicSystem
             Logger.Harmony($"Guts and Tactics: {gutAndTacticsSum}.\nModifier: {panicModifiers}");
             if (mech.team == mech.Combat.LocalPlayerTeam)
 
-            //dZ - Inputtable morale is superior.  TODO make this a configuration setting
+            //dZ - Inputtable morale is superior.
             {
-                float medianMorale = 25;
-                MoraleConstantsDef moraleDef = mech.Combat.Constants.GetActiveMoraleDef(mech.Combat);
-                panicModifiers -= (mech.Combat.LocalPlayerTeam.Morale - medianMorale) / 2;
+                panicModifiers -= (mech.Combat.LocalPlayerTeam.Morale - Settings.MedianMorale) / 2;
                 Logger.Harmony($"Morale: {mech.Combat.LocalPlayerTeam.Morale}");
             }
 
@@ -360,8 +372,7 @@ namespace PanicSystem
                 return true;
             }
 
-            mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
-                new ShowActorInfoSequence(mech, $"Resisted panic check!", FloatieMessage.MessageNature.Buff, true)));
+            mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Resisted panic check!", FloatieMessage.MessageNature.Buff, true)));
             Logger.Harmony($"Resisted panic check.  Modifiers: {panicModifiers}");
             return false;
         }
@@ -405,12 +416,8 @@ namespace PanicSystem
         private static float CheckLegs(Mech mech, float panicModifiers, ref float lowestRemaining)
         {
             // dZ Check legs independently. Code here significantly improved.
-            var legPercentRight = 1 - (mech.RightLegStructure + mech.RightLegArmor) /
-                                  (mech.GetMaxStructure(ChassisLocations.RightLeg) +
-                                   mech.GetMaxArmor(ArmorLocation.RightLeg));
-            var legPercentLeft = 1 - (mech.LeftLegStructure + mech.LeftLegArmor) /
-                                 (mech.GetMaxStructure(ChassisLocations.LeftLeg) +
-                                  mech.GetMaxArmor(ArmorLocation.LeftLeg));
+            var legPercentRight = 1 - (mech.RightLegStructure + mech.RightLegArmor) / (mech.GetMaxStructure(ChassisLocations.RightLeg) + mech.GetMaxArmor(ArmorLocation.RightLeg));
+            var legPercentLeft = 1 - (mech.LeftLegStructure + mech.LeftLegArmor) / (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg));
             if ((legPercentRight + legPercentLeft) < 2)
             {
                 panicModifiers += Settings.LeggedMaxModifier * (legPercentRight + legPercentLeft);
@@ -682,7 +689,13 @@ namespace PanicSystem
 
         }
 
-        public static bool IsLastStrawPanicking(Mech mech, ref bool panicStarted)
+        /// <summary>
+        /// returning true and ref here implies they're on their last straw
+        /// </summary>
+        /// <param name="mech"></param>
+        /// <param name="lastStraw"></param>
+        /// <returns></returns>
+        public static bool IsLastStrawPanicking(Mech mech, ref bool lastStraw)
         {
             if (mech == null || mech.IsDead || (mech.IsFlaggedForDeath && mech.HasHandledDeath))
                 return false;
@@ -694,14 +707,14 @@ namespace PanicSystem
                 int i = GetTrackedPilotIndex(mech);
                 var weapons = mech.Weapons;
 
-                if (pilot != null && pilot.Health - pilot.Injuries <= Settings.MinimumHealthToAlwaysEjectRoll && !pilot.LethalInjuries)
+                if (pilot != null && !pilot.LethalInjuries && pilot.Health - pilot.Injuries <= Settings.MinimumHealthToAlwaysEjectRoll)
                 {
-                    Logger.Harmony($"Panicking due to health.");
+                    Logger.Harmony($"Panicking minimum health threshold met.");
                     return true;
                 }
                 if (weapons.TrueForAll(w => w.DamageLevel == ComponentDamageLevel.Destroyed || w.DamageLevel == ComponentDamageLevel.NonFunctional) && Settings.ConsiderEjectingWithNoWeaps)
                 {
-                    Logger.Harmony($"Panicking due to components being affected.");
+                    Logger.Harmony($"Panicking due to damaged and destroyed weapons.");
                     return true;
                 }
 
@@ -716,14 +729,14 @@ namespace PanicSystem
                     if (TrackedPilots[i].TrackedMech == mech.GUID &&
                         TrackedPilots[i].PilotStatus == PanicStatus.Panicked)
                     {
-                        Logger.Harmony($"Panicking due to health.");
+                        Logger.Harmony($"Still panicking.");
                         return true;
                     }
 
                     if (CanEjectBeforePanicked(mech, i))
                     {
-                        Logger.Harmony($"Panicking at the last straw.");
-                        panicStarted = true;
+                        Logger.Harmony($"Panicking early.");
+                        lastStraw = true;
                         return true;
                     }
                 }
@@ -845,6 +858,7 @@ namespace PanicSystem
             public int AtLeastOneChanceToPanicPercentage = 10;
             public bool AlwaysGatedChanges = true;
             public float MaxPanicResistTotal = 15; //at least 20% chance to panic if you can't nullify the whole thing
+            public float MedianMorale = 25;
 
             public bool LosingLimbAlwaysPanics = false;
 
@@ -852,7 +866,7 @@ namespace PanicSystem
             //+1 difficulty to attacks
             public float UnsettledAttackModifier = 1;
             public float BraveModifier = 5;
-            public float DependableModifier = 5;
+            public float TagDependableModifier = 5;
 
             //stressed debuffs
             //+2 difficulty to attacks

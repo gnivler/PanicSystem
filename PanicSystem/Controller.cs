@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using BattleTech;
 using Newtonsoft.Json;
 using static PanicSystem.PanicSystem;
 
@@ -164,5 +165,29 @@ namespace PanicSystem
                 }
             }
         }
+
+        public static int GetTrackedPilotIndex(Mech mech)
+        {
+            if (mech == null)
+            {
+                return -1;
+            }
+
+            if (TrackedPilots == null)
+            {
+                DeserializeActiveJson();
+            }
+
+            for (int i = 0; i < TrackedPilots.Count; i++)
+            {
+
+                if (TrackedPilots[i].TrackedMech == mech.GUID)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
     }
 }

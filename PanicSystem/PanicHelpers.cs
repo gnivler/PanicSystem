@@ -1,5 +1,6 @@
 ﻿using BattleTech;
 using static PanicSystem.PanicSystem;
+using static PanicSystem.Controller;
 
 // HUGE thanks to RealityMachina and mpstark for their work, outstanding.
 namespace PanicSystem
@@ -141,27 +142,5 @@ namespace PanicSystem
             return false;
         }
 
-        public static int GetTrackedPilotIndex(Mech mech)
-        {
-            if (mech == null)
-            {
-                return -1;
-            }
-
-            if (TrackedPilots == null)
-            {
-                Controller.DeserializeActiveJson();
-            }
-
-            for (int i = 0; i < TrackedPilots.Count; i++)
-            {
-
-                if (TrackedPilots[i].TrackedMech == mech.GUID)
-                {
-                    return i;
-                }
-            }
-            return -1;
-        }
     }
 }

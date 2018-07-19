@@ -4,6 +4,7 @@ using BattleTech.UI;
 using Harmony;
 using static PanicSystem.Controller;
 using static PanicSystem.PanicSystem;
+using static PanicSystem.PanicHelpers;
 
 namespace PanicSystem
 {
@@ -27,7 +28,7 @@ namespace PanicSystem
 
                 if (__instance.directorSequences[0].target is Mech)
                 {
-                    mech = (Mech) __instance.directorSequences[0].target;
+                    mech = (Mech)__instance.directorSequences[0].target;
                     hasReasonToPanic = ShouldPanic(mech, attackCompleteMessage.attackSequence);
                 }
 
@@ -37,7 +38,7 @@ namespace PanicSystem
                 }
 
                 SerializeActiveJson();
-                if (PanicHelpers.IsLastStrawPanicking(mech, ref hasReasonToPanic) &&
+                if (IsLastStrawPanicking(mech, ref hasReasonToPanic) &&
                     RollForEjectionResult(mech, attackCompleteMessage.attackSequence, hasReasonToPanic))
                 {
                     var combat = Traverse.Create(__instance).Property("Combat").GetValue<CombatGameState>();
@@ -71,7 +72,7 @@ namespace PanicSystem
                     return;
                 }
 
-                index = PanicHelpers.GetTrackedPilotIndex(mech);
+                index = GetTrackedPilotIndex(mech);
                 if (index > -1)
                 {
                     foundPilot = true;
@@ -80,9 +81,8 @@ namespace PanicSystem
                 if (!foundPilot)
                 {
                     PanicTracker panicTracker = new PanicTracker(mech);
-                    TrackedPilots
-                        .Add(panicTracker); //add a new tracker to tracked pilot, then we run it all over again;;
-                    index = PanicHelpers.GetTrackedPilotIndex(mech);
+                    TrackedPilots.Add(panicTracker); //add a new tracker to tracked pilot, then we run it all over again;;
+                    index = GetTrackedPilotIndex(mech);
                     if (index > -1)
                     {
                         foundPilot = true;
@@ -129,7 +129,7 @@ namespace PanicSystem
 
                     else if (TrackedPilots[index].PilotStatus == PanicStatus.Stressed)
                     {
-                        __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage 
+                        __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
                                                                       (new ShowActorInfoSequence(mech, $"Stressed", FloatieMessage.MessageNature.Debuff, true)));
                         __instance.StatCollection.ModifyStat("Panic Turn: Stressed Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, PanicSystem.Settings.StressedAimModifier);
                         __instance.StatCollection.ModifyStat("Panic Turn: Stressed Defence", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, PanicSystem.Settings.StressedToHitModifier);
@@ -137,7 +137,7 @@ namespace PanicSystem
 
                     else //now Confident
                     {
-                        __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage (new ShowActorInfoSequence(mech, "Confident", FloatieMessage.MessageNature.Buff, true)));
+                        __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, "Confident", FloatieMessage.MessageNature.Buff, true)));
                     }
                 }
                 SerializeActiveJson();
@@ -174,7 +174,7 @@ namespace PanicSystem
                     return;
                 }
 
-                int index = PanicHelpers.GetTrackedPilotIndex(__instance);
+                int index = GetTrackedPilotIndex(__instance);
                 if (PanicSystem.Settings.LosingLimbAlwaysPanics)
                 {
                     if (TrackedPilots[index].TrackedMech != __instance.GUID)
@@ -192,7 +192,7 @@ namespace PanicSystem
                     if (index < 0)
                     {
                         TrackedPilots.Add(new PanicTracker(__instance)); //add a new tracker to tracked pilot, then we run it all over again;
-                        index = PanicHelpers.GetTrackedPilotIndex(__instance);
+                        index = GetTrackedPilotIndex(__instance);
                         if (index < 0) // G  Why does this matter?
                         {
                             return;

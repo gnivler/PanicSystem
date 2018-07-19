@@ -5,6 +5,7 @@ using System.Reflection;
 using BattleTech;
 using Harmony;
 using Newtonsoft.Json;
+using static PanicSystem.Controller;
 
 
 // HUGE thanks to RealityMachina and mpstark for their work, outstanding.
@@ -232,7 +233,7 @@ namespace PanicSystem
             var tactics = mech.SkillTactics * Settings.TacticsEjectionResistPerPoint;
             var gutAndTacticsSum = guts + tactics;
             int index = -1;
-            index = PanicHelpers.GetTrackedPilotIndex(mech);
+            index = GetTrackedPilotIndex(mech);
             float lowestRemaining = mech.CenterTorsoStructure + mech.CenterTorsoFrontArmor + mech.CenterTorsoRearArmor;
             float panicModifiers = 0;
 
@@ -449,7 +450,7 @@ namespace PanicSystem
             {
                 TrackedPilots.Add(
                     new PanicTracker(mech)); //add a new tracker to tracked pilot, then we run it all over again;
-                index = PanicHelpers.GetTrackedPilotIndex(mech);
+                index = GetTrackedPilotIndex(mech);
                 if (index < 0)
                 {
                     return false;
@@ -628,7 +629,7 @@ namespace PanicSystem
 
             public static void Debug(object line)
             {
-                //if (!PanicSystem.Settings.DebugEnabled) return;
+                if (!Settings.Debug) return;
                 using (var writer = new StreamWriter(FilePath, true))
                 {
                     writer.WriteLine($"{DateTime.Now.ToShortTimeString()} {line}");

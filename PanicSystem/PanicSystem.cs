@@ -24,8 +24,8 @@ namespace PanicSystem
         public static void Init(string modDir, string modSettings)
         {
             FileLog.Reset();
-            FileLog.Log($"{DateTime.Now.ToLongTimeString()} Harmony init");
-            Logger.Harmony("Init()");
+            FileLog.Log($"{DateTime.Now.ToLongTimeString()} Harmony Init");
+
             var harmony = HarmonyInstance.Create("com.BattleTech.PanicSystem");
             harmony.PatchAll(Assembly.GetExecutingAssembly());
             ModDirectory = modDir;
@@ -44,7 +44,7 @@ namespace PanicSystem
 
         public static class Logger
         {
-            static readonly string FilePath = $"{ModDirectory}/Log.txt";
+            public static readonly string FilePath = $"{ModDirectory}/Log.txt";
             public static void Harmony(object line)
             {
                 //if (!Settings.Debug) return;
@@ -88,7 +88,7 @@ namespace PanicSystem
             index = GetTrackedPilotIndex(mech);
             float panicModifiers = 0;
 
-            Logger.Harmony($"Starting to collect panic modifiers.");
+            Logger.Harmony($"Collecting panic modifiers:");
             if (!CheckTrackedPilots(mech, ref index))
             {
                 return false;
@@ -140,7 +140,7 @@ namespace PanicSystem
 
             if (rng <= rollToBeat)
             {
-                Logger.Harmony($"Failed panic save."); // maybe incorrect, maybe others
+                Logger.Harmony($"Failed panic save.");
                 ApplyPanicDebuff(mech, index);
                 return true;
             }
@@ -195,7 +195,7 @@ namespace PanicSystem
             // start building ejectModifiers
             float lowestHealthLethalLocation = float.MaxValue;
             float ejectModifiers = 0;
-            Logger.Harmony($"Start collecting ejection modifiers.");
+            Logger.Harmony($"Collecting ejection modifiers:");
             Logger.Harmony(new string(c: '-', count: 80));
 
             // pilot health

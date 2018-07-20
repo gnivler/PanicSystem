@@ -47,11 +47,10 @@ namespace PanicSystem
                     RollForEjectionResult(mech, attackCompleteMessage.attackSequence, panicStarted))
                 {
                     var combat = Traverse.Create(__instance).Property("Combat").GetValue<CombatGameState>();
+                    if (combat == null) Logger.Harmony(("combat is null"));
                     var effectsTargeting = combat.EffectManager.GetAllEffectsTargeting(mech);
-                    if (combat == null | effectsTargeting == null)
-                    {
-                        Logger.Harmony($"combat or effects are null");
-                    }
+                    if (effectsTargeting == null) Logger.Harmony(("effects is null"));
+
                     foreach (Effect effect in effectsTargeting)
                     {
                         mech.CancelEffect(effect);

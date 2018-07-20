@@ -129,6 +129,7 @@ namespace PanicSystem
             if ((panicModifiers < Settings.AtLeastOneChanceToPanicPercentage) && Settings.AtLeastOneChanceToPanic)
             {
                 panicModifiers = Settings.AtLeastOneChanceToPanicPercentage;
+                Logger.Harmony($"Floored saving throw to 25");
                 Logger.Harmony(panicModifiers);
             }
 

@@ -19,7 +19,7 @@ For panic recovery, as long as a pilot avoids failing another roll while they're
 
 A typical chain of events under this system is thus something like Confident at start -> Turn 1 during enemy action: takes hit, downgrades to Unsettled -> Turn 2: manages to avoid failing a panic roll -> Turn 3 on pilot's movement: hits Confident again.
 
-## Panic Effects (deafults)
+## Panic Effects (defaults)
 
 Panic State|To Hit|To Hit Against
 -----------|------|--------------

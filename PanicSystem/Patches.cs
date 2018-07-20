@@ -48,6 +48,10 @@ namespace PanicSystem
                 {
                     var combat = Traverse.Create(__instance).Property("Combat").GetValue<CombatGameState>();
                     var effectsTargeting = combat.EffectManager.GetAllEffectsTargeting(mech);
+                    if (combat == null | effectsTargeting == null)
+                    {
+                        Logger.Harmony($"combat or effects are null");
+                    }
                     foreach (Effect effect in effectsTargeting)
                     {
                         mech.CancelEffect(effect);

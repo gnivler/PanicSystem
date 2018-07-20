@@ -170,27 +170,32 @@ namespace PanicSystem
                 return false;
             }
 
+            Logger.Harmony("1");
             // knocked down mechs cannot eject
             if (mech.IsProne && Settings.KnockedDownCannotEject)
             {
                 return false;
             }
+            Logger.Harmony("2");
 
             Pilot pilot = mech.GetPilot();
             if (pilot == null)
             {
                 return false;
             }
+            Logger.Harmony("3");
 
             var weapons = mech.Weapons;
             var guts = mech.SkillGuts;
             var tactics = mech.SkillTactics;
             var gutsAndTacticsSum = guts + tactics;
+            Logger.Harmony("4");
 
             if (CheckCantEject(mech, guts, pilot, tactics, gutsAndTacticsSum))
             {
                 return true;
             }
+            Logger.Harmony("5");
 
             // start building ejectModifiers
             float lowestHealthLethalLocation = float.MaxValue;

@@ -310,48 +310,6 @@ namespace PanicSystem
         }
 
         /// <summary>
-        /// returns armour and structure sum for the worst leg
-        /// </summary>
-        /// <param name="attackSequence"></param>
-        /// <param name="lowestHealthLethalLocation"></param>
-        /// <param name="mech"></param>
-        /// <returns></returns>
-        private static float LowestLegForEject(AttackDirector.AttackSequence attackSequence, float lowestHealthLethalLocation, Mech mech)
-        {
-            var leftLegHealth = mech.RightLegStructure + mech.RightLegArmor;
-            var rightLegHealth = mech.LeftLegStructure + mech.LeftLegArmor;
-
-            if (leftLegHealth > 0)
-            {
-                Logger.Harmony($"Left leg intact.");
-                if (rightLegHealth <= 0)
-                {
-                    Logger.Harmony($"Right leg destroyed.");
-                    if (leftLegHealth - attackSequence.cumulativeDamage <= 0)
-                    {
-                        Logger.Harmony($"Legging danger.  Left leg has {leftLegHealth} and the attack did {attackSequence.cumulativeDamage}");
-                        lowestHealthLethalLocation = leftLegHealth;
-                    }
-                }
-            }
-
-            if (rightLegHealth > 0)
-            {
-                Logger.Harmony($"Right leg intact.");
-                if (leftLegHealth <= 0)
-                {
-                    Logger.Harmony($"Left leg destroyed.");
-                    if (rightLegHealth - attackSequence.cumulativeDamage <= 0)
-                    {
-                        Logger.Harmony($"Legging danger.  Right leg has {rightLegHealth} and the attack did {attackSequence.cumulativeDamage}");
-                        lowestHealthLethalLocation = rightLegHealth;
-                    }
-                }
-            }
-            return lowestHealthLethalLocation;
-        }
-
-        /// <summary>
         /// true implies a last straw condition was met
         /// </summary>
         /// <param name="mech"></param>
@@ -368,14 +326,12 @@ namespace PanicSystem
                 w.DamageLevel == ComponentDamageLevel.NonFunctional))
             {
                 panicModifiers += Settings.WeaponlessModifier;
-                Logger.Harmony($"Weaponless: {panicModifiers}");
             }
 
             // alone
             if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m == mech as AbstractActor))
             {
                 panicModifiers += Settings.AloneModifier;
-                Logger.Harmony($"Alone: {panicModifiers}");
             }
             return panicModifiers;
         }
@@ -395,9 +351,6 @@ namespace PanicSystem
             if (legPercentRight + legPercentLeft < 2)
             {
                 panicModifiers += Settings.LeggedMaxModifier * (legPercentRight + legPercentLeft);
-                Logger.Harmony($"Legs: {panicModifiers}");
-                var legCheck = legPercentRight * (mech.GetMaxStructure(ChassisLocations.RightLeg) + mech.GetMaxArmor(ArmorLocation.RightLeg)) +
-                               legPercentLeft * (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg));
             }
             return panicModifiers;
         }
@@ -414,9 +367,7 @@ namespace PanicSystem
             if (rtStructurePercent < 1)
             {
                 panicModifiers += Settings.SideTorsoInternalDamageMaxModifier * (1 - rtStructurePercent);
-                Logger.Harmony($"RT: {panicModifiers}");
             }
-
             return panicModifiers;
         }
 
@@ -432,9 +383,7 @@ namespace PanicSystem
             if (ltStructurePercent < 1)
             {
                 panicModifiers += Settings.SideTorsoInternalDamageMaxModifier * (1 - ltStructurePercent);
-                Logger.Harmony($"LT: {panicModifiers}");
             }
-
             return panicModifiers;
         }
 
@@ -453,7 +402,6 @@ namespace PanicSystem
             if (ctPercent < 1)
             {
                 panicModifiers += Settings.CTDamageMaxModifier * (1 - ctPercent);
-                Logger.Harmony($"CT: {panicModifiers}");
             }
             return panicModifiers;
         }
@@ -472,9 +420,7 @@ namespace PanicSystem
             if (headHealthPercent < 1)
             {
                 panicModifiers += Settings.HeadDamageMaxModifier * (1 - headHealthPercent);
-                Logger.Harmony($"Head Health: {panicModifiers}");
             }
-
             return panicModifiers;
         }
 
@@ -489,9 +435,7 @@ namespace PanicSystem
             if (mech.IsUnsteady)
             {
                 panicModifiers += Settings.UnsteadyModifier;
-                Logger.Harmony($"Unsteady {panicModifiers}");
             }
-
             return panicModifiers;
         }
 
@@ -506,14 +450,11 @@ namespace PanicSystem
             if (pilot != null)
             {
                 float pilotHealthPercent = 1 - ((float)pilot.Injuries / pilot.Health);
-
                 if (pilotHealthPercent < 1)
                 {
                     panicModifiers += Settings.PilotHealthMaxModifier * (1 - pilotHealthPercent);
-                    Logger.Harmony($"Health: {panicModifiers}");
                 }
             }
-
             return panicModifiers;
         }
 
@@ -597,16 +538,23 @@ namespace PanicSystem
             // guts 10 makes you immune, player character cannot be forced to eject
             if ((guts == 10 && Settings.GutsTenAlwaysResists) ||
                 (Settings.PlayerCharacterAlwaysResists && pilot.IsPlayerCharacter))
+            {
                 return false;
+            }
 
             // tactics 10 makes you immune, or combination of guts and tactics makes you immune.
             if ((tactics == 10 && Settings.TacticsTenAlwaysResists) ||
                 (gutsAndTacticsSum >= 10 && Settings.ComboTenAlwaysResists))
+            {
                 return false;
+            }
 
             // pilots that cannot eject or be headshot shouldn't eject
             if (!mech.CanBeHeadShot || !pilot.CanEject)
+            {
                 return false;
+
+            }
             return true;
         }
 

@@ -45,21 +45,11 @@ namespace PanicSystem
         public static class Logger
         {
             static readonly string FilePath = $"{ModDirectory}/Log.txt";
-            public static void LogError(Exception ex)
-            {
-                using (var writer = new StreamWriter(FilePath, true))
-                {
-                    writer.WriteLine($"{DateTime.Now.ToShortTimeString()} Message: {ex.Message}\nStack Trace: {ex.StackTrace}");
-                    writer.WriteLine(new string(c: '-', count: 80));
-                }
-            }
-
             public static void Harmony(object line)
             {
                 //if (!Settings.Debug) return;
                 FileLog.Log(line.ToString());
             }
-
             public static void Debug(object line)
             {
                 if (!Settings.Debug) return;
@@ -110,7 +100,7 @@ namespace PanicSystem
             panicModifiers = CheckCT(mech, panicModifiers, ref lowestHealthLethalLocation);
             panicModifiers = CheckLT(mech, panicModifiers);
             panicModifiers = CheckRT(mech, panicModifiers);
-            panicModifiers = CheckLegs(mech, panicModifiers, ref lowestHealthLethalLocation);
+            panicModifiers = CheckLegs(mech, panicModifiers);
             panicModifiers = CheckFinalStraws(mech, attackSequence, lowestHealthLethalLocation, panicModifiers, weapons);
             panicModifiers -= gutAndTacticsSum;
 
@@ -190,14 +180,16 @@ namespace PanicSystem
             var tactics = mech.SkillTactics;
             var gutsAndTacticsSum = guts + tactics;
 
-            if (!CheckCantEject(mech, guts, pilot, tactics, gutsAndTacticsSum))
+            if (CheckCantEject(mech, guts, pilot, tactics, gutsAndTacticsSum))
             {
-                return false;
+                return true;
             }
 
             // start building ejectModifiers
             float lowestHealthLethalLocation = float.MaxValue;
             float ejectModifiers = 0;
+            Logger.Harmony($"Start collecting ejection modifiers");
+            Logger.Harmony(new string(c: '-', count:80));
 
             // pilot health
             float pilotHealthPercent = 1 - ((float)pilot.Injuries / pilot.Health);
@@ -205,11 +197,13 @@ namespace PanicSystem
             {
                 ejectModifiers += Settings.PilotHealthMaxModifier * (1 - pilotHealthPercent);
             }
+            Logger.Harmony(ejectModifiers);
 
             if (mech.IsUnsteady)
             {
                 ejectModifiers += Settings.UnsteadyModifier;
             }
+            Logger.Harmony(ejectModifiers);
 
             // Head
             var headHealthPercent = (mech.HeadArmor + mech.HeadStructure) /
@@ -219,6 +213,7 @@ namespace PanicSystem
             {
                 ejectModifiers += Settings.HeadDamageMaxModifier * (1 - headHealthPercent);
             }
+            Logger.Harmony(ejectModifiers);
 
             // CT                                                                                   
             var ctPercent = (mech.CenterTorsoFrontArmor + mech.CenterTorsoStructure + mech.CenterTorsoRearArmor) /
@@ -229,6 +224,7 @@ namespace PanicSystem
                 ejectModifiers += Settings.CTDamageMaxModifier * (1 - ctPercent);
                 lowestHealthLethalLocation = Math.Min(mech.CenterTorsoStructure, lowestHealthLethalLocation);
             }
+            Logger.Harmony(ejectModifiers);
 
             // LT/RT
             var ltStructurePercent = mech.LeftTorsoStructure / mech.GetMaxStructure(ChassisLocations.LeftTorso);
@@ -236,51 +232,44 @@ namespace PanicSystem
             {
                 ejectModifiers += Settings.SideTorsoInternalDamageMaxModifier * (1 - ltStructurePercent);
             }
+            Logger.Harmony(ejectModifiers);
 
             var rtStructurePercent = mech.RightTorsoStructure / mech.GetMaxStructure(ChassisLocations.RightTorso);
             if (rtStructurePercent < 1)
             {
                 ejectModifiers += Settings.SideTorsoInternalDamageMaxModifier * (1 - rtStructurePercent);
             }
-
-            var leftLegHealth = mech.RightLegStructure + mech.RightLegArmor;
-            var rightLegHealth = mech.LeftLegStructure + mech.LeftLegArmor;
-
-            // check one then then the other, then inversely, to see if a shot can leg out the mech
-            lowestHealthLethalLocation = Math.Min(lowestHealthLethalLocation, LowestLegForEject(attackSequence, lowestHealthLethalLocation, mech));  // TODO why two methods for lowest-leg
-
-            ejectModifiers += Settings.LeggedMaxModifier * (leftLegHealth / 100 + rightLegHealth / 100);
-
-            // next shot like that could kill or leg
-            if (lowestHealthLethalLocation <= attackSequence.cumulativeDamage)
-            {
-                ejectModifiers += Settings.NextShotLikeThatCouldKill;
-            }
+            Logger.Harmony(ejectModifiers);
 
             // weaponless
             if (weapons.TrueForAll(w => w.DamageLevel == ComponentDamageLevel.Destroyed))
             {
                 ejectModifiers += Settings.WeaponlessModifier;
             }
+            Logger.Harmony(ejectModifiers);
 
             // alone
             if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m == mech as AbstractActor || m.IsDead))
             {
                 ejectModifiers += Settings.AloneModifier;
             }
+            Logger.Harmony(ejectModifiers);
 
             //dZ Because this is how it should be. Make this changeable. 
             ejectModifiers = (ejectModifiers - Settings.BaseEjectionResist - (Settings.GutsEjectionResistPerPoint * guts) -
                              (Settings.TacticsEjectionResistPerPoint * tactics)) * Settings.EjectChanceMultiplier;
+            Logger.Harmony(ejectModifiers);
 
             if (pilot.pilotDef.PilotTags.Contains("pilot_dependable"))
             {
                 ejectModifiers -= Settings.TagDependableModifier;
+                Logger.Harmony(ejectModifiers);
             }
 
             if (mech.team == mech.Combat.LocalPlayerTeam)
             {
                 ejectModifiers -= (mech.Combat.LocalPlayerTeam.Morale - Settings.MedianMorale) / 2;
+                Logger.Harmony(ejectModifiers);
             }
 
             if (ejectModifiers < 0)
@@ -298,8 +287,9 @@ namespace PanicSystem
             {
                 rollToBeat = Math.Min(ejectModifiers, Settings.MaxEjectChanceWhenEarlyEjectThresholdMet);
             }
-
-            if (!(rng < rollToBeat))
+            Logger.Harmony($"Final ejection modifier: {ejectModifiers}");
+            
+            if (!(rng <= rollToBeat))
             {
                 mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
                                                          new ShowActorInfoSequence(mech,$"{Math.Floor(rollToBeat)}% EJECTION SAVE SUCCESS", FloatieMessage.MessageNature.Buff, true)));
@@ -309,7 +299,7 @@ namespace PanicSystem
             mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
                                                      new ShowActorInfoSequence(mech, $"{Math.Floor(rollToBeat)}% EJECTION SAVE FAILED: Punchin' Out!!", FloatieMessage.MessageNature.Debuff, true)));
             }
-            return rng < rollToBeat;
+            return rng <= rollToBeat;
         }
 
         /// <summary>
@@ -365,13 +355,6 @@ namespace PanicSystem
         /// <returns></returns>
         private static float CheckFinalStraws(Mech mech, AttackDirector.AttackSequence attackSequence, float lowestHealthLethalLocation, float panicModifiers, List<Weapon> weapons)
         {
-            // next shot could kill or leg
-            if (lowestHealthLethalLocation <= attackSequence.attackArmorDamage + attackSequence.attackStructureDamage)
-            {
-                Logger.Harmony($"Next shot could kill {panicModifiers} (lowest health is {lowestHealthLethalLocation})");
-                panicModifiers += Settings.NextShotLikeThatCouldKill;
-            }
-
             // weaponless
             if (weapons.TrueForAll(w =>
                 w.DamageLevel == ComponentDamageLevel.Destroyed ||
@@ -397,7 +380,7 @@ namespace PanicSystem
         /// <param name="panicModifiers"></param>
         /// <param name="lowestHealthLethalLocation"></param>
         /// <returns></returns>
-        private static float CheckLegs(Mech mech, float panicModifiers, ref float lowestHealthLethalLocation)
+        private static float CheckLegs(Mech mech, float panicModifiers)
         {
             // dZ Check legs independently. Code here significantly improved.  Handles missing legs
             var legPercentRight = 1 - (mech.RightLegStructure + mech.RightLegArmor) / (mech.GetMaxStructure(ChassisLocations.RightLeg) + mech.GetMaxArmor(ArmorLocation.RightLeg));
@@ -408,7 +391,6 @@ namespace PanicSystem
                 Logger.Harmony($"Legs: {panicModifiers}");
                 var legCheck = legPercentRight * (mech.GetMaxStructure(ChassisLocations.RightLeg) + mech.GetMaxArmor(ArmorLocation.RightLeg)) +
                                legPercentLeft * (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg));
-                lowestHealthLethalLocation = Math.Min(legCheck, lowestHealthLethalLocation);
             }
             return panicModifiers;
         }
@@ -963,8 +945,6 @@ namespace PanicSystem
             public float CTDamageMaxModifier = 10;
             public float SideTorsoInternalDamageMaxModifier = 10;
             public float LeggedMaxModifier = 10;
-
-            public float NextShotLikeThatCouldKill = 15;
 
             public float WeaponlessModifier = 15;
             public float AloneModifier = 20;

@@ -86,59 +86,66 @@ namespace PanicSystem
             var gutAndTacticsSum = guts + tactics;
             int index = -1;
             index = GetTrackedPilotIndex(mech);
-            float lowestHealthLethalLocation = float.MaxValue;
             float panicModifiers = 0;
 
+            Logger.Harmony($"Starting to collect panic modifiers.");
             if (!CheckTrackedPilots(mech, ref index))
             {
                 return false;
             }
 
             panicModifiers = CheckPilotHealth(pilot, panicModifiers);
+            Logger.Harmony(panicModifiers);
             panicModifiers = CheckMechUnsteady(mech, panicModifiers);
+            Logger.Harmony(panicModifiers);
             panicModifiers = CheckHead(mech, panicModifiers);
-            panicModifiers = CheckCT(mech, panicModifiers, ref lowestHealthLethalLocation);
+            Logger.Harmony(panicModifiers);
+            panicModifiers = CheckCT(mech, panicModifiers);
+            Logger.Harmony(panicModifiers);
             panicModifiers = CheckLT(mech, panicModifiers);
+            Logger.Harmony(panicModifiers);
             panicModifiers = CheckRT(mech, panicModifiers);
+            Logger.Harmony(panicModifiers);
             panicModifiers = CheckLegs(mech, panicModifiers);
-            panicModifiers = CheckFinalStraws(mech, attackSequence, lowestHealthLethalLocation, panicModifiers, weapons);
+            Logger.Harmony(panicModifiers);
+            panicModifiers = CheckFinalStraws(mech, attackSequence, panicModifiers, weapons);
+            Logger.Harmony(panicModifiers);
             panicModifiers -= gutAndTacticsSum;
+            Logger.Harmony(panicModifiers);
 
             if (pilot.pilotDef.PilotTags.Contains("pilot_brave"))
             {
                 panicModifiers -= Settings.BraveModifier;
+                Logger.Harmony(panicModifiers);
             }
 
             Logger.Harmony($"Guts and Tactics: {gutAndTacticsSum}");
             if (mech.team == mech.Combat.LocalPlayerTeam)
             {
                 panicModifiers -= (mech.Combat.LocalPlayerTeam.Morale - Settings.MedianMorale) / 2;
-                Logger.Harmony($"Morale: {mech.Combat.LocalPlayerTeam.Morale}");
+                Logger.Harmony(panicModifiers);
             }
 
             if ((panicModifiers < Settings.AtLeastOneChanceToPanicPercentage) && Settings.AtLeastOneChanceToPanic)
             {
                 panicModifiers = Settings.AtLeastOneChanceToPanicPercentage;
-                Logger.Harmony($"One Chance: {Settings.AtLeastOneChanceToPanicPercentage}");
+                Logger.Harmony(panicModifiers);
             }
+
+            var rollToBeat = Math.Min((int)panicModifiers, (int)Settings.MaxPanicResistTotal);
+            Logger.Harmony($"RollToBeat: {rollToBeat}");
 
             var rng = (new Random()).Next(1, 101);
             Logger.Harmony($"Rolled: {rng}");
 
-            int rollToBeat;
-            {
-                rollToBeat = Math.Min((int)panicModifiers, (int)Settings.MaxPanicResistTotal);
-                Logger.Harmony($"RollToBeat: {rollToBeat}");
-            }
-
             if (rng <= rollToBeat)
             {
-                Logger.Harmony($"Failed panic save, debuffed!"); // maybe incorrect, maybe others
+                Logger.Harmony($"Failed panic save."); // maybe incorrect, maybe others
                 ApplyPanicDebuff(mech, index);
                 return true;
             }
 
-            mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Resisted panic check!", FloatieMessage.MessageNature.Buff, true)));
+            mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"SAVE SUCCESS AGAINST PANIC!", FloatieMessage.MessageNature.Buff, true)));
             Logger.Harmony($"Resisted panic check.");
             return false;
         }
@@ -188,8 +195,8 @@ namespace PanicSystem
             // start building ejectModifiers
             float lowestHealthLethalLocation = float.MaxValue;
             float ejectModifiers = 0;
-            Logger.Harmony($"Start collecting ejection modifiers");
-            Logger.Harmony(new string(c: '-', count:80));
+            Logger.Harmony($"Start collecting ejection modifiers.");
+            Logger.Harmony(new string(c: '-', count: 80));
 
             // pilot health
             float pilotHealthPercent = 1 - ((float)pilot.Injuries / pilot.Health);
@@ -288,16 +295,16 @@ namespace PanicSystem
                 rollToBeat = Math.Min(ejectModifiers, Settings.MaxEjectChanceWhenEarlyEjectThresholdMet);
             }
             Logger.Harmony($"Final ejection modifier: {ejectModifiers}");
-            
+
             if (!(rng <= rollToBeat))
             {
                 mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
-                                                         new ShowActorInfoSequence(mech,$"{Math.Floor(rollToBeat)}% EJECTION SAVE SUCCESS", FloatieMessage.MessageNature.Buff, true)));
+                                                         new ShowActorInfoSequence(mech, $"{Math.Floor(rollToBeat)}% EJECTION SAVE SUCCESS", FloatieMessage.MessageNature.Buff, true)));
             }
             else
             {
-            mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
-                                                     new ShowActorInfoSequence(mech, $"{Math.Floor(rollToBeat)}% EJECTION SAVE FAILED: Punchin' Out!!", FloatieMessage.MessageNature.Debuff, true)));
+                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
+                                                         new ShowActorInfoSequence(mech, $"{Math.Floor(rollToBeat)}% EJECTION SAVE FAILED: Punchin' Out!!", FloatieMessage.MessageNature.Debuff, true)));
             }
             return rng <= rollToBeat;
         }
@@ -353,7 +360,7 @@ namespace PanicSystem
         /// <param name="panicModifiers"></param>
         /// <param name="weapons"></param>
         /// <returns></returns>
-        private static float CheckFinalStraws(Mech mech, AttackDirector.AttackSequence attackSequence, float lowestHealthLethalLocation, float panicModifiers, List<Weapon> weapons)
+        private static float CheckFinalStraws(Mech mech, AttackDirector.AttackSequence attackSequence, float panicModifiers, List<Weapon> weapons)
         {
             // weaponless
             if (weapons.TrueForAll(w =>
@@ -438,7 +445,7 @@ namespace PanicSystem
         /// <param name="panicModifiers"></param>
         /// <param name="lowestHealthLethalLocation"></param>
         /// <returns></returns>
-        private static float CheckCT(Mech mech, float panicModifiers, ref float lowestHealthLethalLocation)
+        private static float CheckCT(Mech mech, float panicModifiers)
         {
             var ctPercent = (mech.CenterTorsoFrontArmor + mech.CenterTorsoStructure + mech.CenterTorsoRearArmor) /
                             (mech.GetMaxArmor(ArmorLocation.CenterTorso) +
@@ -447,9 +454,7 @@ namespace PanicSystem
             {
                 panicModifiers += Settings.CTDamageMaxModifier * (1 - ctPercent);
                 Logger.Harmony($"CT: {panicModifiers}");
-                lowestHealthLethalLocation = Math.Min(mech.CenterTorsoStructure, lowestHealthLethalLocation);
             }
-
             return panicModifiers;
         }
 

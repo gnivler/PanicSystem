@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using BattleTech;
 using BattleTech.Save;
 using BattleTech.Save.SaveGameStructure;
@@ -16,6 +17,9 @@ namespace PanicSystem
         {
             public static void Prefix(AttackStackSequence __instance, MessageCenterMessage message)
             {
+                Logger.Harmony(new string(c: '-', count: 80));
+                Logger.Harmony($"{__instance.owningActor.DisplayName} attacking {__instance.targets.First().DisplayName}");
+                Logger.Harmony(new string(c: '-', count: 80));
                 AttackCompleteMessage attackCompleteMessage = message as AttackCompleteMessage;
 
                 bool panicStarted = false;
@@ -32,21 +36,22 @@ namespace PanicSystem
                     hasReasonToPanic = ShouldPanic(mech, attackCompleteMessage.attackSequence);
                 }
 
-                if (mech == null || mech.GUID == null || attackCompleteMessage == null)
+                if (mech == null || mech.GUID == null)
                 {
                     return;
                 }
 
                 SerializeActiveJson();
-                if (IsLastStrawPanicking(mech, ref panicStarted) &&
+                if (IsLastStrawPanicking(mech, ref panicStarted) |
+                    hasReasonToPanic &&
                     RollForEjectionResult(mech, attackCompleteMessage.attackSequence, panicStarted))
                 {
-                    var combat = Traverse.Create(__instance).Property("Combat").GetValue<CombatGameState>();
+                    /*var combat = Traverse.Create(__instance).Property("Combat").GetValue<CombatGameState>();
                     var effectsTargeting = combat.EffectManager.GetAllEffectsTargeting(mech);
                     foreach (Effect effect in effectsTargeting)
                     {
                         mech.CancelEffect(effect);
-                    }
+                    }*/
                     mech.EjectPilot(mech.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
                 }
             }
@@ -123,7 +128,7 @@ namespace PanicSystem
                     {
                         __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
                                                                       (new ShowActorInfoSequence(mech, $"Unsettled", FloatieMessage.MessageNature.Debuff, true)));
-                        __instance.StatCollection.ModifyStat("Panic Turn: Unsettled Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, PanicSystem.Settings.UnsettledAttackModifier, -1, true);
+                        __instance.StatCollection.ModifyStat("Panic Turn: Unsettled Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, PanicSystem.Settings.UnsettledAttackModifier);
                     }
 
                     else if (TrackedPilots[index].PilotStatus == PanicStatus.Stressed)

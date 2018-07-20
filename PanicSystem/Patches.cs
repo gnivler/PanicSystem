@@ -46,12 +46,12 @@ namespace PanicSystem
                     hasReasonToPanic &&
                     RollForEjectionResult(mech, attackCompleteMessage.attackSequence, panicStarted))
                 {
-                    /*var combat = Traverse.Create(__instance).Property("Combat").GetValue<CombatGameState>();
+                    var combat = Traverse.Create(__instance).Property("Combat").GetValue<CombatGameState>();
                     var effectsTargeting = combat.EffectManager.GetAllEffectsTargeting(mech);
                     foreach (Effect effect in effectsTargeting)
                     {
                         mech.CancelEffect(effect);
-                    }*/
+                    }
                     mech.EjectPilot(mech.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
                 }
             }

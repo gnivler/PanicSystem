@@ -190,13 +190,12 @@ namespace PanicSystem
             var tactics = mech.SkillTactics;
             var gutsAndTacticsSum = guts + tactics;
 
-            if (!CheckImmunity(mech, guts, pilot, tactics, gutsAndTacticsSum))
+            if (!CheckCantEject(mech, guts, pilot, tactics, gutsAndTacticsSum))
             {
                 return false;
             }
 
             // start building ejectModifiers
-
             float lowestHealthLethalLocation = float.MaxValue;
             float ejectModifiers = 0;
 
@@ -289,7 +288,6 @@ namespace PanicSystem
                 return false;
             }
 
-
             var rng = (new Random()).Next(1, 101);
             float rollToBeat;
             if (!panicStarted)
@@ -301,9 +299,16 @@ namespace PanicSystem
                 rollToBeat = Math.Min(ejectModifiers, Settings.MaxEjectChanceWhenEarlyEjectThresholdMet);
             }
 
-            mech.Combat.MessageCenter.PublishMessage(!(rng < rollToBeat)
-                ? new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"{Math.Floor(rollToBeat)}% EJECTION SAVE SUCCESS", FloatieMessage.MessageNature.Buff, true))
-                : new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"{Math.Floor(rollToBeat)}% EJECTION SAVE FAILED: Punchin' Out!!", FloatieMessage.MessageNature.Debuff, true)));
+            if (!(rng < rollToBeat))
+            {
+                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
+                                                         new ShowActorInfoSequence(mech,$"{Math.Floor(rollToBeat)}% EJECTION SAVE SUCCESS", FloatieMessage.MessageNature.Buff, true)));
+            }
+            else
+            {
+            mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
+                                                     new ShowActorInfoSequence(mech, $"{Math.Floor(rollToBeat)}% EJECTION SAVE FAILED: Punchin' Out!!", FloatieMessage.MessageNature.Debuff, true)));
+            }
             return rng < rollToBeat;
         }
 
@@ -347,33 +352,6 @@ namespace PanicSystem
                 }
             }
             return lowestHealthLethalLocation;
-        }
-
-        /// <summary>
-        /// true implies the entity can't suffer ejection
-        /// </summary>
-        /// <param name="mech"></param>
-        /// <param name="guts"></param>
-        /// <param name="pilot"></param>
-        /// <param name="tactics"></param>
-        /// <param name="gutsAndTacticsSum"></param>
-        /// <returns></returns>
-        private static bool CheckImmunity(Mech mech, int guts, Pilot pilot, int tactics, int gutsAndTacticsSum)
-        {
-            // guts 10 makes you immune, player character cannot be forced to eject
-            if ((guts == 10 && Settings.GutsTenAlwaysResists) ||
-                (Settings.PlayerCharacterAlwaysResists && pilot.IsPlayerCharacter))
-                return false;
-
-            // tactics 10 makes you immune, or combination of guts and tactics makes you immune.
-            if ((tactics == 10 && Settings.TacticsTenAlwaysResists) ||
-                (gutsAndTacticsSum >= 10 && Settings.ComboTenAlwaysResists))
-                return false;
-
-            // pilots that cannot eject or be headshot shouldn't eject
-            if (!mech.CanBeHeadShot || !pilot.CanEject)
-                return false;
-            return true;
         }
 
         /// <summary>
@@ -492,6 +470,7 @@ namespace PanicSystem
 
             return panicModifiers;
         }
+
         /// <summary>
         /// returns modifiers
         /// </summary>
@@ -618,6 +597,33 @@ namespace PanicSystem
         }
 
         /// <summary>
+        /// true implies the entity can't suffer ejection
+        /// </summary>
+        /// <param name="mech"></param>
+        /// <param name="guts"></param>
+        /// <param name="pilot"></param>
+        /// <param name="tactics"></param>
+        /// <param name="gutsAndTacticsSum"></param>
+        /// <returns></returns>
+        private static bool CheckCantEject(Mech mech, int guts, Pilot pilot, int tactics, int gutsAndTacticsSum)
+        {
+            // guts 10 makes you immune, player character cannot be forced to eject
+            if ((guts == 10 && Settings.GutsTenAlwaysResists) ||
+                (Settings.PlayerCharacterAlwaysResists && pilot.IsPlayerCharacter))
+                return false;
+
+            // tactics 10 makes you immune, or combination of guts and tactics makes you immune.
+            if ((tactics == 10 && Settings.TacticsTenAlwaysResists) ||
+                (gutsAndTacticsSum >= 10 && Settings.ComboTenAlwaysResists))
+                return false;
+
+            // pilots that cannot eject or be headshot shouldn't eject
+            if (!mech.CanBeHeadShot || !pilot.CanEject)
+                return false;
+            return true;
+        }
+
+        /// <summary>
         ///  true implies the entity can suffer panic
         /// </summary>
         /// <param name="mech"></param>
@@ -703,6 +709,7 @@ namespace PanicSystem
         /// <param name="index"></param>
         public static void ApplyPanicDebuff(Mech mech, int index)
         {
+            mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Failed Panic Check!", FloatieMessage.MessageNature.Debuff, true)));
             if (TrackedPilots[index].TrackedMech == mech.GUID &&
                 TrackedPilots[index].PilotStatus == PanicStatus.Confident)
             {
@@ -732,10 +739,6 @@ namespace PanicSystem
                 mech.StatCollection.ModifyStat("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f);
                 mech.StatCollection.ModifyStat("Panic Attack: Panicking Aim!", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, Settings.PanickedAimModifier);
                 mech.StatCollection.ModifyStat("Panic Attack: Panicking Defence!", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, Settings.PanickedToHitModifier);
-            }
-            else
-            {
-                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Failed Panic Check!", FloatieMessage.MessageNature.Debuff, true)));
             }
             TrackedPilots[index].ChangedRecently = true;
         }

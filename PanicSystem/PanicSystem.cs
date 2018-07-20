@@ -110,7 +110,7 @@ namespace PanicSystem
             panicModifiers = CheckCT(mech, panicModifiers, ref lowestHealthLethalLocation);
             panicModifiers = CheckLT(mech, panicModifiers);
             panicModifiers = CheckRT(mech, panicModifiers);
-            panicModifiers = CheckLowestLegForPanic(mech, panicModifiers, ref lowestHealthLethalLocation);
+            panicModifiers = CheckLegs(mech, panicModifiers, ref lowestHealthLethalLocation);
             panicModifiers = CheckFinalStraws(mech, attackSequence, lowestHealthLethalLocation, panicModifiers, weapons);
             panicModifiers -= gutAndTacticsSum;
 
@@ -307,6 +307,13 @@ namespace PanicSystem
             return rng < rollToBeat;
         }
 
+        /// <summary>
+        /// returns armour and structure sum for the worst leg
+        /// </summary>
+        /// <param name="attackSequence"></param>
+        /// <param name="lowestHealthLethalLocation"></param>
+        /// <param name="mech"></param>
+        /// <returns></returns>
         private static float LowestLegForEject(AttackDirector.AttackSequence attackSequence, float lowestHealthLethalLocation, Mech mech)
         {
             var leftLegHealth = mech.RightLegStructure + mech.RightLegArmor;
@@ -342,6 +349,15 @@ namespace PanicSystem
             return lowestHealthLethalLocation;
         }
 
+        /// <summary>
+        /// true implies the entity can't suffer ejection
+        /// </summary>
+        /// <param name="mech"></param>
+        /// <param name="guts"></param>
+        /// <param name="pilot"></param>
+        /// <param name="tactics"></param>
+        /// <param name="gutsAndTacticsSum"></param>
+        /// <returns></returns>
         private static bool CheckImmunity(Mech mech, int guts, Pilot pilot, int tactics, int gutsAndTacticsSum)
         {
             // guts 10 makes you immune, player character cannot be forced to eject
@@ -361,7 +377,7 @@ namespace PanicSystem
         }
 
         /// <summary>
-        /// G returning anything true implies a Final-Straw panic was met
+        /// true implies a last straw condition was met
         /// </summary>
         /// <param name="mech"></param>
         /// <param name="attackSequence"></param>
@@ -396,23 +412,35 @@ namespace PanicSystem
             return panicModifiers;
         }
 
-        private static float CheckLowestLegForPanic(Mech mech, float panicModifiers, ref float lowestHealthLethalLocation)
+        /// <summary>
+        /// returns modifiers and updates lowestHealthLethalLocation
+        /// </summary>
+        /// <param name="mech"></param>
+        /// <param name="panicModifiers"></param>
+        /// <param name="lowestHealthLethalLocation"></param>
+        /// <returns></returns>
+        private static float CheckLegs(Mech mech, float panicModifiers, ref float lowestHealthLethalLocation)
         {
-            // dZ Check legs independently. Code here significantly improved.
+            // dZ Check legs independently. Code here significantly improved.  Handles missing legs
             var legPercentRight = 1 - (mech.RightLegStructure + mech.RightLegArmor) / (mech.GetMaxStructure(ChassisLocations.RightLeg) + mech.GetMaxArmor(ArmorLocation.RightLeg));
             var legPercentLeft = 1 - (mech.LeftLegStructure + mech.LeftLegArmor) / (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg));
-            if ((legPercentRight + legPercentLeft) < 2)
+            if (legPercentRight + legPercentLeft < 2)
             {
                 panicModifiers += Settings.LeggedMaxModifier * (legPercentRight + legPercentLeft);
                 Logger.Harmony($"Legs: {panicModifiers}");
                 var legCheck = legPercentRight * (mech.GetMaxStructure(ChassisLocations.RightLeg) + mech.GetMaxArmor(ArmorLocation.RightLeg)) +
                                legPercentLeft * (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg));
                 lowestHealthLethalLocation = Math.Min(legCheck, lowestHealthLethalLocation);
-                lowestHealthLethalLocation = Math.Min(legCheck, lowestHealthLethalLocation);
             }
             return panicModifiers;
         }
 
+        /// <summary>
+        /// returns modifiers
+        /// </summary>
+        /// <param name="mech"></param>
+        /// <param name="panicModifiers"></param>
+        /// <returns></returns>
         private static float CheckRT(Mech mech, float panicModifiers)
         {
             var rtStructurePercent = mech.RightTorsoStructure / mech.GetMaxStructure(ChassisLocations.RightTorso);
@@ -425,6 +453,12 @@ namespace PanicSystem
             return panicModifiers;
         }
 
+        /// <summary>
+        /// returns modifiers
+        /// </summary>
+        /// <param name="mech"></param>
+        /// <param name="panicModifiers"></param>
+        /// <returns></returns>
         private static float CheckLT(Mech mech, float panicModifiers)
         {
             var ltStructurePercent = mech.LeftTorsoStructure / mech.GetMaxStructure(ChassisLocations.LeftTorso);
@@ -437,6 +471,13 @@ namespace PanicSystem
             return panicModifiers;
         }
 
+        /// <summary>
+        /// returns modifiers and updates lowestHealthLethalLocation
+        /// </summary>
+        /// <param name="mech"></param>
+        /// <param name="panicModifiers"></param>
+        /// <param name="lowestHealthLethalLocation"></param>
+        /// <returns></returns>
         private static float CheckCT(Mech mech, float panicModifiers, ref float lowestHealthLethalLocation)
         {
             var ctPercent = (mech.CenterTorsoFrontArmor + mech.CenterTorsoStructure + mech.CenterTorsoRearArmor) /
@@ -451,7 +492,12 @@ namespace PanicSystem
 
             return panicModifiers;
         }
-
+        /// <summary>
+        /// returns modifiers
+        /// </summary>
+        /// <param name="mech"></param>
+        /// <param name="panicModifiers"></param>
+        /// <returns></returns>
         private static float CheckHead(Mech mech, float panicModifiers)
         {
             var headHealthPercent = (mech.HeadArmor + mech.HeadStructure) /
@@ -466,6 +512,12 @@ namespace PanicSystem
             return panicModifiers;
         }
 
+        /// <summary>
+        /// returns modifiers
+        /// </summary>
+        /// <param name="mech"></param>
+        /// <param name="panicModifiers"></param>
+        /// <returns></returns>
         private static float CheckMechUnsteady(Mech mech, float panicModifiers)
         {
             if (mech.IsUnsteady)
@@ -477,6 +529,12 @@ namespace PanicSystem
             return panicModifiers;
         }
 
+        /// <summary>
+        /// returns modifiers
+        /// </summary>
+        /// <param name="mech"></param>
+        /// <param name="panicModifiers"></param>
+        /// <returns></returns>
         private static float CheckPilotHealth(Pilot pilot, float panicModifiers)
         {
             if (pilot != null)
@@ -493,6 +551,12 @@ namespace PanicSystem
             return panicModifiers;
         }
 
+        /// <summary>
+        /// returns modifiers
+        /// </summary>
+        /// <param name="mech"></param>
+        /// <param name="panicModifiers"></param>
+        /// <returns></returns>
         private static bool CheckTrackedPilots(Mech mech, ref int index)
         {
             if (index < 0)
@@ -519,6 +583,12 @@ namespace PanicSystem
             return true;
         }
 
+        /// <summary>
+        /// returns modifiers
+        /// </summary>
+        /// <param name="mech"></param>
+        /// <param name="panicModifiers"></param>
+        /// <returns></returns>
         private static bool CheckPanicFromDamage(Mech mech, AttackDirector.AttackSequence attackSequence)
         {
             if (!attackSequence.attackDidDamage)
@@ -547,6 +617,12 @@ namespace PanicSystem
             return true;
         }
 
+        /// <summary>
+        ///  true implies the entity can suffer panic
+        /// </summary>
+        /// <param name="mech"></param>
+        /// <param name="attackSequence"></param>
+        /// <returns></returns>
         private static bool CheckCanPanic(Mech mech, AttackDirector.AttackSequence attackSequence)
         {
             if (mech == null || mech.IsDead || (mech.IsFlaggedForDeath && mech.HasHandledDeath))
@@ -576,6 +652,11 @@ namespace PanicSystem
             return true;
         }
 
+        /// <summary>
+        /// sums armour from all locations
+        /// </summary>
+        /// <param name="mech"></param>
+        /// <returns></returns>
         private static float GetCurrentMechArmour(Mech mech)
         {
             float totalArmor = 0;
@@ -615,6 +696,11 @@ namespace PanicSystem
             return maxArmor;
         }
 
+        /// <summary>
+        /// applied combat modifiers to tracked mechs based on panic status
+        /// </summary>
+        /// <param name="mech"></param>
+        /// <param name="index"></param>
         public static void ApplyPanicDebuff(Mech mech, int index)
         {
             if (TrackedPilots[index].TrackedMech == mech.GUID &&
@@ -713,6 +799,12 @@ namespace PanicSystem
             return false;
         }
 
+        /// <summary>
+        /// true implies this weight class of mech can eject before reachign Panicked
+        /// </summary>
+        /// <param name="mech"></param>
+        /// <param name="i"></param>
+        /// <returns></returns>
         private static bool CanEjectBeforePanicked(Mech mech, int i)
         {
             if (TrackedPilots[i].TrackedMech == mech.GUID && mech.team.IsLocalPlayer)

@@ -1,17 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using BattleTech;
+﻿using BattleTech;
 using BattleTech.Save;
 using BattleTech.Save.SaveGameStructure;
 using BattleTech.UI;
 using Harmony;
+using System;
+using System.Linq;
 using static PanicSystem.Controller;
 using static PanicSystem.PanicSystem;
 
 namespace PanicSystem
 {
-    public class Patches
+    public static class Patches
     {
         [HarmonyPatch(typeof(AttackStackSequence), "OnAttackComplete")]
         public static class AttackStackSequence_OnAttackComplete_Patch
@@ -19,25 +18,26 @@ namespace PanicSystem
             public static void Prefix(AttackStackSequence __instance, MessageCenterMessage message)
             {
                 Logger.Harmony(new string(c: '-', count: 80));
-                Logger.Harmony($"{__instance.owningActor.DisplayName} attacking {__instance.targets.First().DisplayName}");
-                Logger.Harmony(new string(c: '-', count: 80));
+                Logger.Harmony($"{__instance.owningActor.DisplayName} attacked {__instance.targets.First().DisplayName}");
                 AttackCompleteMessage attackCompleteMessage = message as AttackCompleteMessage;
 
-                bool panicStarted = false;
-                bool hasReasonToPanic = false;
                 Mech mech = null;
                 if (attackCompleteMessage == null || attackCompleteMessage.stackItemUID != __instance.SequenceGUID)
                 {
                     return;
                 }
 
+                PanicStarted = false;
+                bool hasReasonToPanic = false;
+
                 if (__instance.directorSequences[0].target is Mech)
                 {
                     mech = (Mech)__instance.directorSequences[0].target;
+                    LastStraw = IsLastStrawPanicking(mech, ref PanicStarted);
                     hasReasonToPanic = ShouldPanic(mech, attackCompleteMessage.attackSequence);
                 }
 
-                if (mech == null || mech.GUID == null)
+                if (mech?.GUID == null)
                 {
                     return;
                 }
@@ -45,17 +45,14 @@ namespace PanicSystem
                 SerializeActiveJson();
 
                 // ejection check
-                if (IsLastStrawPanicking(mech, ref panicStarted) |
-                    hasReasonToPanic &&
-                    RollForEjectionResult(mech, attackCompleteMessage.attackSequence, panicStarted))
+                if (LastStraw | hasReasonToPanic &&
+                    RollForEjectionResult(mech, attackCompleteMessage.attackSequence, PanicStarted))
                 {
                     // ejecting, clean up
                     try
                     {
                         var combat = Traverse.Create(__instance)?.Property("Combat")?.GetValue<CombatGameState>();
-                        if (combat == null) Logger.Harmony(("combat is null"));
                         var effectsTargeting = combat?.EffectManager?.GetAllEffectsTargeting(mech);
-                        if (effectsTargeting == null) Logger.Harmony(("effects is null"));
                         foreach (Effect effect in effectsTargeting)
                         {
                             mech.CancelEffect(effect);

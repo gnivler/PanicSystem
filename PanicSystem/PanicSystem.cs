@@ -1,10 +1,10 @@
-﻿using System;
+﻿using BattleTech;
+using Harmony;
+using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using BattleTech;
-using Harmony;
-using Newtonsoft.Json;
 using static PanicSystem.Controller;
 
 // HUGE thanks to RealityMachina and mpstark for their work, outstanding.
@@ -20,6 +20,8 @@ namespace PanicSystem
         public static List<PanicTracker> TrackedPilots;
         public static List<MetaTracker> MetaTrackers;
         public static int CurrentIndex = -1;
+        public static bool LastStraw = false;
+        public static bool PanicStarted = false;
 
         public static void Init(string modDir, string modSettings)
         {
@@ -68,13 +70,7 @@ namespace PanicSystem
         /// <returns></returns>
         public static bool ShouldPanic(Mech mech, AttackDirector.AttackSequence attackSequence)
         {
-            //Logger.Harmony($"----- ShouldPanic -----");
             if (!CheckCanPanic(mech, attackSequence))
-            {
-                return false;
-            }
-
-            if (!CheckPanicFromDamage(mech, attackSequence))
             {
                 return false;
             }
@@ -87,6 +83,16 @@ namespace PanicSystem
             int index = -1;
             index = GetTrackedPilotIndex(mech);
             float panicModifiers = 0;
+
+            if (LastStraw)
+            {
+                return true;
+            }
+
+            if (!CheckPanicFromDamage(mech, attackSequence))
+            {
+                return false;
+            }
 
             Logger.Harmony($"Collecting panic modifiers:");
             if (!CheckTrackedPilots(mech, ref index))
@@ -108,9 +114,7 @@ namespace PanicSystem
             Logger.Harmony(panicModifiers);
             panicModifiers = GetLegModifier(mech, panicModifiers);
             Logger.Harmony(panicModifiers);
-            panicModifiers = CheckFinalStraws(mech, attackSequence, panicModifiers, weapons);
-            Logger.Harmony(panicModifiers);
-            panicModifiers -= gutAndTacticsSum;
+            panicModifiers = CheckLastStraws(mech, attackSequence, panicModifiers, weapons);
             Logger.Harmony(panicModifiers);
 
             if (pilot.pilotDef.PilotTags.Contains("pilot_brave"))
@@ -119,11 +123,12 @@ namespace PanicSystem
                 Logger.Harmony(panicModifiers);
             }
 
+            panicModifiers -= gutAndTacticsSum;
+
             Logger.Harmony($"Guts and Tactics: {gutAndTacticsSum}");
             if (mech.team == mech.Combat.LocalPlayerTeam)
             {
                 panicModifiers -= (mech.Combat.LocalPlayerTeam.Morale - Settings.MedianMorale) / 2;
-                Logger.Harmony(panicModifiers);
             }
 
             if ((panicModifiers < Settings.AtLeastOneChanceToPanicPercentage) && Settings.AtLeastOneChanceToPanic)
@@ -131,14 +136,13 @@ namespace PanicSystem
                 panicModifiers = Settings.AtLeastOneChanceToPanicPercentage;
                 Logger.Harmony($"Floored saving throw to 25");
             }
-            else
-            {
-                panicModifiers = (float)Math.Round(panicModifiers);
-            }
-          
+
+            panicModifiers = (float)Math.Round(panicModifiers);
+            Logger.Harmony(panicModifiers);
+
             Logger.Harmony($"RollToBeat: {panicModifiers}");
 
-            var rng = (new Random()).Next(1, 101);
+            var rng = new Random().Next(1, 101);
             Logger.Harmony($"Rolled: {rng}");
 
             if (rng <= (int)panicModifiers)
@@ -148,7 +152,7 @@ namespace PanicSystem
                 return true;
             }
 
-            mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"SAVED VERSUS PANIC!", FloatieMessage.MessageNature.Buff, true)));
+            mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"MADE {panicModifiers}% PANIC SAVE!", FloatieMessage.MessageNature.Buff, true)));
             Logger.Harmony($"Resisted panic check.");
             return false;
         }
@@ -279,13 +283,15 @@ namespace PanicSystem
                 Logger.Harmony(ejectModifiers);
             }
 
-            if (ejectModifiers <= 0)
+            // passes through if last straw is met to force an ejection roll
+            if (ejectModifiers <= 0 & !IsLastStrawPanicking(mech, ref panicStarted))
             {
-                Logger.Harmony($"negative ejection modifiers, exit");
+                Logger.Harmony($"Negative ejection modifiers.  Resisted.");
+                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
+                    new ShowActorInfoSequence(mech, $"RESISTED EJECTION!", FloatieMessage.MessageNature.Buff, true)));
                 return false;
             }
 
-            var rng = (new Random()).Next(1, 101);
             float rollToBeat;
             if (!panicStarted)
             {
@@ -296,7 +302,11 @@ namespace PanicSystem
                 rollToBeat = (float)Math.Round(Math.Min(ejectModifiers, Settings.MaxEjectChanceWhenEarlyEjectThresholdMet));
             }
 
-            Logger.Harmony($"Final ejection modifier: {rollToBeat}");
+            Logger.Harmony($"RollToBeat: {rollToBeat}");
+
+            var rng = new Random().Next(1, 101);
+
+            Logger.Harmony($"Rolled: {rng}");
             mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
                 new ShowActorInfoSequence(mech, $"{rollToBeat}% EJECTION CHANCE!", FloatieMessage.MessageNature.Debuff, true)));
             if (rng >= rollToBeat)
@@ -313,7 +323,7 @@ namespace PanicSystem
         }
 
         /// <summary>
-        /// true implies a last straw condition was met
+        /// returns modifiers
         /// </summary>
         /// <param name="mech"></param>
         /// <param name="attackSequence"></param>
@@ -321,7 +331,7 @@ namespace PanicSystem
         /// <param name="panicModifiers"></param>
         /// <param name="weapons"></param>
         /// <returns></returns>
-        private static float CheckFinalStraws(Mech mech, AttackDirector.AttackSequence attackSequence, float panicModifiers, List<Weapon> weapons)
+        private static float CheckLastStraws(Mech mech, AttackDirector.AttackSequence attackSequence, float panicModifiers, List<Weapon> weapons)
         {
             // weaponless
             if (weapons.TrueForAll(w =>
@@ -684,9 +694,9 @@ namespace PanicSystem
         /// returning true and ref here implies they're on their last straw
         /// </summary>
         /// <param name="mech"></param>
-        /// <param name="lastStraw"></param>
+        /// <param name="PanicStarted"></param>
         /// <returns></returns>
-        public static bool IsLastStrawPanicking(Mech mech, ref bool lastStraw)
+        public static bool IsLastStrawPanicking(Mech mech, ref bool PanicStarted)
         {
             //Logger.Harmony($"----- IsLastStrawPanicking -----");
             if (mech == null || mech.IsDead || (mech.IsFlaggedForDeath && mech.HasHandledDeath))
@@ -696,44 +706,44 @@ namespace PanicSystem
 
             Pilot pilot = mech.GetPilot();
 
-            if (mech != null)
+            int i = GetTrackedPilotIndex(mech);
+            var weapons = mech.Weapons;
+
+            if (pilot != null && !pilot.LethalInjuries && pilot.Health - pilot.Injuries <= Settings.MinimumHealthToAlwaysEjectRoll)
             {
-                int i = GetTrackedPilotIndex(mech);
-                var weapons = mech.Weapons;
+                Logger.Harmony($"Last straw health.");
+                PanicStarted = true;
+                return true;
+            }
+            if (weapons.TrueForAll(w => w.DamageLevel == ComponentDamageLevel.Destroyed || w.DamageLevel == ComponentDamageLevel.NonFunctional) && Settings.ConsiderEjectingWithNoWeaps)
+            {
+                Logger.Harmony($"Last straw weapons.");
+                PanicStarted = true;
+                return true;
+            }
 
-                if (pilot != null && !pilot.LethalInjuries && pilot.Health - pilot.Injuries <= Settings.MinimumHealthToAlwaysEjectRoll)
+            if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m.GUID == mech.GUID) && Settings.ConsiderEjectingWhenAlone)
+            {
+                Logger.Harmony($"Last straw sole survivor.");
+                PanicStarted = true;
+                return true;
+            }
+
+            if (i > -1)
+            {
+                if (TrackedPilots[i].TrackedMech == mech.GUID &&
+                    TrackedPilots[i].PilotStatus == PanicStatus.Panicked)
                 {
-                    Logger.Harmony($"Panicking minimum health threshold met.");
+                    Logger.Harmony($"Panicked.");
+                    PanicStarted = true;
                     return true;
                 }
-                if (weapons.TrueForAll(w => w.DamageLevel == ComponentDamageLevel.Destroyed || w.DamageLevel == ComponentDamageLevel.NonFunctional) && Settings.ConsiderEjectingWithNoWeaps)
+
+                if (CanEjectBeforePanicked(mech, i))
                 {
-                    Logger.Harmony($"Panicking due to damaged and destroyed weapons.");
+                    Logger.Harmony($"Early ejection danger.");
+                    PanicSystem.PanicStarted = true;
                     return true;
-                }
-
-                if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m.GUID == mech.GUID) && Settings.ConsiderEjectingWhenAlone)
-                {
-                    Logger.Harmony($"Panicking due to being the last alive.");
-                    return true;
-                }
-
-                if (i > -1)
-                {
-                    if (TrackedPilots[i].TrackedMech == mech.GUID &&
-                        TrackedPilots[i].PilotStatus == PanicStatus.Panicked)
-                    {
-                        Logger.Harmony($"Panicked.");
-                        lastStraw = true;
-                        return true;
-                    }
-
-                    if (CanEjectBeforePanicked(mech, i))
-                    {
-                        Logger.Harmony($"Early ejection danger.");
-                        lastStraw = true;
-                        return true;
-                    }
                 }
             }
             return false;

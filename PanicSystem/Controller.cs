@@ -10,6 +10,10 @@ namespace PanicSystem
 {
     public static class Controller
     {
+        public static List<PanicTracker> TrackedPilots;
+        public static List<MetaTracker> MetaTrackers;
+        public static int CurrentIndex = -1;
+
         public static void Reset()
         {
             TrackedPilots = new List<PanicTracker>();

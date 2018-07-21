@@ -17,10 +17,12 @@ namespace PanicSystem
         public static string StorageJsonPath; //store our meta trackers here
         public static string ModDirectory;
 
-        public static List<PanicTracker> TrackedPilots;
-        public static List<MetaTracker> MetaTrackers;
-        public static int CurrentIndex = -1;
+        public static Random RNG = new Random();
+
+        // forces ejection saves every attack
         public static bool LastStraw = false;
+
+        // makes saving throws harder
         public static bool PanicStarted = false;
 
         public static void Init(string modDir, string modSettings)
@@ -49,9 +51,10 @@ namespace PanicSystem
             public static readonly string FilePath = $"{ModDirectory}/Log.txt";
             public static void Harmony(object line)
             {
-                //if (!Settings.Debug) return;
+                if (!Settings.Debug) return;
                 FileLog.Log(line.ToString());
             }
+
             public static void Debug(object line)
             {
                 if (!Settings.Debug) return;
@@ -114,18 +117,19 @@ namespace PanicSystem
             Logger.Harmony(panicModifiers);
             panicModifiers = GetLegModifier(mech, panicModifiers);
             Logger.Harmony(panicModifiers);
-            panicModifiers = CheckLastStraws(mech, attackSequence, panicModifiers, weapons);
+            panicModifiers = CheckLastStraws(mech, panicModifiers, weapons);
             Logger.Harmony(panicModifiers);
 
             if (pilot.pilotDef.PilotTags.Contains("pilot_brave"))
             {
                 panicModifiers -= Settings.BraveModifier;
-                Logger.Harmony(panicModifiers);
+                Logger.Harmony($"After bravery {panicModifiers}");
             }
 
-            panicModifiers -= gutAndTacticsSum;
-
             Logger.Harmony($"Guts and Tactics: {gutAndTacticsSum}");
+            panicModifiers -= gutAndTacticsSum;
+            Logger.Harmony($"After guts and tactics");
+
             if (mech.team == mech.Combat.LocalPlayerTeam)
             {
                 panicModifiers -= (mech.Combat.LocalPlayerTeam.Morale - Settings.MedianMorale) / 2;
@@ -138,9 +142,7 @@ namespace PanicSystem
             }
 
             panicModifiers = (float)Math.Round(panicModifiers);
-            Logger.Harmony(panicModifiers);
-
-            Logger.Harmony($"RollToBeat: {panicModifiers}");
+            Logger.Harmony($"Rounded to {panicModifiers} - roll to beat");
 
             var rng = new Random().Next(1, 101);
             Logger.Harmony($"Rolled: {rng}");
@@ -153,7 +155,7 @@ namespace PanicSystem
             }
 
             mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"MADE {panicModifiers}% PANIC SAVE!", FloatieMessage.MessageNature.Buff, true)));
-            Logger.Harmony($"Resisted panic check.");
+            Logger.Harmony($"MADE {panicModifiers}% PANIC SAVE!");
             return false;
         }
 
@@ -300,9 +302,9 @@ namespace PanicSystem
             // passes through if last straw is met to force an ejection roll
             if (rollToBeat <= 0 && !IsLastStrawPanicking(mech, ref panicStarted))
             {
-                Logger.Harmony($"Negative ejection modifiers.  Resisted.");
                 mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
                     new ShowActorInfoSequence(mech, $"RESISTED EJECTION!", FloatieMessage.MessageNature.Buff, true)));
+                Logger.Harmony($"RESISTED EJECTION!");
                 return false;
             }
 
@@ -316,23 +318,24 @@ namespace PanicSystem
             }
 
             Logger.Harmony($"RollToBeat: {rollToBeat}");
-            var rng = new Random().Next(1, 101);
-            Logger.Harmony($"Rolled: {rng}");
+            var roll = RNG.Next(1, 101);
+            Logger.Harmony($"Rolled: {roll}");
+            Logger.Harmony($"{rollToBeat}% EJECTION CHANCE!");
             mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
                 new ShowActorInfoSequence(mech, $"{rollToBeat}% EJECTION CHANCE!", FloatieMessage.MessageNature.Debuff, true)));
-            if (rng >= rollToBeat)
+            if (roll < rollToBeat)
             {
-                Logger.Harmony($"Saved against ejection.");
-                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
-                                                         new ShowActorInfoSequence(mech, $"AVOIDED!", FloatieMessage.MessageNature.Buff, true)));
-            }
-            else
-            {
-                Logger.Harmony($"Ejecting.");
+                Logger.Harmony($"FAILED SAVE: Punchin' Out!!");
                 mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
                                                          new ShowActorInfoSequence(mech, $"FAILED SAVE: Punchin' Out!!", FloatieMessage.MessageNature.Debuff, true)));
             }
-            return rng <= rollToBeat;
+            else
+            {
+                Logger.Harmony($"AVOIDED!");
+                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
+                                                         new ShowActorInfoSequence(mech, $"AVOIDED!", FloatieMessage.MessageNature.Buff, true)));
+            }
+            return roll < rollToBeat;
         }
 
         /// <summary>
@@ -664,11 +667,13 @@ namespace PanicSystem
         /// <param name="index"></param>
         public static void ApplyPanicDebuff(Mech mech, int index)
         {
-            mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Failed Panic Check!", FloatieMessage.MessageNature.Debuff, true)));
+            Logger.Harmony("FAILED PANIC CHECK!");
+            mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"FAILED PANIC CHECK!", FloatieMessage.MessageNature.Debuff, true)));
             if (TrackedPilots[index].TrackedMech == mech.GUID &&
                 TrackedPilots[index].PilotStatus == PanicStatus.Confident)
             {
-                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Unsettled!", FloatieMessage.MessageNature.Debuff, true)));
+                Logger.Harmony("UNSETTLED!");
+                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"UNSETTLED!", FloatieMessage.MessageNature.Debuff, true)));
                 TrackedPilots[index].PilotStatus = PanicStatus.Unsettled;
                 mech.StatCollection.ModifyStat("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f);
                 mech.StatCollection.ModifyStat("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f);
@@ -678,7 +683,8 @@ namespace PanicSystem
             else if (TrackedPilots[index].TrackedMech == mech.GUID &&
                      TrackedPilots[index].PilotStatus == PanicStatus.Unsettled)
             {
-                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Stressed!", FloatieMessage.MessageNature.Debuff, true)));
+                Logger.Harmony("STRESSED!!");
+                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"STRESSED!", FloatieMessage.MessageNature.Debuff, true)));
                 TrackedPilots[index].PilotStatus = PanicStatus.Stressed;
                 mech.StatCollection.ModifyStat("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f);
                 mech.StatCollection.ModifyStat("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f);
@@ -688,7 +694,8 @@ namespace PanicSystem
             else if (TrackedPilots[index].TrackedMech == mech.GUID &&
                      TrackedPilots[index].PilotStatus == PanicStatus.Stressed)
             {
-                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"Panicked!", FloatieMessage.MessageNature.Debuff, true)));
+                Logger.Harmony("PANICKED!");
+                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"PANICKED!", FloatieMessage.MessageNature.Debuff, true)));
                 TrackedPilots[index].PilotStatus = PanicStatus.Panicked;
                 mech.StatCollection.ModifyStat("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f);
                 mech.StatCollection.ModifyStat("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f);

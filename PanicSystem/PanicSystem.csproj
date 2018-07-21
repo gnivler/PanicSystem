@@ -62,4 +62,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>copy /y $(TargetPath) N:\SteamLibrary\steamapps\common\BATTLETECH\Mods\PanicSystem</PostBuildEvent>
+  </PropertyGroup>
 </Project>

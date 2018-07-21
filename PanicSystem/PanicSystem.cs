@@ -296,7 +296,7 @@ namespace PanicSystem
                 rollToBeat = (float)Math.Round(Math.Min(ejectModifiers, Settings.MaxEjectChanceWhenEarlyEjectThresholdMet));
             }
 
-            Logger.Harmony($"Final ejection modifier: {ejectModifiers}");
+            Logger.Harmony($"Final ejection modifier: {rollToBeat}");
             mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
                 new ShowActorInfoSequence(mech, $"{rollToBeat}% EJECTION CHANCE!", FloatieMessage.MessageNature.Debuff, true)));
             if (rng >= rollToBeat)

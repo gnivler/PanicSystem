@@ -130,39 +130,27 @@ namespace PanicSystem
             {
                 panicModifiers = Settings.AtLeastOneChanceToPanicPercentage;
                 Logger.Harmony($"Floored saving throw to 25");
-                Logger.Harmony(panicModifiers);
-            }
-
-            var rollToBeat = 25;
-            if (panicModifiers < 25)
-            {
-                Logger.Harmony($"Negative value: floored saving throw to 25");
-                rollToBeat = (int)Settings.MaxPanicResistTotal;
-            }
-            else
-            {
-                rollToBeat = (int)panicModifiers;
             }
           
-            Logger.Harmony($"RollToBeat: {rollToBeat}");
+            Logger.Harmony($"RollToBeat: {(int)panicModifiers}");
 
             var rng = (new Random()).Next(1, 101);
             Logger.Harmony($"Rolled: {rng}");
 
-            if (rng <= rollToBeat)
+            if (rng <= (int)panicModifiers)
             {
                 Logger.Harmony($"Failed panic save.");
                 ApplyPanicDebuff(mech, index);
                 return true;
             }
 
-            mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"SAVE SUCCESS AGAINST PANIC!", FloatieMessage.MessageNature.Buff, true)));
+            mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"SAVED VERSUS PANIC!", FloatieMessage.MessageNature.Buff, true)));
             Logger.Harmony($"Resisted panic check.");
             return false;
         }
 
         /// <summary>
-        /// true implies an ejection condition was met
+        /// true implies an ejection condition was met and ejections occurs
         /// </summary>
         /// <param name="mech"></param>
         /// <param name="attackSequence"></param>
@@ -197,15 +185,12 @@ namespace PanicSystem
             var tactics = mech.SkillTactics;
             var gutsAndTacticsSum = guts + tactics;
 
-            if (CheckCantEject(mech, guts, pilot, tactics, gutsAndTacticsSum))
+            if (!CheckCantEject(mech, guts, pilot, tactics, gutsAndTacticsSum))
             {
-                return true;
+                return false;
             }
 
-            Logger.Harmony("5");
-
             // start building ejectModifiers
-            float lowestHealthLethalLocation = float.MaxValue;
             float ejectModifiers = 0;
             Logger.Harmony($"Collecting ejection modifiers:");
             Logger.Harmony(new string(c: '-', count: 80));
@@ -241,7 +226,6 @@ namespace PanicSystem
             if (ctPercent < 1)
             {
                 ejectModifiers += Settings.CTDamageMaxModifier * (1 - ctPercent);
-                lowestHealthLethalLocation = Math.Min(mech.CenterTorsoStructure, lowestHealthLethalLocation);
             }
             Logger.Harmony(ejectModifiers);
 
@@ -291,10 +275,13 @@ namespace PanicSystem
                 Logger.Harmony(ejectModifiers);
             }
 
-            if (ejectModifiers < 0)
+            if (ejectModifiers <= 0)
             {
+                Logger.Harmony($"negative ejection modifiers, exit");
                 return false;
             }
+
+            Logger.Harmony("1");
 
             var rng = (new Random()).Next(1, 101);
             float rollToBeat;
@@ -307,16 +294,17 @@ namespace PanicSystem
                 rollToBeat = Math.Min(ejectModifiers, Settings.MaxEjectChanceWhenEarlyEjectThresholdMet);
             }
             Logger.Harmony($"Final ejection modifier: {ejectModifiers}");
-
+            mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
+                new ShowActorInfoSequence(mech, $"{Math.Floor(rollToBeat)}% EJECTION CHANCE!", FloatieMessage.MessageNature.Debuff, true)));
             if (!(rng <= rollToBeat))
             {
                 mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
-                                                         new ShowActorInfoSequence(mech, $"{Math.Floor(rollToBeat)}% EJECTION SAVE SUCCESS", FloatieMessage.MessageNature.Buff, true)));
+                                                         new ShowActorInfoSequence(mech, $"AVOIDED!", FloatieMessage.MessageNature.Buff, true)));
             }
             else
             {
                 mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
-                                                         new ShowActorInfoSequence(mech, $"{Math.Floor(rollToBeat)}% EJECTION SAVE FAILED: Punchin' Out!!", FloatieMessage.MessageNature.Debuff, true)));
+                                                         new ShowActorInfoSequence(mech, $"FAILED SAVE: Punchin' Out!!", FloatieMessage.MessageNature.Debuff, true)));
             }
             return rng <= rollToBeat;
         }

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using BattleTech;
 using BattleTech.Save;
@@ -42,20 +43,29 @@ namespace PanicSystem
                 }
 
                 SerializeActiveJson();
+
+                // ejection check
                 if (IsLastStrawPanicking(mech, ref panicStarted) |
                     hasReasonToPanic &&
                     RollForEjectionResult(mech, attackCompleteMessage.attackSequence, panicStarted))
                 {
-                    var combat = Traverse.Create(__instance).Property("Combat").GetValue<CombatGameState>();
-                    if (combat == null) Logger.Harmony(("combat is null"));
-                    var effectsTargeting = combat.EffectManager.GetAllEffectsTargeting(mech);
-                    if (effectsTargeting == null) Logger.Harmony(("effects is null"));
-
-                    foreach (Effect effect in effectsTargeting)
+                    // ejecting, clean up
+                    try
                     {
-                        mech.CancelEffect(effect);
+                        var combat = Traverse.Create(__instance)?.Property("Combat")?.GetValue<CombatGameState>();
+                        if (combat == null) Logger.Harmony(("combat is null"));
+                        var effectsTargeting = combat?.EffectManager?.GetAllEffectsTargeting(mech);
+                        if (effectsTargeting == null) Logger.Harmony(("effects is null"));
+                        foreach (Effect effect in effectsTargeting)
+                        {
+                            mech.CancelEffect(effect);
+                        }
+                        mech.EjectPilot(mech.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
                     }
-                    mech.EjectPilot(mech.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
+                    catch (Exception e)
+                    {
+                        Logger.Harmony($"exception: {e.Message}\n{e.Data}");
+                    }
                 }
             }
         }

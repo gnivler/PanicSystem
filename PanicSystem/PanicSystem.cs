@@ -131,8 +131,12 @@ namespace PanicSystem
                 panicModifiers = Settings.AtLeastOneChanceToPanicPercentage;
                 Logger.Harmony($"Floored saving throw to 25");
             }
+            else
+            {
+                panicModifiers = (float)Math.Round(panicModifiers);
+            }
           
-            Logger.Harmony($"RollToBeat: {(int)panicModifiers}");
+            Logger.Harmony($"RollToBeat: {panicModifiers}");
 
             var rng = (new Random()).Next(1, 101);
             Logger.Harmony($"Rolled: {rng}");
@@ -281,22 +285,21 @@ namespace PanicSystem
                 return false;
             }
 
-            Logger.Harmony("1");
-
             var rng = (new Random()).Next(1, 101);
             float rollToBeat;
             if (!panicStarted)
             {
-                rollToBeat = Math.Min(ejectModifiers, Settings.MaxEjectChance);
+                rollToBeat = (float)Math.Round(Math.Min(ejectModifiers, Settings.MaxEjectChance));
             }
             else
             {
-                rollToBeat = Math.Min(ejectModifiers, Settings.MaxEjectChanceWhenEarlyEjectThresholdMet);
+                rollToBeat = (float)Math.Round(Math.Min(ejectModifiers, Settings.MaxEjectChanceWhenEarlyEjectThresholdMet));
             }
+
             Logger.Harmony($"Final ejection modifier: {ejectModifiers}");
             mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
-                new ShowActorInfoSequence(mech, $"{Math.Floor(rollToBeat)}% EJECTION CHANCE!", FloatieMessage.MessageNature.Debuff, true)));
-            if (!(rng <= rollToBeat))
+                new ShowActorInfoSequence(mech, $"{rollToBeat}% EJECTION CHANCE!", FloatieMessage.MessageNature.Debuff, true)));
+            if (rng >= rollToBeat)
             {
                 mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
                                                          new ShowActorInfoSequence(mech, $"AVOIDED!", FloatieMessage.MessageNature.Buff, true)));

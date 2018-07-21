@@ -45,7 +45,7 @@ namespace PanicSystem
                 SerializeActiveJson();
 
                 // ejection check
-                if (LastStraw | hasReasonToPanic &&
+                if (LastStraw || hasReasonToPanic &&
                     RollForEjectionResult(mech, attackCompleteMessage.attackSequence, PanicStarted))
                 {
                     // ejecting, clean up

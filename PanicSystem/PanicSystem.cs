@@ -284,7 +284,7 @@ namespace PanicSystem
             }
 
             // passes through if last straw is met to force an ejection roll
-            if (ejectModifiers <= 0 & !IsLastStrawPanicking(mech, ref panicStarted))
+            if (ejectModifiers <= 0 && !IsLastStrawPanicking(mech, ref panicStarted))
             {
                 Logger.Harmony($"Negative ejection modifiers.  Resisted.");
                 mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(

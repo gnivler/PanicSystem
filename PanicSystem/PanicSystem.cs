@@ -26,10 +26,7 @@ namespace PanicSystem
         public static bool PanicStarted = false;
 
         public static void Init(string modDir, string modSettings)
-        {
-            FileLog.Reset();
-            FileLog.Log($"{DateTime.Now.ToLongTimeString()} Harmony Init");
-
+        {           
             var harmony = HarmonyInstance.Create("com.BattleTech.PanicSystem");
             harmony.PatchAll(Assembly.GetExecutingAssembly());
             ModDirectory = modDir;
@@ -43,6 +40,11 @@ namespace PanicSystem
             catch (Exception)
             {
                 Settings = new ModSettings();
+            }
+
+            if (Settings.Debug)
+            {
+                 FileLog.Reset();
             }
         }
 
@@ -483,34 +485,11 @@ namespace PanicSystem
             return panicModifiers;
         }
 
-        // thanks to Razhunter
-        [HarmonyPatch(typeof(StatisticEffect), "OnEffectEnd")]
-        public static class OnEffectEndOverride
-        {
-            public static bool Prefix(StatisticEffect __instance, EffectData ___effectData, bool expired)
-            {
-                if (___effectData.targetingData.effectTriggerType != EffectTriggerType.OnDamaged &&
-                    (!expired || !___effectData.statisticData.effectsPersistAfterDestruction))
-                {
-                    StatCollection sc = Traverse.Create(__instance).Property("statCollection").GetValue<StatCollection>();
-                    if (sc == null)
-                    {
-                        Logger.Debug($"Empty StatCollection bug!" + Environment.NewLine +
-                                     $"Effect name {___effectData.Description.Name}. Effect id: {___effectData.Description.Id}" +
-                                     Environment.NewLine + $"effectTriggerType: {___effectData.targetingData.effectTriggerType}");
-                        return false;
-                    }
-                }
-                return true;
-            }
-        }
 
-        public static class RollHelpers
         /// <summary>
         /// true implies the pilot is tracked
         /// </summary>
         /// <param name="mech"></param>
-        /// <param name="panicModifiers"></param>
         /// <returns></returns>
         private static bool CheckTrackedPilots(Mech mech, ref int index)
 
@@ -542,7 +521,7 @@ namespace PanicSystem
         /// returns modifiers
         /// </summary>
         /// <param name="mech"></param>
-        /// <param name="panicModifiers"></param>
+        /// <param name="attackSequence"></param>
         /// <returns></returns>
         private static bool CheckPanicFromDamage(Mech mech, AttackDirector.AttackSequence attackSequence)
         {

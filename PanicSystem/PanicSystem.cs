@@ -34,7 +34,7 @@ namespace PanicSystem
             StorageJsonPath = Path.Combine(modDir, "PanicSystemStorage.json");
             try
             {
-                FileLog.Log($"Loading settings");
+
                 Settings = JsonConvert.DeserializeObject<ModSettings>(modSettings);
             }
             catch (Exception)
@@ -42,7 +42,7 @@ namespace PanicSystem
                 Settings = new ModSettings();
             }
 
-            if (Settings.Debug)
+            if (Settings.Debug | Settings.EnableDebug)
             {
                  FileLog.Reset();
             }
@@ -59,7 +59,7 @@ namespace PanicSystem
 
             public static void Debug(object line)
             {
-                if (!Settings.Debug) return;
+                if (!Settings.Debug || !Settings.EnableDebug) return;
                 using (var writer = new StreamWriter(FilePath, true))
                 {
                     writer.WriteLine($"{DateTime.Now.ToShortTimeString()} {line}");
@@ -129,11 +129,6 @@ namespace PanicSystem
             CheckLastStraws(mech, ref panicModifiers, weapons);
             Logger.Harmony($"LastStraw: {panicModifiers}");
 
-            if (pilot.pilotDef.PilotTags.Contains("pilot_brave"))
-            {
-                panicModifiers -= Settings.BraveModifier;
-                Logger.Harmony($"After bravery {panicModifiers}");
-            }
 
             panicModifiers -= gutAndTacticsSum;
             Logger.Harmony($"Guts and Tactics: {panicModifiers} ({gutAndTacticsSum})");
@@ -146,7 +141,7 @@ namespace PanicSystem
             if ((panicModifiers < Settings.AtLeastOneChanceToPanicPercentage) && Settings.AtLeastOneChanceToPanic)
             {
                 panicModifiers = Settings.AtLeastOneChanceToPanicPercentage;
-                Logger.Harmony($"Floored saving throw to 25");
+                Logger.Harmony($"Floored saving throw to {Settings.AtLeastOneChanceToPanicPercentage}");
             }
 
             panicModifiers = (float)Math.Round(panicModifiers);
@@ -194,11 +189,6 @@ namespace PanicSystem
 
             Pilot pilot = mech.GetPilot();
             if (pilot == null)
-            {
-                return false;
-            }
-
-            if (pilot.pilotDef.PilotTags.Contains("pilot_drunk"))
             {
                 return false;
             }
@@ -283,16 +273,11 @@ namespace PanicSystem
             }
 
             //dZ Because this is how it should be. Make this changeable. 
-            ejectModifiers = Math.Min(0, (ejectModifiers - Settings.BaseEjectionResist - (Settings.GutsEjectionResistPerPoint * guts) -
+            ejectModifiers = Math.Max(0, (ejectModifiers - Settings.BaseEjectionResist - (Settings.GutsEjectionResistPerPoint * guts) -
                              (Settings.TacticsEjectionResistPerPoint * tactics)) * Settings.EjectChanceMultiplier);
             Logger.Harmony($"After calculation: {ejectModifiers}");
 
-            if (pilot.pilotDef.PilotTags.Contains("pilot_dependable"))
-            {
-                ejectModifiers -= Settings.DependableModifier;
-                Logger.Harmony($"Dependable Pilot: {ejectModifiers}");
-            }
-
+  
             if (mech.team == mech.Combat.LocalPlayerTeam)
             {
                 ejectModifiers -= (mech.Combat.LocalPlayerTeam.Morale - Settings.MedianMorale) / 2;
@@ -340,6 +325,31 @@ namespace PanicSystem
             }
             return roll < rollToBeat;
         }
+
+        private static int NumberOfEnemies()
+        {
+            throw new NotImplementedException();
+        }
+
+        private static int NumberOfAllies()
+        {
+            throw new NotImplementedException();
+        }
+
+        private static float GetAllEnemiesHealth(Mech mech)
+        {
+            var enemies = mech.Combat.GetAllEnemiesOf(mech);
+            float enemiesHealth = 0f;
+            foreach (var enemy in enemies)
+            {
+                enemiesHealth += enemy.SummaryArmorCurrent + enemy.SummaryStructureCurrent;
+            }
+
+            return enemiesHealth;
+        }
+
+
+
 
         /// <summary>
         /// returns modifiers
@@ -633,6 +643,20 @@ namespace PanicSystem
             return totalArmor;
         }
 
+        private static float GetCurrentMechStructure(Mech mech)
+        {
+            float totalStructure = 0;
+            totalStructure += mech.GetCurrentStructure(ChassisLocations.Head);
+            totalStructure += mech.GetCurrentStructure(ChassisLocations.CenterTorso);
+            totalStructure += mech.GetCurrentStructure(ChassisLocations.LeftTorso);
+            totalStructure += mech.GetCurrentStructure(ChassisLocations.RightTorso);
+            totalStructure += mech.GetCurrentStructure(ChassisLocations.RightArm);
+            totalStructure += mech.GetCurrentStructure(ChassisLocations.LeftArm);
+            totalStructure += mech.GetCurrentStructure(ChassisLocations.RightLeg);
+            totalStructure += mech.GetCurrentStructure(ChassisLocations.LeftLeg);
+            return totalStructure;
+        }
+
         /// <summary>
         /// not in use
         /// </summary>
@@ -708,16 +732,13 @@ namespace PanicSystem
         /// <returns></returns>
         public static bool IsLastStrawPanicking(Mech mech, ref bool PanicStarted)
         {
-            //Logger.Harmony($"----- IsLastStrawPanicking -----");
             if (mech == null || mech.IsDead || (mech.IsFlaggedForDeath && mech.HasHandledDeath))
             {
                 return false;
             }
 
             Pilot pilot = mech.GetPilot();
-
             int i = GetTrackedPilotIndex(mech);
-            var weapons = mech.Weapons;
 
             if (pilot != null && !pilot.LethalInjuries && pilot.Health - pilot.Injuries <= Settings.MinimumHealthToAlwaysEjectRoll)
             {
@@ -725,14 +746,18 @@ namespace PanicSystem
                 PanicStarted = true;
                 return true;
             }
-            if (weapons.TrueForAll(w => w.DamageLevel == ComponentDamageLevel.Destroyed || w.DamageLevel == ComponentDamageLevel.NonFunctional) && Settings.ConsiderEjectingWithNoWeaps)
+            if (mech.Weapons.TrueForAll(w => w.DamageLevel == ComponentDamageLevel.Destroyed || w.DamageLevel == ComponentDamageLevel.NonFunctional) && Settings.ConsiderEjectingWithNoWeaps)
             {
                 Logger.Harmony($"Last straw weapons.");
                 PanicStarted = true;
                 return true;
             }
 
-            if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m.GUID == mech.GUID) && Settings.ConsiderEjectingWhenAlone)
+            var enemyHealth = GetAllEnemiesHealth(mech);
+
+            if (Settings.ConsiderEjectingWhenAlone &&
+                mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m.GUID == mech.GUID) &&
+                enemyHealth > (mech.SummaryArmorCurrent + mech.SummaryStructureCurrent) * 2)
             {
                 Logger.Harmony($"Last straw sole survivor.");
                 PanicStarted = true;
@@ -847,6 +872,7 @@ namespace PanicSystem
             public bool PlayerTeamCanPanic = true;
             public bool EnemiesCanPanic = true;
             public bool Debug = false;
+            public bool EnableDebug = false;
 
             //new mechanics for considering when to eject based on mech class
             public bool PlayerLightsConsiderEjectingEarly = false;

@@ -1,6 +1,6 @@
-﻿using BattleTech;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using BattleTech;
 
 // HUGE thanks to RealityMachina and mpstark for their work, outstanding.
 namespace PanicSystem
@@ -15,8 +15,8 @@ namespace PanicSystem
 
     public class PanicTracker
     {
-        public PanicStatus pilotStatus;
-        public string trackedMech;
+        public PanicStatus PilotStatus;
+        public string TrackedMech;
         public bool ChangedRecently;
 
         public PanicTracker()
@@ -25,8 +25,8 @@ namespace PanicSystem
         }
         public PanicTracker(Mech mech)
         {
-            trackedMech = mech.GUID;
-            pilotStatus = PanicStatus.Confident;
+            TrackedMech = mech.GUID;
+            PilotStatus = PanicStatus.Confident;
             ChangedRecently = false;
         }
     }
@@ -36,11 +36,6 @@ namespace PanicSystem
         public List<PanicTracker> TrackedPilots { get; set; }
         public DateTime SaveGameTimeStamp { get; set; }
         public string SimGameGUID { get; set; }
-
-        public MetaTracker()
-        {
-            //do nothing for this is when we deserialize/serialize objects
-        }
 
         public void SetGameGUID(string GUID)
         {

@@ -105,32 +105,33 @@ namespace PanicSystem
                 return false;
             }
 
-            panicModifiers = GetPilotHealthModifier(pilot, panicModifiers);
-            Logger.Harmony(panicModifiers);
-            panicModifiers = GetUnsteadyModifier(mech, panicModifiers);
-            Logger.Harmony(panicModifiers);
-            panicModifiers = GetHeadModifier(mech, panicModifiers);
-            Logger.Harmony(panicModifiers);
-            panicModifiers = GetCTModifier(mech, panicModifiers);
-            Logger.Harmony(panicModifiers);
-            panicModifiers = GetLTModifier(mech, panicModifiers);
-            Logger.Harmony(panicModifiers);
-            panicModifiers = CheckRT(mech, panicModifiers);
-            Logger.Harmony(panicModifiers);
-            panicModifiers = GetLegModifier(mech, panicModifiers);
-            Logger.Harmony(panicModifiers);
-            panicModifiers = CheckLastStraws(mech, panicModifiers, weapons);
-            Logger.Harmony(panicModifiers);
+            GetPilotHealthModifier(pilot, ref panicModifiers);
+            Logger.Harmony($"pilot: {panicModifiers}");
 
-            if (pilot.pilotDef.PilotTags.Contains("pilot_brave"))
-            {
-                panicModifiers -= Settings.BraveModifier;
-                Logger.Harmony($"After bravery {panicModifiers}");
-            }
+            GetUnsteadyModifier(mech, ref panicModifiers);
+            Logger.Harmony($"unsteady: {panicModifiers}");
 
-            Logger.Harmony($"Guts and Tactics: {gutAndTacticsSum}");
+            GetHeadModifier(mech, ref panicModifiers);
+            Logger.Harmony($"head: {panicModifiers}");
+
+            GetCTModifier(mech, ref panicModifiers);
+            Logger.Harmony($"CT: {panicModifiers}");
+
+            GetLTModifier(mech, ref panicModifiers);
+            Logger.Harmony($"LT: {panicModifiers}");
+
+            CheckRT(mech, ref panicModifiers);
+            Logger.Harmony($"RT: {panicModifiers}");
+
+            GetLegModifier(mech, ref panicModifiers);
+            Logger.Harmony($"Legs: {panicModifiers}");
+
+            CheckLastStraws(mech, ref panicModifiers, weapons);
+            Logger.Harmony($"LastStraw: {panicModifiers}");
+
+
             panicModifiers -= gutAndTacticsSum;
-            Logger.Harmony($"After guts and tactics");
+            Logger.Harmony($"Guts and Tactics: {panicModifiers} ({gutAndTacticsSum})");
 
             if (mech.team == mech.Combat.LocalPlayerTeam)
             {
@@ -208,31 +209,29 @@ namespace PanicSystem
             Logger.Harmony(new string(c: '-', count: 80));
 
             // pilot health
-            Logger.Harmony("Pilot Percent");
-            float pilotHealthPercent = 1 - ((float)pilot.Injuries / pilot.Health);
+            float pilotHealthPercent = 1f - ((float)pilot.Injuries / pilot.Health);
             if (pilotHealthPercent < 1)
             {
-                ejectModifiers += Settings.PilotHealthMaxModifier * (1 - pilotHealthPercent);
+                ejectModifiers += Settings.PilotHealthMaxModifier * (1f - pilotHealthPercent);
+                Logger.Harmony($"Pilot Health: {ejectModifiers}");
             }
-            Logger.Harmony(ejectModifiers);
 
-            Logger.Harmony("Unsteady");
+            // unsteady
             if (mech.IsUnsteady)
             {
                 ejectModifiers += Settings.UnsteadyModifier;
+                Logger.Harmony($"Unsteady: {ejectModifiers}");
             }
-            Logger.Harmony(ejectModifiers);
 
             // Head
-            Logger.Harmony("Head Percent");
             var headHealthPercent = (mech.HeadArmor + mech.HeadStructure) /
                                     (mech.GetMaxArmor(ArmorLocation.Head) +
                                      mech.GetMaxStructure(ChassisLocations.Head));
             if (headHealthPercent < 1)
             {
-                ejectModifiers += Settings.HeadDamageMaxModifier * (1 - headHealthPercent);
+                ejectModifiers += Settings.HeadDamageMaxModifier * (1f - headHealthPercent);
+                Logger.Harmony($"Head Damage: {ejectModifiers}"); 
             }
-            Logger.Harmony(ejectModifiers);
 
             // CT  
             var ctPercent = (mech.CenterTorsoFrontArmor + mech.CenterTorsoStructure + mech.CenterTorsoRearArmor) /
@@ -240,67 +239,54 @@ namespace PanicSystem
                              mech.GetMaxStructure(ChassisLocations.CenterTorso));
             if (ctPercent < 1)
             {
-                ejectModifiers += Settings.CTDamageMaxModifier * (1 - ctPercent);
+                ejectModifiers += Settings.CTDamageMaxModifier * (1f - ctPercent);
+                Logger.Harmony($"CT Damage: {ejectModifiers}");
             }
-            Logger.Harmony("CT Percent");
-            Logger.Harmony(ejectModifiers);
 
             // LT/RT
             var ltStructurePercent = mech.LeftTorsoStructure / mech.GetMaxStructure(ChassisLocations.LeftTorso);
             if (ltStructurePercent < 1)
             {
-                ejectModifiers += Settings.SideTorsoInternalDamageMaxModifier * (1 - ltStructurePercent);
+                ejectModifiers += Settings.SideTorsoInternalDamageMaxModifier * (1f - ltStructurePercent);
             }
-            Logger.Harmony("LT Percent");
-            Logger.Harmony(ejectModifiers);
+            Logger.Harmony($"LT Damage: {ejectModifiers}");
 
             var rtStructurePercent = mech.RightTorsoStructure / mech.GetMaxStructure(ChassisLocations.RightTorso);
             if (rtStructurePercent < 1)
             {
-                ejectModifiers += Settings.SideTorsoInternalDamageMaxModifier * (1 - rtStructurePercent);
+                ejectModifiers += Settings.SideTorsoInternalDamageMaxModifier * (1f - rtStructurePercent);
+                Logger.Harmony($"RT Damage: {ejectModifiers}");
             }
-            Logger.Harmony("RT Percent");
-            Logger.Harmony(ejectModifiers);
 
             // weaponless
             if (weapons.TrueForAll(w => w.DamageLevel == ComponentDamageLevel.Destroyed))
             {
                 ejectModifiers += Settings.WeaponlessModifier;
+                Logger.Harmony($"Weaponless: {ejectModifiers}");
             }
-            Logger.Harmony("Weaponless");
-            Logger.Harmony(ejectModifiers);
 
             // alone
             if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m == mech as AbstractActor || m.IsDead))
             {
                 ejectModifiers += Settings.AloneModifier;
+                Logger.Harmony($"Sole Survivor: {ejectModifiers}");
             }
-            Logger.Harmony("Sole Survivor");
-            Logger.Harmony(ejectModifiers);
 
             //dZ Because this is how it should be. Make this changeable. 
-            ejectModifiers = (ejectModifiers - Settings.BaseEjectionResist - (Settings.GutsEjectionResistPerPoint * guts) -
-                             (Settings.TacticsEjectionResistPerPoint * tactics)) * Settings.EjectChanceMultiplier;
-            Logger.Harmony("Calculation:");
-            Logger.Harmony(ejectModifiers);
+            ejectModifiers = Math.Min(0, (ejectModifiers - Settings.BaseEjectionResist - (Settings.GutsEjectionResistPerPoint * guts) -
+                             (Settings.TacticsEjectionResistPerPoint * tactics)) * Settings.EjectChanceMultiplier);
+            Logger.Harmony($"After calculation: {ejectModifiers}");
 
-            if (pilot.pilotDef.PilotTags.Contains("pilot_dependable"))
-            {
-                ejectModifiers -= Settings.TagDependableModifier;
-                Logger.Harmony("Dependable Pilot");
-                Logger.Harmony(ejectModifiers);
-            }
 
             if (mech.team == mech.Combat.LocalPlayerTeam)
             {
                 ejectModifiers -= (mech.Combat.LocalPlayerTeam.Morale - Settings.MedianMorale) / 2;
-                Logger.Harmony("Morale calcuation:");
-                Logger.Harmony(ejectModifiers);
+                Logger.Harmony($"Morale: {ejectModifiers}");
             }
 
-            Logger.Harmony("Final roll to beat:");
             var rollToBeat = (float)Math.Round(ejectModifiers);
-            Logger.Harmony($"");
+            Logger.Harmony($"Final roll to beat: {rollToBeat}");
+
             // passes through if last straw is met to force an ejection roll
             if (rollToBeat <= 0 && !IsLastStrawPanicking(mech, ref panicStarted))
             {
@@ -347,7 +333,7 @@ namespace PanicSystem
         /// <param name="panicModifiers"></param>
         /// <param name="weapons"></param>
         /// <returns></returns>
-        private static float CheckLastStraws(Mech mech, float panicModifiers, List<Weapon> weapons)
+        private static void CheckLastStraws(Mech mech, ref float panicModifiers, List<Weapon> weapons)
         {
             // weaponless
             if (weapons.TrueForAll(w =>
@@ -362,7 +348,6 @@ namespace PanicSystem
             {
                 panicModifiers += Settings.AloneModifier;
             }
-            return panicModifiers;
         }
 
         /// <summary>
@@ -371,7 +356,7 @@ namespace PanicSystem
         /// <param name="mech"></param>
         /// <param name="panicModifiers"></param>
         /// <returns></returns>
-        private static float GetLegModifier(Mech mech, float panicModifiers)
+        private static void GetLegModifier(Mech mech, ref float panicModifiers)
         {
             // dZ Check legs independently. Code here significantly improved.  Handles missing legs
             var legPercentRight = 1 - (mech.RightLegStructure + mech.RightLegArmor) / (mech.GetMaxStructure(ChassisLocations.RightLeg) + mech.GetMaxArmor(ArmorLocation.RightLeg));
@@ -380,7 +365,6 @@ namespace PanicSystem
             {
                 panicModifiers += Settings.LeggedMaxModifier * (legPercentRight + legPercentLeft);
             }
-            return panicModifiers;
         }
 
         /// <summary>
@@ -389,14 +373,13 @@ namespace PanicSystem
         /// <param name="mech"></param>
         /// <param name="panicModifiers"></param>
         /// <returns></returns>
-        private static float CheckRT(Mech mech, float panicModifiers)
+        private static void CheckRT(Mech mech, ref float panicModifiers)
         {
             var rtStructurePercent = mech.RightTorsoStructure / mech.GetMaxStructure(ChassisLocations.RightTorso);
             if (rtStructurePercent < 1)
             {
                 panicModifiers += Settings.SideTorsoInternalDamageMaxModifier * (1 - rtStructurePercent);
             }
-            return panicModifiers;
         }
 
         /// <summary>
@@ -405,14 +388,13 @@ namespace PanicSystem
         /// <param name="mech"></param>
         /// <param name="panicModifiers"></param>
         /// <returns></returns>
-        private static float GetLTModifier(Mech mech, float panicModifiers)
+        private static void GetLTModifier(Mech mech, ref float panicModifiers)
         {
             var ltStructurePercent = mech.LeftTorsoStructure / mech.GetMaxStructure(ChassisLocations.LeftTorso);
             if (ltStructurePercent < 1)
             {
                 panicModifiers += Settings.SideTorsoInternalDamageMaxModifier * (1 - ltStructurePercent);
             }
-            return panicModifiers;
         }
 
         /// <summary>
@@ -421,7 +403,7 @@ namespace PanicSystem
         /// <param name="mech"></param>
         /// <param name="panicModifiers"></param>
         /// <returns></returns>
-        private static float GetCTModifier(Mech mech, float panicModifiers)
+        private static void GetCTModifier(Mech mech, ref float panicModifiers)
         {
             var ctPercent = (mech.CenterTorsoFrontArmor + mech.CenterTorsoStructure + mech.CenterTorsoRearArmor) /
                             (mech.GetMaxArmor(ArmorLocation.CenterTorso) +
@@ -430,7 +412,6 @@ namespace PanicSystem
             {
                 panicModifiers += Settings.CTDamageMaxModifier * (1 - ctPercent);
             }
-            return panicModifiers;
         }
 
         /// <summary>
@@ -439,7 +420,7 @@ namespace PanicSystem
         /// <param name="mech"></param>
         /// <param name="panicModifiers"></param>
         /// <returns></returns>
-        private static float GetHeadModifier(Mech mech, float panicModifiers)
+        private static void GetHeadModifier(Mech mech, ref float panicModifiers)
         {
             var headHealthPercent = (mech.HeadArmor + mech.HeadStructure) /
                                     (mech.GetMaxArmor(ArmorLocation.Head) +
@@ -448,7 +429,6 @@ namespace PanicSystem
             {
                 panicModifiers += Settings.HeadDamageMaxModifier * (1 - headHealthPercent);
             }
-            return panicModifiers;
         }
 
         /// <summary>
@@ -457,13 +437,12 @@ namespace PanicSystem
         /// <param name="mech"></param>
         /// <param name="panicModifiers"></param>
         /// <returns></returns>
-        private static float GetUnsteadyModifier(Mech mech, float panicModifiers)
+        private static void GetUnsteadyModifier(Mech mech, ref float panicModifiers)
         {
             if (mech.IsUnsteady)
             {
                 panicModifiers += Settings.UnsteadyModifier;
             }
-            return panicModifiers;
         }
 
         /// <summary>
@@ -472,17 +451,16 @@ namespace PanicSystem
         /// <param name="pilot"></param>
         /// <param name="panicModifiers"></param>
         /// <returns></returns>
-        private static float GetPilotHealthModifier(Pilot pilot, float panicModifiers)
+        private static void GetPilotHealthModifier(Pilot pilot, ref float panicModifiers)
         {
             if (pilot != null)
             {
-                float pilotHealthPercent = 1 - ((float)pilot.Injuries / pilot.Health);
+                float pilotHealthPercent = 1f - (float)pilot.Injuries / pilot.Health;
                 if (pilotHealthPercent < 1)
                 {
                     panicModifiers += Settings.PilotHealthMaxModifier * (1 - pilotHealthPercent);
                 }
             }
-            return panicModifiers;
         }
 
 
@@ -492,7 +470,6 @@ namespace PanicSystem
         /// <param name="mech"></param>
         /// <returns></returns>
         private static bool CheckTrackedPilots(Mech mech, ref int index)
-
         {
             if (index < 0)
             {
@@ -889,11 +866,13 @@ namespace PanicSystem
 
             public bool LosingLimbAlwaysPanics = false;
 
+            //tag effects
+            public float BraveModifier = 5;
+            public float DependableModifier = 5;
+
             //Unsettled debuffs
             //+1 difficulty to attacks
             public float UnsettledAttackModifier = 1;
-            public float BraveModifier = 5;
-            public float TagDependableModifier = 5;
 
             //stressed debuffs
             //+2 difficulty to attacks

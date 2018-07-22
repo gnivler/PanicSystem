@@ -35,6 +35,10 @@ namespace PanicSystem
             try
             {
                 ModSettings = JsonConvert.DeserializeObject<Settings>(modSettings);
+                if (ModSettings.Debug || ModSettings.EnableDebug)
+                {
+                    Logger.Clear();
+                }
             }
             catch
             {
@@ -111,12 +115,6 @@ namespace PanicSystem
                 var moraleModifier = (mech.Combat.LocalPlayerTeam.Morale - ModSettings.MedianMorale) / 2;
                 panicModifiers -= moraleModifier;
                 Logger.Debug($"Morale: {panicModifiers}");
-            }
-
-            if (ModSettings.AtLeastOneChanceToPanic && panicModifiers < ModSettings.AtLeastOneChanceToPanicPercentage)
-            {
-                panicModifiers = ModSettings.AtLeastOneChanceToPanicPercentage;
-                Logger.Debug($"Floored saving throw to {ModSettings.AtLeastOneChanceToPanicPercentage}");
             }
 
             panicModifiers = (float) Math.Round(panicModifiers);

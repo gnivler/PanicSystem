@@ -129,6 +129,11 @@ namespace PanicSystem
             CheckLastStraws(mech, ref panicModifiers, weapons);
             Logger.Harmony($"LastStraw: {panicModifiers}");
 
+            if (pilot.pilotDef.PilotTags.Contains("pilot_brave"))
+            {
+                panicModifiers -= Settings.BraveModifier;
+                Logger.Harmony($"After bravery {panicModifiers}");
+            }
 
             panicModifiers -= gutAndTacticsSum;
             Logger.Harmony($"Guts and Tactics: {panicModifiers} ({gutAndTacticsSum})");
@@ -189,6 +194,11 @@ namespace PanicSystem
 
             Pilot pilot = mech.GetPilot();
             if (pilot == null)
+            {
+                return false;
+            }
+
+            if (pilot.pilotDef.PilotTags.Contains("pilot_drunk"))
             {
                 return false;
             }
@@ -277,6 +287,11 @@ namespace PanicSystem
                              (Settings.TacticsEjectionResistPerPoint * tactics)) * Settings.EjectChanceMultiplier);
             Logger.Harmony($"After calculation: {ejectModifiers}");
 
+            if (pilot.pilotDef.PilotTags.Contains("pilot_dependable"))
+            {
+                ejectModifiers -= Settings.DependableModifier;
+                Logger.Harmony($"Dependable Pilot: {ejectModifiers}");
+            }
 
             if (mech.team == mech.Combat.LocalPlayerTeam)
             {

@@ -26,7 +26,7 @@ namespace PanicSystem
         public static bool PanicStarted = false;
 
         public static void Init(string modDir, string modSettings)
-        {           
+        {
             var harmony = HarmonyInstance.Create("com.BattleTech.PanicSystem");
             harmony.PatchAll(Assembly.GetExecutingAssembly());
             ModDirectory = modDir;
@@ -44,7 +44,7 @@ namespace PanicSystem
 
             if (Settings.Debug | Settings.EnableDebug)
             {
-                 FileLog.Reset();
+                FileLog.Reset();
             }
         }
 
@@ -225,18 +225,16 @@ namespace PanicSystem
 
             // Head
             var headHealthPercent = (mech.HeadArmor + mech.HeadStructure) /
-                                    (mech.GetMaxArmor(ArmorLocation.Head) +
-                                     mech.GetMaxStructure(ChassisLocations.Head));
+                                    (mech.GetMaxArmor(ArmorLocation.Head) + mech.GetMaxStructure(ChassisLocations.Head));
             if (headHealthPercent < 1)
             {
                 ejectModifiers += Settings.HeadDamageMaxModifier * (1f - headHealthPercent);
-                Logger.Harmony($"Head Damage: {ejectModifiers}"); 
+                Logger.Harmony($"Head Damage: {ejectModifiers}");
             }
 
             // CT  
             var ctPercent = (mech.CenterTorsoFrontArmor + mech.CenterTorsoStructure + mech.CenterTorsoRearArmor) /
-                            (mech.GetMaxArmor(ArmorLocation.CenterTorso) +
-                             mech.GetMaxStructure(ChassisLocations.CenterTorso));
+                            (mech.GetMaxArmor(ArmorLocation.CenterTorso) + mech.GetMaxStructure(ChassisLocations.CenterTorso));
             if (ctPercent < 1)
             {
                 ejectModifiers += Settings.CTDamageMaxModifier * (1f - ctPercent);
@@ -272,17 +270,16 @@ namespace PanicSystem
                 Logger.Harmony($"Sole Survivor: {ejectModifiers}");
             }
 
-            //dZ Because this is how it should be. Make this changeable. 
-            ejectModifiers = Math.Max(0, (ejectModifiers - Settings.BaseEjectionResist - (Settings.GutsEjectionResistPerPoint * guts) -
-                             (Settings.TacticsEjectionResistPerPoint * tactics)) * Settings.EjectChanceMultiplier);
-            Logger.Harmony($"After calculation: {ejectModifiers}");
-
-  
             if (mech.team == mech.Combat.LocalPlayerTeam)
             {
                 ejectModifiers -= (mech.Combat.LocalPlayerTeam.Morale - Settings.MedianMorale) / 2;
                 Logger.Harmony($"Morale: {ejectModifiers}");
             }
+
+            ejectModifiers = Math.Max(0, (ejectModifiers - Settings.BaseEjectionResist - (Settings.GutsEjectionResistPerPoint * guts) -
+                             (Settings.TacticsEjectionResistPerPoint * tactics)) * Settings.EjectChanceMultiplier);
+            Logger.Harmony($"After calculation: {ejectModifiers}");
+
 
             var rollToBeat = (float)Math.Round(ejectModifiers);
             Logger.Harmony($"Final roll to beat: {rollToBeat}");
@@ -290,8 +287,7 @@ namespace PanicSystem
             // passes through if last straw is met to force an ejection roll
             if (rollToBeat <= 0 && !IsLastStrawPanicking(mech, ref panicStarted))
             {
-                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
-                    new ShowActorInfoSequence(mech, $"RESISTED EJECTION!", FloatieMessage.MessageNature.Buff, true)));
+                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"RESISTED EJECTION!", FloatieMessage.MessageNature.Buff, true)));
                 Logger.Harmony($"RESISTED EJECTION!");
                 return false;
             }
@@ -908,6 +904,7 @@ namespace PanicSystem
             public bool LosingLimbAlwaysPanics = false;
 
             //tag effects
+            public bool TagsEnabled = false;
             public float BraveModifier = 5;
             public float DependableModifier = 5;
 

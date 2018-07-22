@@ -45,6 +45,7 @@ namespace PanicSystem
             if (Settings.Debug | Settings.EnableDebug)
             {
                 FileLog.Reset();
+                Logger.Debug("Init");
             }
         }
 
@@ -53,13 +54,13 @@ namespace PanicSystem
             public static readonly string FilePath = $"{ModDirectory}/Log.txt";
             public static void Harmony(object line)
             {
-                if (!Settings.Debug) return;
+                if (!Settings.Debug || !Settings.EnableDebug) return;
                 FileLog.Log(line.ToString());
             }
 
             public static void Debug(object line)
             {
-                if (!Settings.Debug || !Settings.EnableDebug) return;
+                if (!Settings.Debug) return;
                 using (var writer = new StreamWriter(FilePath, true))
                 {
                     writer.WriteLine($"{DateTime.Now.ToShortTimeString()} {line}");
@@ -104,15 +105,24 @@ namespace PanicSystem
             {
                 return false;
             }
+            if (Settings.QuirksEnabled)
+            {
+                if (pilot.pilotDef.PilotTags.Contains("pilot_brave"))
+                {
+                    panicModifiers -= Settings.BraveModifier;
+                    Logger.Harmony($"Bravery: {panicModifiers}");
+                }
+            }
+
 
             GetPilotHealthModifier(pilot, ref panicModifiers);
-            Logger.Harmony($"pilot: {panicModifiers}");
+            Logger.Harmony($"Pilot: {panicModifiers}");
 
             GetUnsteadyModifier(mech, ref panicModifiers);
-            Logger.Harmony($"unsteady: {panicModifiers}");
+            Logger.Harmony($"Unsteady: {panicModifiers}");
 
             GetHeadModifier(mech, ref panicModifiers);
-            Logger.Harmony($"head: {panicModifiers}");
+            Logger.Harmony($"Head: {panicModifiers}");
 
             GetCTModifier(mech, ref panicModifiers);
             Logger.Harmony($"CT: {panicModifiers}");
@@ -145,14 +155,13 @@ namespace PanicSystem
             }
 
             panicModifiers = (float)Math.Round(panicModifiers);
-            Logger.Harmony($"Rounded to {panicModifiers} - roll to beat");
+            Logger.Harmony($"{panicModifiers} is the roll to beat");
 
             var rng = new Random().Next(1, 101);
             Logger.Harmony($"Rolled: {rng}");
 
             if (rng <= (int)panicModifiers)
             {
-                Logger.Harmony($"Failed panic save.");
                 ApplyPanicDebuff(mech, index);
                 return true;
             }
@@ -207,6 +216,22 @@ namespace PanicSystem
             float ejectModifiers = 0;
             Logger.Harmony($"Collecting ejection modifiers:");
             Logger.Harmony(new string(c: '-', count: 80));
+
+            // Pilot Quirks
+            if (Settings.QuirksEnabled)
+            {
+                if (pilot.pilotDef.PilotTags.Contains("pilot_drunk"))
+                {
+                    return false;
+                }
+
+                if (pilot.pilotDef.PilotTags.Contains("pilot_dependable"))
+                {
+                    ejectModifiers -= Settings.DependableModifier;
+                    Logger.Harmony("Dependable Pilot");
+                    Logger.Harmony(ejectModifiers);
+                }
+            }
 
             // pilot health
             float pilotHealthPercent = 1f - ((float)pilot.Injuries / pilot.Health);
@@ -864,13 +889,16 @@ namespace PanicSystem
 
         public class ModSettings
         {
-            public bool PlayerCharacterAlwaysResists = true;
-            public bool PlayerTeamCanPanic = true;
-            public bool EnemiesCanPanic = true;
+
+            // these are the same thing for backward json compat
             public bool Debug = false;
             public bool EnableDebug = false;
 
-            //new mechanics for considering when to eject based on mech class
+            public bool PlayerCharacterAlwaysResists = true;
+            public bool PlayerTeamCanPanic = true;
+            public bool EnemiesCanPanic = true;
+
+            // mechanics for considering when to eject based on mech class
             public bool PlayerLightsConsiderEjectingEarly = false;
             public bool EnemyLightsConsiderEjectingEarly = true;
             public PanicStatus LightMechEarlyEjecthreshold = PanicStatus.Unsettled;
@@ -903,8 +931,8 @@ namespace PanicSystem
 
             public bool LosingLimbAlwaysPanics = false;
 
-            //tag effects
-            public bool TagsEnabled = false;
+            //Quirks effects
+            public bool QuirksEnabled = false;
             public float BraveModifier = 5;
             public float DependableModifier = 5;
 

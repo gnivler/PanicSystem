@@ -34,39 +34,11 @@ namespace PanicSystem
             StorageJsonPath = Path.Combine(modDir, "PanicSystemStorage.json");
             try
             {
-
                 ModSettings = JsonConvert.DeserializeObject<Settings>(modSettings);
-                Settings = JsonConvert.DeserializeObject<ModSettings>(modSettings);
-            }
-            catch (Exception)
-            {
-                Settings = new ModSettings();
-            }
-
-            if (Settings.Debug | Settings.EnableDebug)
-            {
-                FileLog.Reset();
-                Logger.Debug("Init");
-            }
-        }
-
-        public static class Logger
-        {
-            public static readonly string FilePath = $"{ModDirectory}/Log.txt";
-            public static void Harmony(object line)
-            {
-                if (!Settings.Debug || !Settings.EnableDebug) return;
-                FileLog.Log(line.ToString());
             }
             catch
             {
                 ModSettings = new Settings();
-
-                if (!Settings.Debug) return;
-                using (var writer = new StreamWriter(FilePath, true))
-                {
-                    writer.WriteLine($"{DateTime.Now.ToShortTimeString()} {line}");
-                }
             }
         }
 
@@ -106,24 +78,15 @@ namespace PanicSystem
             {
                 return false;
             }
-            if (Settings.QuirksEnabled)
-            {
-                if (pilot.pilotDef.PilotTags.Contains("pilot_brave"))
-                {
-                    panicModifiers -= Settings.BraveModifier;
-                    Logger.Harmony($"Bravery: {panicModifiers}");
-                }
-            }
-
 
             GetPilotHealthModifier(pilot, ref panicModifiers);
-            Logger.Harmony($"Pilot: {panicModifiers}");
+            Logger.Debug($"pilot: {panicModifiers}");
 
             GetUnsteadyModifier(mech, ref panicModifiers);
-            Logger.Harmony($"Unsteady: {panicModifiers}");
+            Logger.Debug($"unsteady: {panicModifiers}");
 
             GetHeadModifier(mech, ref panicModifiers);
-            Logger.Harmony($"Head: {panicModifiers}");
+            Logger.Debug($"head: {panicModifiers}");
 
             GetCTModifier(mech, ref panicModifiers);
             Logger.Debug($"CT: {panicModifiers}");
@@ -219,22 +182,6 @@ namespace PanicSystem
             Logger.Debug($"Collecting ejection modifiers:");
             Logger.Debug(new string(c: '-', count: 80));
 
-            // Pilot Quirks
-            if (Settings.QuirksEnabled)
-            {
-                if (pilot.pilotDef.PilotTags.Contains("pilot_drunk"))
-                {
-                    return false;
-                }
-
-                if (pilot.pilotDef.PilotTags.Contains("pilot_dependable"))
-                {
-                    ejectModifiers -= Settings.DependableModifier;
-                    Logger.Harmony("Dependable Pilot");
-                    Logger.Harmony(ejectModifiers);
-                }
-            }
-
             // pilot health
             float pilotHealthPercent = 1f - ((float) pilot.Injuries / pilot.Health);
             if (pilotHealthPercent < 1)
@@ -252,17 +199,18 @@ namespace PanicSystem
 
             // Head
             var headHealthPercent = (mech.HeadArmor + mech.HeadStructure) /
-                                    (mech.GetMaxArmor(ArmorLocation.Head) + mech.GetMaxStructure(ChassisLocations.Head));
+                                    (mech.GetMaxArmor(ArmorLocation.Head) +
+                                     mech.GetMaxStructure(ChassisLocations.Head));
             if (headHealthPercent < 1)
             {
                 ejectModifiers += ModSettings.HeadDamageMaxModifier * (1f - headHealthPercent);
                 Logger.Debug($"Head Damage: {ejectModifiers}");
-
             }
 
             // CT  
             var ctPercent = (mech.CenterTorsoFrontArmor + mech.CenterTorsoStructure + mech.CenterTorsoRearArmor) /
-                            (mech.GetMaxArmor(ArmorLocation.CenterTorso) + mech.GetMaxStructure(ChassisLocations.CenterTorso));
+                            (mech.GetMaxArmor(ArmorLocation.CenterTorso) +
+                             mech.GetMaxStructure(ChassisLocations.CenterTorso));
             if (ctPercent < 1)
             {
                 ejectModifiers += ModSettings.CTDamageMaxModifier * (1f - ctPercent);
@@ -314,14 +262,12 @@ namespace PanicSystem
             var rollToBeat = (float) Math.Round(ejectModifiers);
             Logger.Debug($"Final roll to beat: {rollToBeat}");
 
-
             // passes through if last straw is met to force an ejection roll
             if (rollToBeat <= 0 && !IsLastStrawPanicking(mech, ref panicStarted))
             {
                 mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
                     new ShowActorInfoSequence(mech, $"RESISTED EJECTION!", FloatieMessage.MessageNature.Buff, true)));
                 Logger.Debug($"RESISTED EJECTION!");
-
                 return false;
             }
 
@@ -930,96 +876,91 @@ namespace PanicSystem
         }
     }
 
- public class ModSettings
- {
 
-     // these are the same thing for backward json compat
-     public bool Debug = false;
-     public bool EnableDebug = false;
+public class Settings
+    {
+        public bool PlayerCharacterAlwaysResists = true;
+        public bool PlayerTeamCanPanic = true;
+        public bool EnemiesCanPanic = true;
+        public bool Debug = false;
+        public bool EnableDebug = false;
 
-     public bool PlayerCharacterAlwaysResists = true;
-     public bool PlayerTeamCanPanic = true;
-     public bool EnemiesCanPanic = true;
+        //new mechanics for considering when to eject based on mech class
+        public bool PlayerLightsConsiderEjectingEarly = false;
+        public bool EnemyLightsConsiderEjectingEarly = true;
+        public PanicStatus LightMechEarlyEjecthreshold = PanicStatus.Unsettled;
 
-     // mechanics for considering when to eject based on mech class
-     public bool PlayerLightsConsiderEjectingEarly = false;
-     public bool EnemyLightsConsiderEjectingEarly = true;
-     public PanicStatus LightMechEarlyEjecthreshold = PanicStatus.Unsettled;
+        public bool PlayerMediumsConsiderEjectingEarly = false;
+        public bool EnemyMediumsConsiderEjectingEarly = false;
+        public PanicStatus MediumMechEarlyEjectThreshold = PanicStatus.Stressed;
 
-     public bool PlayerMediumsConsiderEjectingEarly = false;
-     public bool EnemyMediumsConsiderEjectingEarly = false;
-     public PanicStatus MediumMechEarlyEjectThreshold = PanicStatus.Stressed;
+        public bool PlayerHeaviesConsiderEjectingEarly = false;
+        public bool EnemyHeaviesConsiderEjectingEarly = false;
+        public PanicStatus HeavyMechEarlyEjectThreshold = PanicStatus.Stressed;
 
-     public bool PlayerHeaviesConsiderEjectingEarly = false;
-     public bool EnemyHeaviesConsiderEjectingEarly = false;
-     public PanicStatus HeavyMechEarlyEjectThreshold = PanicStatus.Stressed;
+        public bool PlayerAssaultsConsiderEjectingEarly = false;
+        public bool EnemyAssaultsConsiderEjectingEarly = false;
+        public PanicStatus AssaultMechEarlyEjectThreshold = PanicStatus.Stressed;
 
-     public bool PlayerAssaultsConsiderEjectingEarly = false;
-     public bool EnemyAssaultsConsiderEjectingEarly = false;
-     public PanicStatus AssaultMechEarlyEjectThreshold = PanicStatus.Stressed;
+        public float MaxEjectChanceWhenEarlyEjectThresholdMet = 10;
 
-     public float MaxEjectChanceWhenEarlyEjectThresholdMet = 10;
+        //minmum armour and structure damage
+        public float MinimumArmourDamagePercentageRequired = 10; //if no structure damage, a Mech must lost a bit of its armour before it starts worrying
 
-     //minmum armour and structure damage
-     public float MinimumArmourDamagePercentageRequired = 10; //if no structure damage, a Mech must lost a bit of its armour before it starts worrying
+        //general panic roll
+        //rolls out of 20
+        //max guts and tactics almost prevents any panicking (or being the player character, by default)
+        public bool AtLeastOneChanceToPanic = true;
+        public int AtLeastOneChanceToPanicPercentage = 10;
+        public bool AlwaysGatedChanges = true;
+        public float MaxPanicResistTotal = 15; //at least 20% chance to panic if you can't nullify the whole thing
+        public float MedianMorale = 25;
 
-     //general panic roll
-     //rolls out of 20
-     //max guts and tactics almost prevents any panicking (or being the player character, by default)
-     public bool AtLeastOneChanceToPanic = true;
-     public int AtLeastOneChanceToPanicPercentage = 10;
-     public bool AlwaysGatedChanges = true;
-     public float MaxPanicResistTotal = 15; //at least 20% chance to panic if you can't nullify the whole thing
-     public float MedianMorale = 25;
+        public bool LosingLimbAlwaysPanics = false;
 
-     public bool LosingLimbAlwaysPanics = false;
+        //tag effects
+        public float BraveModifier = 5;
+        public float DependableModifier = 5;
 
-     //Quirks effects
-     public bool QuirksEnabled = false;
-     public float BraveModifier = 5;
-     public float DependableModifier = 5;
+        //Unsettled debuffs
+        //+1 difficulty to attacks
+        public float UnsettledAttackModifier = 1;
 
-     //Unsettled debuffs
-     //+1 difficulty to attacks
-     public float UnsettledAttackModifier = 1;
+        //stressed debuffs
+        //+2 difficulty to attacks
+        //-1 difficulty to being hit
 
-     //stressed debuffs
-     //+2 difficulty to attacks
-     //-1 difficulty to being hit
+        public float StressedAimModifier = 2;
+        public float StressedToHitModifier = -1;
 
-     public float StressedAimModifier = 2;
-     public float StressedToHitModifier = -1;
+        //ejection
+        //+4 difficulty to attacks
+        //-2 difficulty to being hit
+        public float PanickedAimModifier = 4;
+        public float PanickedToHitModifier = -2;
+        public bool GutsTenAlwaysResists = false;
+        public bool ComboTenAlwaysResists = false;
+        public bool TacticsTenAlwaysResists = false;
+        public int MinimumHealthToAlwaysEjectRoll = 1;
+        public bool KnockedDownCannotEject = true;
 
-     //ejection
-     //+4 difficulty to attacks
-     //-2 difficulty to being hit
-     public float PanickedAimModifier = 4;
-     public float PanickedToHitModifier = -2;
-     public bool GutsTenAlwaysResists = false;
-     public bool ComboTenAlwaysResists = false;
-     public bool TacticsTenAlwaysResists = false;
-     public int MinimumHealthToAlwaysEjectRoll = 1;
-     public bool KnockedDownCannotEject = true;
+        public bool ConsiderEjectingWithNoWeaps = true;
+        public bool ConsiderEjectingWhenAlone = true;
+        public float MaxEjectChance = 50;
+        public float EjectChanceMultiplier = 5;
 
-     public bool ConsiderEjectingWithNoWeaps = true;
-     public bool ConsiderEjectingWhenAlone = true;
-     public float MaxEjectChance = 50;
-     public float EjectChanceMultiplier = 5;
+        public float BaseEjectionResist = 10;
+        public float GutsEjectionResistPerPoint = 2;
+        public float TacticsEjectionResistPerPoint = 1;
+        public float UnsteadyModifier = 5;
+        public float PilotHealthMaxModifier = 10;
 
-     public float BaseEjectionResist = 10;
-     public float GutsEjectionResistPerPoint = 2;
-     public float TacticsEjectionResistPerPoint = 1;
-     public float UnsteadyModifier = 5;
-     public float PilotHealthMaxModifier = 10;
+        public float HeadDamageMaxModifier = 10;
+        public float CTDamageMaxModifier = 10;
+        public float SideTorsoInternalDamageMaxModifier = 10;
+        public float LeggedMaxModifier = 10;
 
-     public float HeadDamageMaxModifier = 10;
-     public float CTDamageMaxModifier = 10;
-     public float SideTorsoInternalDamageMaxModifier = 10;
-     public float LeggedMaxModifier = 10;
-
-     public float WeaponlessModifier = 15;
-     public float AloneModifier = 20;
- }
-
+        public float WeaponlessModifier = 15;
+        public float AloneModifier = 20;
     }
 }

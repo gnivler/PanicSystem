@@ -757,7 +757,7 @@ namespace PanicSystem
 
             if (Settings.ConsiderEjectingWhenAlone &&
                 mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m.GUID == mech.GUID) &&
-                enemyHealth > (mech.SummaryArmorCurrent + mech.SummaryStructureCurrent) * 2)
+                enemyHealth >= (mech.SummaryArmorCurrent + mech.SummaryStructureCurrent) * 2)
             {
                 Logger.Harmony($"Last straw sole survivor.");
                 PanicStarted = true;

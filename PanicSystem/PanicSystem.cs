@@ -26,7 +26,7 @@ namespace PanicSystem
         public static bool PanicStarted = false;
 
         public static void Init(string modDir, string modSettings)
-        {           
+        {
             var harmony = HarmonyInstance.Create("com.BattleTech.PanicSystem");
             harmony.PatchAll(Assembly.GetExecutingAssembly());
             ModDirectory = modDir;
@@ -44,7 +44,8 @@ namespace PanicSystem
 
             if (Settings.Debug | Settings.EnableDebug)
             {
-                 FileLog.Reset();
+                FileLog.Reset();
+                Logger.Debug("Init");
             }
         }
 
@@ -53,13 +54,13 @@ namespace PanicSystem
             public static readonly string FilePath = $"{ModDirectory}/Log.txt";
             public static void Harmony(object line)
             {
-                if (!Settings.Debug) return;
+                if (!Settings.Debug || !Settings.EnableDebug) return;
                 FileLog.Log(line.ToString());
             }
 
             public static void Debug(object line)
             {
-                if (!Settings.Debug || !Settings.EnableDebug) return;
+                if (!Settings.Debug) return;
                 using (var writer = new StreamWriter(FilePath, true))
                 {
                     writer.WriteLine($"{DateTime.Now.ToShortTimeString()} {line}");
@@ -104,15 +105,24 @@ namespace PanicSystem
             {
                 return false;
             }
+            if (Settings.QuirksEnabled)
+            {
+                if (pilot.pilotDef.PilotTags.Contains("pilot_brave"))
+                {
+                    panicModifiers -= Settings.BraveModifier;
+                    Logger.Harmony($"Bravery: {panicModifiers}");
+                }
+            }
+
 
             GetPilotHealthModifier(pilot, ref panicModifiers);
-            Logger.Harmony($"pilot: {panicModifiers}");
+            Logger.Harmony($"Pilot: {panicModifiers}");
 
             GetUnsteadyModifier(mech, ref panicModifiers);
-            Logger.Harmony($"unsteady: {panicModifiers}");
+            Logger.Harmony($"Unsteady: {panicModifiers}");
 
             GetHeadModifier(mech, ref panicModifiers);
-            Logger.Harmony($"head: {panicModifiers}");
+            Logger.Harmony($"Head: {panicModifiers}");
 
             GetCTModifier(mech, ref panicModifiers);
             Logger.Harmony($"CT: {panicModifiers}");
@@ -145,14 +155,13 @@ namespace PanicSystem
             }
 
             panicModifiers = (float)Math.Round(panicModifiers);
-            Logger.Harmony($"Rounded to {panicModifiers} - roll to beat");
+            Logger.Harmony($"{panicModifiers} is the roll to beat");
 
             var rng = new Random().Next(1, 101);
             Logger.Harmony($"Rolled: {rng}");
 
             if (rng <= (int)panicModifiers)
             {
-                Logger.Harmony($"Failed panic save.");
                 ApplyPanicDebuff(mech, index);
                 return true;
             }
@@ -208,6 +217,22 @@ namespace PanicSystem
             Logger.Harmony($"Collecting ejection modifiers:");
             Logger.Harmony(new string(c: '-', count: 80));
 
+            // Pilot Quirks
+            if (Settings.QuirksEnabled)
+            {
+                if (pilot.pilotDef.PilotTags.Contains("pilot_drunk"))
+                {
+                    return false;
+                }
+
+                if (pilot.pilotDef.PilotTags.Contains("pilot_dependable"))
+                {
+                    ejectModifiers -= Settings.DependableModifier;
+                    Logger.Harmony("Dependable Pilot");
+                    Logger.Harmony(ejectModifiers);
+                }
+            }
+
             // pilot health
             float pilotHealthPercent = 1f - ((float)pilot.Injuries / pilot.Health);
             if (pilotHealthPercent < 1)
@@ -225,18 +250,16 @@ namespace PanicSystem
 
             // Head
             var headHealthPercent = (mech.HeadArmor + mech.HeadStructure) /
-                                    (mech.GetMaxArmor(ArmorLocation.Head) +
-                                     mech.GetMaxStructure(ChassisLocations.Head));
+                                    (mech.GetMaxArmor(ArmorLocation.Head) + mech.GetMaxStructure(ChassisLocations.Head));
             if (headHealthPercent < 1)
             {
                 ejectModifiers += Settings.HeadDamageMaxModifier * (1f - headHealthPercent);
-                Logger.Harmony($"Head Damage: {ejectModifiers}"); 
+                Logger.Harmony($"Head Damage: {ejectModifiers}");
             }
 
             // CT  
             var ctPercent = (mech.CenterTorsoFrontArmor + mech.CenterTorsoStructure + mech.CenterTorsoRearArmor) /
-                            (mech.GetMaxArmor(ArmorLocation.CenterTorso) +
-                             mech.GetMaxStructure(ChassisLocations.CenterTorso));
+                            (mech.GetMaxArmor(ArmorLocation.CenterTorso) + mech.GetMaxStructure(ChassisLocations.CenterTorso));
             if (ctPercent < 1)
             {
                 ejectModifiers += Settings.CTDamageMaxModifier * (1f - ctPercent);
@@ -272,17 +295,16 @@ namespace PanicSystem
                 Logger.Harmony($"Sole Survivor: {ejectModifiers}");
             }
 
-            //dZ Because this is how it should be. Make this changeable. 
-            ejectModifiers = Math.Max(0, (ejectModifiers - Settings.BaseEjectionResist - (Settings.GutsEjectionResistPerPoint * guts) -
-                             (Settings.TacticsEjectionResistPerPoint * tactics)) * Settings.EjectChanceMultiplier);
-            Logger.Harmony($"After calculation: {ejectModifiers}");
-
-  
             if (mech.team == mech.Combat.LocalPlayerTeam)
             {
                 ejectModifiers -= (mech.Combat.LocalPlayerTeam.Morale - Settings.MedianMorale) / 2;
                 Logger.Harmony($"Morale: {ejectModifiers}");
             }
+
+            ejectModifiers = Math.Max(0, (ejectModifiers - Settings.BaseEjectionResist - (Settings.GutsEjectionResistPerPoint * guts) -
+                             (Settings.TacticsEjectionResistPerPoint * tactics)) * Settings.EjectChanceMultiplier);
+            Logger.Harmony($"After calculation: {ejectModifiers}");
+
 
             var rollToBeat = (float)Math.Round(ejectModifiers);
             Logger.Harmony($"Final roll to beat: {rollToBeat}");
@@ -290,8 +312,7 @@ namespace PanicSystem
             // passes through if last straw is met to force an ejection roll
             if (rollToBeat <= 0 && !IsLastStrawPanicking(mech, ref panicStarted))
             {
-                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
-                    new ShowActorInfoSequence(mech, $"RESISTED EJECTION!", FloatieMessage.MessageNature.Buff, true)));
+                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"RESISTED EJECTION!", FloatieMessage.MessageNature.Buff, true)));
                 Logger.Harmony($"RESISTED EJECTION!");
                 return false;
             }
@@ -868,13 +889,16 @@ namespace PanicSystem
 
         public class ModSettings
         {
-            public bool PlayerCharacterAlwaysResists = true;
-            public bool PlayerTeamCanPanic = true;
-            public bool EnemiesCanPanic = true;
+
+            // these are the same thing for backward json compat
             public bool Debug = false;
             public bool EnableDebug = false;
 
-            //new mechanics for considering when to eject based on mech class
+            public bool PlayerCharacterAlwaysResists = true;
+            public bool PlayerTeamCanPanic = true;
+            public bool EnemiesCanPanic = true;
+
+            // mechanics for considering when to eject based on mech class
             public bool PlayerLightsConsiderEjectingEarly = false;
             public bool EnemyLightsConsiderEjectingEarly = true;
             public PanicStatus LightMechEarlyEjecthreshold = PanicStatus.Unsettled;
@@ -907,7 +931,8 @@ namespace PanicSystem
 
             public bool LosingLimbAlwaysPanics = false;
 
-            //tag effects
+            //Quirks effects
+            public bool QuirksEnabled = false;
             public float BraveModifier = 5;
             public float DependableModifier = 5;
 

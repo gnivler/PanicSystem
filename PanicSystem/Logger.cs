@@ -24,5 +24,13 @@ namespace PanicSystem
                 writer.WriteLine(line);
             }
         }
+
+        public static void Clear()
+        {
+            using (var writer = new StreamWriter(LogFilePath, false))
+            {
+                writer.WriteLine($"{DateTime.Now.ToLongTimeString()} Init");
+            }
+        }
     }
 }

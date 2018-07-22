@@ -11,6 +11,7 @@
     <AssemblyName>PanicSystem</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <LangVersion>7.2</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -63,6 +64,6 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy /y $(TargetPath) N:\SteamLibrary\steamapps\common\BATTLETECH\Mods\PanicSystem</PostBuildEvent>
+    <PostBuildEvent>copy /y $(TargetPath) N:\SteamLibrary\steamapps\common\BATTLETECH\Mods\RTBasicPanicSystem</PostBuildEvent>
   </PropertyGroup>
 </Project>

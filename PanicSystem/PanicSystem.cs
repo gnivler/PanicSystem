@@ -12,7 +12,7 @@ namespace PanicSystem
 {
     public static class PanicSystem
     {
-        internal static ModSettings Settings;
+        internal static ModSettings Settings = new ModSettings();
         public static string ActiveJsonPath; //store current tracker here
         public static string StorageJsonPath; //store our meta trackers here
         public static string ModDirectory;
@@ -42,7 +42,7 @@ namespace PanicSystem
                 Settings = new ModSettings();
             }
 
-            if (Settings.Debug | Settings.EnableDebug)
+            if (Settings.Debug || Settings.EnableDebug)
             {
                  FileLog.Reset();
             }
@@ -53,7 +53,7 @@ namespace PanicSystem
             public static readonly string FilePath = $"{ModDirectory}/Log.txt";
             public static void Harmony(object line)
             {
-                if (!Settings.Debug) return;
+                if (!Settings.Debug || !Settings.EnableDebug) return;
                 FileLog.Log(line.ToString());
             }
 
@@ -273,7 +273,7 @@ namespace PanicSystem
             }
 
             //dZ Because this is how it should be. Make this changeable. 
-            ejectModifiers = Math.Max(0, (ejectModifiers - Settings.BaseEjectionResist - (Settings.GutsEjectionResistPerPoint * guts) -
+            ejectModifiers = Math.Max(0f, (ejectModifiers - Settings.BaseEjectionResist - (Settings.GutsEjectionResistPerPoint * guts) -
                              (Settings.TacticsEjectionResistPerPoint * tactics)) * Settings.EjectChanceMultiplier);
             Logger.Harmony($"After calculation: {ejectModifiers}");
 

@@ -18,8 +18,8 @@ namespace PanicSystem
         {
             public static void Prefix(AttackStackSequence __instance, MessageCenterMessage message)
             {
-                Logger.Harmony(new string(c: '-', count: 80));
-                Logger.Harmony($"{__instance.owningActor.DisplayName} attacked {__instance.targets.First().DisplayName}");
+                Logger.Debug(new string(c: '-', count: 80));
+                Logger.Debug($"{__instance.owningActor.DisplayName} attacked {__instance.targets.First().DisplayName}");
                 AttackCompleteMessage attackCompleteMessage = message as AttackCompleteMessage;
 
                 Mech mech = null;
@@ -58,6 +58,8 @@ namespace PanicSystem
                     RollForEjectionResult(mech, attackCompleteMessage.attackSequence, PanicStarted))
                 {
                     // ejecting, clean up
+                    Logger.Debug($"FAILED SAVE: Punchin' Out!!");
+
                     var combat = Traverse.Create(__instance).Property("Combat").GetValue<CombatGameState>();
                     List<Effect> effectsTargeting = combat.EffectManager.GetAllEffectsTargeting(mech);
 
@@ -72,8 +74,7 @@ namespace PanicSystem
                         }
                     }
 
-                    Logger.Harmony($"FAILED SAVE: Punchin' Out!!");
-                    Logger.Harmony($"Done removing effects.");
+                    Logger.Debug($"Done removing effects.");
                     mech.EjectPilot(mech.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
 
                 }
@@ -150,22 +151,22 @@ namespace PanicSystem
 
                     if (TrackedPilots[index].PilotStatus == PanicStatus.Unsettled)
                     {
-                        Logger.Harmony("IMPROVED PANIC TO UNSETTLED!");
+                        Logger.Debug("IMPROVED PANIC TO UNSETTLED!");
                         __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"IMPROVED PANIC TO UNSETTLED",FloatieMessage.MessageNature.Buff, true)));
-                        __instance.StatCollection.ModifyStat("Panic Turn: Unsettled Aim", -1, "AccuracyModifier",StatCollection.StatOperation.Float_Add, PanicSystem.Settings.UnsettledAttackModifier);
+                        __instance.StatCollection.ModifyStat("Panic Turn: Unsettled Aim", -1, "AccuracyModifier",StatCollection.StatOperation.Float_Add, PanicSystem.ModSettings.UnsettledAttackModifier);
                     }
 
                     else if (TrackedPilots[index].PilotStatus == PanicStatus.Stressed)
                     {
-                        Logger.Harmony("IMPROVED PANIC TO STRESSED!");
+                        Logger.Debug("IMPROVED PANIC TO STRESSED!");
                         __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"IMPROVED PANIC TO STRESSED",FloatieMessage.MessageNature.Buff, true)));
-                        __instance.StatCollection.ModifyStat("Panic Turn: Stressed Aim", -1, "AccuracyModifier",StatCollection.StatOperation.Float_Add, PanicSystem.Settings.StressedAimModifier);
-                        __instance.StatCollection.ModifyStat("Panic Turn: Stressed Defence", -1, "ToHitThisActor",StatCollection.StatOperation.Float_Add, PanicSystem.Settings.StressedToHitModifier);
+                        __instance.StatCollection.ModifyStat("Panic Turn: Stressed Aim", -1, "AccuracyModifier",StatCollection.StatOperation.Float_Add, PanicSystem.ModSettings.StressedAimModifier);
+                        __instance.StatCollection.ModifyStat("Panic Turn: Stressed Defence", -1, "ToHitThisActor",StatCollection.StatOperation.Float_Add, PanicSystem.ModSettings.StressedToHitModifier);
                     }
 
                     else
                     {
-                        Logger.Harmony("IMPROVED PANIC TO CONFIDENT!");
+                        Logger.Debug("IMPROVED PANIC TO CONFIDENT!");
                         __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
                             new ShowActorInfoSequence(mech, "IMPROVED PANIC TO CONFIDENT",
                                 FloatieMessage.MessageNature.Buff, true)));
@@ -208,7 +209,7 @@ namespace PanicSystem
                 }
 
                 int index = GetTrackedPilotIndex(mech);
-                if (PanicSystem.Settings.LosingLimbAlwaysPanics)
+                if (PanicSystem.ModSettings.LosingLimbAlwaysPanics)
                 {
                     if (TrackedPilots[index].TrackedMech != mech.GUID)
                     {
@@ -217,7 +218,7 @@ namespace PanicSystem
 
                     if (TrackedPilots[index].TrackedMech == mech.GUID &&
                         TrackedPilots[index].ChangedRecently &&
-                        PanicSystem.Settings.AlwaysGatedChanges)
+                        PanicSystem.ModSettings.AlwaysGatedChanges)
                     {
                         return;
                     }

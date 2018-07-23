@@ -11,6 +11,8 @@
   "DLL": "PanicSystem.dll",
 
   "Settings": {
+    "Debug": false,
+    "EnableDebug": false, /* legacy compat */
     "PlayerCharacterAlwaysResists": false,
     "PlayerTeamCanPanic": true,
     "EnemiesCanPanic": true,
@@ -32,13 +34,17 @@
     "AssaultMechEarlyPanicThreshold": 2,
 
     "MaxEjectChanceWhenEarly": 10,
-
+    
     "MinimumArmourDamagePercentageRequired": 10,
-    "AtLeastOneChanceToPanic": true,
-    "AtLeastOneChanceToPanicPercentage": 10,
-    "AlwaysGatedChanges": false,
-    "MaxPanicResistTotal": 100,
+    "OneChangePerTurn": false,
     "LosingLimbAlwaysPanics": false,
+    
+    "Median Morale": 25,
+    
+    /* Quirks compatibility */
+    "QuirksEnabled": false,
+    "BraveModifier": 5,
+    "DependableModifier": 5,
 
     "UnsettledAttackModifier": 1,
     "StressedAimModifier": 1,
@@ -67,7 +73,6 @@
     "CTDamageMaxModifier": 35,
     "SideTorsoInternalDamageMaxModifier": 25,
     "LeggedMaxModifier": 10,
-    "NextShotLikeThatCouldKill": 20,
     "WeaponlessModifier": 10,
     "AloneModifier": 10
   }

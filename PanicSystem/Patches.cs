@@ -219,7 +219,7 @@ namespace PanicSystem
 
                     if (TrackedPilots[index].TrackedMech == mech.GUID &&
                         TrackedPilots[index].ChangedRecently &&
-                        PanicSystem.ModSettings.AlwaysGatedChanges)
+                        PanicSystem.ModSettings.OneChangePerTurn)
                     {
                         return;
                     }

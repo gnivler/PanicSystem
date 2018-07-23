@@ -263,7 +263,7 @@ namespace PanicSystem
 
             if (mech.team == mech.Combat.LocalPlayerTeam)
             {
-                ejectModifiers -= (mech.Combat.LocalPlayerTeam.Morale - ModSettings.MedianMorale) / 2;
+                ejectModifiers -= (mech.Combat.LocalPlayerTeam.Morale - ModSettings.MedianMorale) / 8;
                 Logger.Debug($"Morale: {ejectModifiers}");
             }
             
@@ -724,7 +724,7 @@ namespace PanicSystem
 
             var enemyHealth = GetAllEnemiesHealth(mech);
 
-            if (ModSettings.ConsiderEjectingWhenAlone && mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m.GUID == mech.GUID) && enemyHealth >= (mech.SummaryArmorCurrent + mech.SummaryStructureCurrent) * 2)
+            if (ModSettings.ConsiderEjectingWhenAlone && mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m.GUID == mech.GUID) && enemyHealth >= (mech.SummaryArmorCurrent + mech.SummaryStructureCurrent) * 3)
             {
                 Logger.Debug($"Last straw sole survivor.");
                 PanicStarted = true;

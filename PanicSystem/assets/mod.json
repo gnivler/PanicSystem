@@ -3,7 +3,7 @@
 
   "Enabled": true,
 
-  "Version": "2.0",
+  "Version": "2.4",
   "Description": "Adds basic panic system, based on mpstark's Punchin' Out.",
   "Author": "RealityMachina, forked from mpstark's work - Hard forked and Modified by donZappo and gnivler",
   "Website": "https://github.com/gnivler/PanicSystem",
@@ -70,8 +70,8 @@
     "UnsteadyModifier": 10,
     "PilotHealthMaxModifier": 15,
     "HeadDamageMaxModifier": 15,
-    "CTDamageMaxModifier": 35,
-    "SideTorsoInternalDamageMaxModifier": 25,
+    "CTDamageMaxModifier": 45,
+    "SideTorsoInternalDamageMaxModifier": 20,
     "LeggedMaxModifier": 10,
     "WeaponlessModifier": 10,
     "AloneModifier": 10

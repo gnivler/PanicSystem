@@ -55,9 +55,11 @@ namespace PanicSystem
                 SerializeActiveJson();
 
                 // ejection check
+                //var shouldEject = RollForEjectionResult(mech, attackCompleteMessage.attackSequence, PanicStarted);
                 if (LastStraw || hasReasonToPanic && RollForEjectionResult(mech, attackCompleteMessage.attackSequence, PanicStarted))
                 {
                     Logger.Debug($"FAILED SAVE: Punchin' Out!!");
+                    mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"FAILED SAVE: Punchin' Out!!", FloatieMessage.MessageNature.Debuff, true)));
                     // ejecting, clean up
                     var combat = Traverse.Create(__instance).Property("Combat").GetValue<CombatGameState>();
                     List<Effect> effectsTargeting = combat.EffectManager.GetAllEffectsTargeting(mech);

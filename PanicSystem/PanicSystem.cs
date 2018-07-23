@@ -62,7 +62,8 @@ namespace PanicSystem
             Pilot pilot = mech.GetPilot();
             var weapons = mech.Weapons;
             int index = -1;
-            float gutAndTacticsSum = mech.SkillGuts * ModSettings.GutsEjectionResistPerPoint + mech.SkillTactics * ModSettings.TacticsEjectionResistPerPoint;
+            float gutAndTacticsSum = mech.SkillGuts * ModSettings.GutsEjectionResistPerPoint +
+                                     mech.SkillTactics * ModSettings.TacticsEjectionResistPerPoint;
 
             index = GetTrackedPilotIndex(mech);
             float panicModifiers = 0;
@@ -108,7 +109,8 @@ namespace PanicSystem
             Logger.Debug($"LastStraw: {panicModifiers}");
 
             panicModifiers -= gutAndTacticsSum;
-            Logger.Debug($"Guts and Tactics: {panicModifiers} ({mech.SkillGuts}x{ModSettings.GutsEjectionResistPerPoint} + {mech.SkillTactics}x{ModSettings.TacticsEjectionResistPerPoint})");
+            Logger.Debug(
+                $"Guts and Tactics: {panicModifiers} ({mech.SkillGuts}x{ModSettings.GutsEjectionResistPerPoint} + {mech.SkillTactics}x{ModSettings.TacticsEjectionResistPerPoint})");
 
             if (mech.team == mech.Combat.LocalPlayerTeam)
             {
@@ -117,7 +119,7 @@ namespace PanicSystem
                 Logger.Debug($"Morale: {panicModifiers}");
             }
 
-            panicModifiers = (float) Math.Round(panicModifiers);
+            panicModifiers = (float) Math.Max(0f, Math.Round(panicModifiers));
             Logger.Debug($"Roll to beat: {panicModifiers}");
 
             var rng = new Random().Next(1, 101);
@@ -127,9 +129,12 @@ namespace PanicSystem
             {
                 ApplyPanicDebuff(mech, index);
             }
+            else
+            {
+                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"MADE {panicModifiers}% PANIC SAVE!", FloatieMessage.MessageNature.Buff, true)));
+                Logger.Debug($"MADE {panicModifiers}% PANIC SAVE!");
+            }
 
-            mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"MADE {panicModifiers}% PANIC SAVE!", FloatieMessage.MessageNature.Buff, true)));
-            Logger.Debug($"MADE {panicModifiers}% PANIC SAVE!");
             return false;
         }
 
@@ -252,10 +257,11 @@ namespace PanicSystem
             }
 
             //dZ Because this is how it should be. Make this changeable. 
-            ejectModifiers = Math.Max(0f, (ejectModifiers - ModSettings.BaseEjectionResist - (ModSettings.GutsEjectionResistPerPoint * guts) -
+            ejectModifiers = Math.Max(0f,
+                (ejectModifiers - ModSettings.BaseEjectionResist - (ModSettings.GutsEjectionResistPerPoint * guts) -
                  (ModSettings.TacticsEjectionResistPerPoint * tactics)) * ModSettings.EjectChanceMultiplier);
             Logger.Debug($"After calculation: {ejectModifiers}");
-            
+
 
             var rollToBeat = (float) Math.Round(ejectModifiers);
             Logger.Debug($"Final roll to beat: {rollToBeat}");
@@ -263,8 +269,7 @@ namespace PanicSystem
             // passes through if last straw is met to force an ejection roll
             if (rollToBeat <= 0 && !IsLastStrawPanicking(mech, ref panicStarted))
             {
-                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
-                    new ShowActorInfoSequence(mech, $"RESISTED EJECTION!", FloatieMessage.MessageNature.Buff, true)));
+                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"RESISTED EJECTION!", FloatieMessage.MessageNature.Buff, true)));
                 Logger.Debug($"RESISTED EJECTION!");
                 return false;
             }
@@ -302,16 +307,6 @@ namespace PanicSystem
             return roll < rollToBeat;
         }
 
-        private static int NumberOfEnemies()
-        {
-            throw new NotImplementedException();
-        }
-
-        private static int NumberOfAllies()
-        {
-            throw new NotImplementedException();
-        }
-
         private static float GetAllEnemiesHealth(Mech mech)
         {
             var enemies = mech.Combat.GetAllEnemiesOf(mech);
@@ -323,9 +318,6 @@ namespace PanicSystem
 
             return enemiesHealth;
         }
-
-
-
 
         /// <summary>
         /// returns modifiers
@@ -361,11 +353,9 @@ namespace PanicSystem
         {
             // dZ Check legs independently. Code here significantly improved.  Handles missing legs
             var legPercentRight = 1 - (mech.RightLegStructure + mech.RightLegArmor) /
-                                  (mech.GetMaxStructure(ChassisLocations.RightLeg) +
-                                   mech.GetMaxArmor(ArmorLocation.RightLeg));
-            var legPercentLeft = 1 - (mech.LeftLegStructure + mech.LeftLegArmor) /
-                                 (mech.GetMaxStructure(ChassisLocations.LeftLeg) +
-                                  mech.GetMaxArmor(ArmorLocation.LeftLeg));
+                                      (mech.GetMaxStructure(ChassisLocations.RightLeg) + mech.GetMaxArmor(ArmorLocation.RightLeg));
+            var legPercentLeft = 1 - (mech.LeftLegStructure + mech.LeftLegArmor) / 
+                                     (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg));
             if (legPercentRight + legPercentLeft < 2)
             {
                 panicModifiers += ModSettings.LeggedMaxModifier * (legPercentRight + legPercentLeft);
@@ -411,8 +401,7 @@ namespace PanicSystem
         private static void GetCTModifier(Mech mech, ref float panicModifiers)
         {
             var ctPercent = (mech.CenterTorsoFrontArmor + mech.CenterTorsoStructure + mech.CenterTorsoRearArmor) /
-                            (mech.GetMaxArmor(ArmorLocation.CenterTorso) +
-                             mech.GetMaxStructure(ChassisLocations.CenterTorso));
+                            (mech.GetMaxArmor(ArmorLocation.CenterTorso) + mech.GetMaxStructure(ChassisLocations.CenterTorso));
             if (ctPercent < 1)
             {
                 panicModifiers += ModSettings.CTDamageMaxModifier * (1 - ctPercent);
@@ -467,7 +456,6 @@ namespace PanicSystem
                 }
             }
         }
-
 
         /// <summary>
         /// true implies the pilot is tracked
@@ -687,7 +675,6 @@ namespace PanicSystem
                     StatCollection.StatOperation.Set, 0f);
                 mech.StatCollection.ModifyStat("Panic Attack: Unsettled Aim", -1, "AccuracyModifier",
                     StatCollection.StatOperation.Float_Add, ModSettings.UnsettledAttackModifier);
-
             }
             else if (TrackedPilots[index].TrackedMech == mech.GUID &&
                      TrackedPilots[index].PilotStatus == PanicStatus.Unsettled)
@@ -774,7 +761,7 @@ namespace PanicSystem
                 if (TrackedPilots[i].TrackedMech == mech.GUID &&
                     TrackedPilots[i].PilotStatus == PanicStatus.Panicked)
                 {
-                    Logger.Debug($"PANICKING - EJECT ROLLS ARE HARDER.");
+                    Logger.Debug($"STILL PANICKING!.");
                     PanicStarted = true;
                     return true;
                 }
@@ -782,7 +769,7 @@ namespace PanicSystem
                 if (CanEjectBeforePanicked(mech, i))
                 {
                     Logger.Debug($"Early ejection danger.");
-                    PanicSystem.PanicStarted = true;
+                    PanicStarted = true;
                     return true;
                 }
             }
@@ -791,7 +778,7 @@ namespace PanicSystem
         }
 
         /// <summary>
-        /// true implies this weight class of mech can eject before reachign Panicked
+        /// true implies this weight class of mech can eject before reaching Panicked
         /// </summary>
         /// <param name="mech"></param>
         /// <param name="i"></param>
@@ -875,7 +862,7 @@ namespace PanicSystem
     }
 
 
-public class Settings
+    public class Settings
     {
         public bool PlayerCharacterAlwaysResists = true;
         public bool PlayerTeamCanPanic = true;
@@ -903,7 +890,9 @@ public class Settings
         public float MaxEjectChanceWhenEarlyEjectThresholdMet = 10;
 
         //minmum armour and structure damage
-        public float MinimumArmourDamagePercentageRequired = 10; //if no structure damage, a Mech must lost a bit of its armour before it starts worrying
+        public float
+            MinimumArmourDamagePercentageRequired =
+                10; //if no structure damage, a Mech must lost a bit of its armour before it starts worrying
 
         //general panic roll
         //rolls out of 20

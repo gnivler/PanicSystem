@@ -34,6 +34,7 @@ namespace PanicSystem
                 // this bool is the normal panic reason, which can be saved against
                 bool hasReasonToPanic = false;
 
+                // simple flag to see if damage was done
                 var attack = Traverse.Create(__instance).Field("directorSequences").GetValue<List<AttackDirector.AttackSequence>>();
                 var damaged = attack.Any(x => x.attackDidDamage);
 
@@ -41,7 +42,7 @@ namespace PanicSystem
                 {
                     mech = (Mech)__instance.directorSequences[0].target;
 
-                    // sets global variable that last-straw is met
+                    // sets global variable that last-straw is met and only when it damages target
                     LastStraw = (IsLastStrawPanicking(mech, ref PanicStarted) && damaged);
                     hasReasonToPanic = ShouldPanic(mech, attackCompleteMessage.attackSequence);
                 }
@@ -54,12 +55,10 @@ namespace PanicSystem
                 SerializeActiveJson();
 
                 // ejection check
-                if (LastStraw || hasReasonToPanic &&
-                    RollForEjectionResult(mech, attackCompleteMessage.attackSequence, PanicStarted))
+                if (LastStraw || hasReasonToPanic && RollForEjectionResult(mech, attackCompleteMessage.attackSequence, PanicStarted))
                 {
-                    // ejecting, clean up
                     Logger.Debug($"FAILED SAVE: Punchin' Out!!");
-
+                    // ejecting, clean up
                     var combat = Traverse.Create(__instance).Property("Combat").GetValue<CombatGameState>();
                     List<Effect> effectsTargeting = combat.EffectManager.GetAllEffectsTargeting(mech);
 

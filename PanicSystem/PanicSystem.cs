@@ -197,6 +197,7 @@ namespace PanicSystem
             if (pilot.pilotDef.PilotTags.Contains("pilot_drunk"))
             {
                 Logger.Debug("Drunkard - not ejecting!");
+                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"..HIC!", FloatieMessage.MessageNature.Buff, true)));
                 return false;
             }
 
@@ -909,8 +910,8 @@ namespace PanicSystem
         public float UnsteadyModifier = 10;
         public float PilotHealthMaxModifier = 15;
         public float HeadDamageMaxModifier = 15;
-        public float CTDamageMaxModifier = 35;
-        public float SideTorsoInternalDamageMaxModifier = 25;
+        public float CTDamageMaxModifier = 45;
+        public float SideTorsoInternalDamageMaxModifier = 20;
         public float LeggedMaxModifier = 10;
         public float WeaponlessModifier = 10;
         public float AloneModifier = 10;

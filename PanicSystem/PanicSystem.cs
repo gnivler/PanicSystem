@@ -83,7 +83,7 @@ namespace PanicSystem
                 return false;
             }
             
-            if (pilot.pilotDef.PilotTags.Contains("pilot_brave"))
+            if (pilot.pilotDef.PilotTags.Contains("pilot_brave") && ModSettings.QuirksEnabled)
             {
                 panicModifiers -= ModSettings.BraveModifier;
                 Logger.Debug($"bravery: {panicModifiers}");
@@ -194,7 +194,7 @@ namespace PanicSystem
             Logger.Debug($"Collecting ejection modifiers:");
             Logger.Debug(new string(c: '-', count: 80));
 
-            if (pilot.pilotDef.PilotTags.Contains("pilot_drunk"))
+            if (pilot.pilotDef.PilotTags.Contains("pilot_drunk") && pilot.pilotDef.TimeoutRemaining > 0 && ModSettings.QuirksEnabled)
             {
                 Logger.Debug("Drunkard - not ejecting!");
                 return false;
@@ -267,7 +267,7 @@ namespace PanicSystem
                 Logger.Debug($"Morale: {ejectModifiers}");
             }
             
-            if (pilot.pilotDef.PilotTags.Contains("pilot_dependable"))
+            if (pilot.pilotDef.PilotTags.Contains("pilot_dependable") && ModSettings.QuirksEnabled)
             {
                 ejectModifiers -= ModSettings.DependableModifier;
                 Logger.Debug($"Dependable: {ejectModifiers}");

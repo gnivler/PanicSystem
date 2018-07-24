@@ -711,23 +711,24 @@ namespace PanicSystem
 
             if (pilot != null && !pilot.LethalInjuries && pilot.Health - pilot.Injuries <= ModSettings.MinimumHealthToAlwaysEjectRoll)
             {
-                Logger.Debug($"Last straw health.");
+                Logger.Debug($"Last straw: Injuries.");
                 PanicStarted = true;
                 return true;
             }
 
             if (mech.Weapons.TrueForAll(w => w.DamageLevel == ComponentDamageLevel.Destroyed || w.DamageLevel == ComponentDamageLevel.NonFunctional) && ModSettings.ConsiderEjectingWithNoWeaps)
             {
-                Logger.Debug($"Last straw weapons.");
+                Logger.Debug($"Last straw: Weaponless.");
                 PanicStarted = true;
                 return true;
             }
 
             var enemyHealth = GetAllEnemiesHealth(mech);
 
-            if (ModSettings.ConsiderEjectingWhenAlone && mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m.GUID == mech.GUID) && enemyHealth >= (mech.SummaryArmorCurrent + mech.SummaryStructureCurrent) * 3)
+            if (ModSettings.ConsiderEjectingWhenAlone && mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m.GUID == mech.GUID) &&
+                enemyHealth >= (mech.SummaryArmorCurrent + mech.SummaryStructureCurrent) * 3)
             {
-                Logger.Debug($"Last straw sole survivor.");
+                Logger.Debug($"Last straw: Sole Survivor.");
                 PanicStarted = true;
                 return true;
             }

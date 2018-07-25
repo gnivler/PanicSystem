@@ -93,10 +93,7 @@ namespace PanicSystem
                 Pilot pilot = mech.GetPilot();
                 int index = -1;
 
-                if (pilot == null)
-                {
-                    return;
-                }
+                if (pilot == null) return;
 
                 index = GetTrackedPilotIndex(mech);
                 if (index > -1)
@@ -108,7 +105,7 @@ namespace PanicSystem
                 {
                     PanicTracker panicTracker = new PanicTracker(mech);
                     TrackedPilots.Add(panicTracker); //add a new tracker to tracked pilot, then we run it all over again
-                    Prefix(__instance);
+                    Prefix();
                 }
 
                 PanicStatus originalStatus = TrackedPilots[index].PilotStatus;

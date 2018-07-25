@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Text;
 using static PanicSystem.Controller;
 
 // HUGE thanks to RealityMachina and mpstark for their work, outstanding.
@@ -54,6 +55,15 @@ namespace PanicSystem
         /// <returns></returns>
         public static bool ShouldPanic(Mech mech, AttackDirector.AttackSequence attackSequence)
         {
+            var sb = new StringBuilder();
+            sb.Append(new string(c: '-', count:60));
+            sb.Append($"from Mech\nStructure: {mech.LeftLegStructure} {mech.RightLegStructure}\nArmor: {mech.LeftLegArmor} {mech.RightLegArmor}");
+            sb.Append($"Max? {mech.MaxArmorForLocation(64)} {mech.MaxArmorForLocation(128)}");
+            sb.Append($"from MechDef.  Structure: {mech.MechDef.LeftLeg.CurrentInternalStructure} {mech.MechDef.RightLeg.CurrentInternalStructure}\n");
+            sb.Append($"Armor: {mech.MechDef.LeftLeg.CurrentArmor} {mech.MechDef.RightLeg.CurrentArmor}");
+            sb.Append($"Max? {mech.MechDef.LeftLeg.AssignedArmor} {mech.MechDef.RightLeg.AssignedArmor}");
+            Logger.Debug(sb.ToString()); 
+
             if (!CheckCanPanic(mech, attackSequence))
             {
                 return false;
@@ -317,10 +327,6 @@ namespace PanicSystem
             //mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"FAILED SAVE: Punchin' Out!!", FloatieMessage.MessageNature.Debuff, true)));   
         }
 
-        private static void Eject()
-        {
-        }
-
         private static float GetAllEnemiesHealth(Mech mech)
         {
             var enemies = mech.Combat.GetAllEnemiesOf(mech);
@@ -354,7 +360,9 @@ namespace PanicSystem
                 panicModifiers += ModSettings.AloneModifier;
             }
         }
-
+        
+// TODO make sure this is using dropped armour
+        
         /// <summary>
         /// returns modifiers and updates lowestHealthLethalLocation
         /// </summary>
@@ -365,7 +373,8 @@ namespace PanicSystem
         {
             // dZ Check legs independently. Code here significantly improved.  Handles missing legs
             var legPercentRight = 1 - (mech.RightLegStructure + mech.RightLegArmor) / (mech.GetMaxStructure(ChassisLocations.RightLeg) + mech.GetMaxArmor(ArmorLocation.RightLeg));
-            var legPercentLeft = 1 - (mech.LeftLegStructure + mech.LeftLegArmor) / (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg));
+            var legPercentLeft = 1 - (mech.LeftLegStructure + mech.LeftLegArmor) /
+                                 (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg));
             if (legPercentRight + legPercentLeft < 2)
             {
                 panicModifiers += ModSettings.LeggedMaxModifier * (legPercentRight + legPercentLeft);
@@ -617,6 +626,11 @@ namespace PanicSystem
             return totalArmor;
         }
 
+        //TODO add heat modifier
+        //TODO check strucure mods
+        //TODO extra modifiers for missing limbs on every roll?  same as damage?
+        //TODO arms but how to deal with clip-ons
+        
         private static float GetCurrentMechStructure(Mech mech)
         {
             float totalStructure = 0;
@@ -631,6 +645,16 @@ namespace PanicSystem
             return totalStructure;
         }
 
+        private static float CurrentArmorTotal(Mech mech)
+        {
+            return mech.MechDef.MechDefCurrentArmor;
+        }
+
+        private static float DroppedArmorTotal(Mech mech)
+        {
+            return mech.MechDef.MechDefAssignedArmor;
+        }
+
         /// <summary>
         /// not in use
         /// </summary>
@@ -638,6 +662,7 @@ namespace PanicSystem
         /// <returns></returns>
         private static float GetTotalMechArmour(Mech mech)
         {
+            MechDef _mech = mech.MechDef;
             float maxArmor = 0;
             maxArmor += mech.GetMaxArmor(ArmorLocation.CenterTorso);
             maxArmor += mech.GetMaxArmor(ArmorLocation.LeftArm);
@@ -671,7 +696,7 @@ namespace PanicSystem
             }
             else if (TrackedPilots[index].TrackedMech == mech.GUID && TrackedPilots[index].PilotStatus == PanicStatus.Unsettled)
             {
-                Logger.Debug("STRESSED!!");
+                Logger.Debug("STRESSED!");
                 mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"STRESSED!", FloatieMessage.MessageNature.Debuff, true)));
                 TrackedPilots[index].PilotStatus = PanicStatus.Stressed;
                 mech.StatCollection.ModifyStat("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f);
@@ -728,7 +753,7 @@ namespace PanicSystem
             if (ModSettings.ConsiderEjectingWhenAlone && mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m.GUID == mech.GUID) &&
                 enemyHealth >= (mech.SummaryArmorCurrent + mech.SummaryStructureCurrent) * 3)
             {
-                Logger.Debug($"Last straw: Sole Survivor.");
+                Logger.Debug($"Last straw: Sole Survivor, hopeless situation.");
                 PanicStarted = true;
                 return true;
             }

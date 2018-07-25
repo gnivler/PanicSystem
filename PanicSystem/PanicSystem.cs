@@ -105,15 +105,19 @@ namespace PanicSystem
                 Debug($"Unsteady adds {ModSettings.UnsteadyModifier}, modifier now at {panicModifiers:0.###}.");
             }
 
-            if (mech.IsFlaggedForKnockdown && pilot.pilotDef.PilotTags.Contains("pilot_klutz"))
+            if (mech.IsFlaggedForKnockdown)
             {
-                Debug($"Klutz!");
-                if (RNG.Next(1, 101) == 13)
+                if (pilot.pilotDef.PilotTags.Contains("pilot_klutz"))
                 {
-                    mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"WOOPS!", FloatieMessage.MessageNature.Death, true)));
-                    Debug($"Very klutzy!");
-                    KlutzEject = true;
-                    return true;
+                    Debug($"Klutz!");
+
+                    if (RNG.Next(1, 101) == 13)
+                    {
+                        mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"WOOPS!", FloatieMessage.MessageNature.Death, true)));
+                        Debug($"Very klutzy!");
+                        KlutzEject = true;
+                        return true;
+                    }
                 }
 
                 panicModifiers += ModSettings.UnsteadyModifier;
@@ -290,76 +294,71 @@ namespace PanicSystem
             }
 
             // pilot health
-            float pilotHealthPercent = 1f - ((float) pilot.Injuries / pilot.Health);
-            if (pilotHealthPercent < 1)
+            if (PercentPilot(pilot) < 1)
             {
-                ejectModifiers += ModSettings.PilotHealthMaxModifier * (1f - pilotHealthPercent);
-                Debug($"Pilot Health: {ejectModifiers}");
+                ejectModifiers += ModSettings.PilotHealthMaxModifier * PercentPilot(pilot);
+                Debug($"Pilot injury adds {ModSettings.PilotHealthMaxModifier * PercentPilot(pilot)}, modifier now at {ejectModifiers}.");
             }
 
             // unsteady
             if (mech.IsUnsteady)
             {
                 ejectModifiers += ModSettings.UnsteadyModifier;
-                Debug($"Unsteady: {ejectModifiers}");
+                Debug($"Unsteady adds {ModSettings.UnsteadyModifier}, modifier now at {ejectModifiers}.");
             }
 
             // Head
-            var headHealthPercent = (mech.HeadArmor + mech.HeadStructure) / (mech.GetMaxArmor(ArmorLocation.Head) + mech.GetMaxStructure(ChassisLocations.Head));
-            if (headHealthPercent < 1)
+            if (PercentHead(mech) < 1)
             {
-                ejectModifiers += ModSettings.HeadMaxModifier * (1f - headHealthPercent);
-                Debug($"Head Damage: {ejectModifiers}");
+                ejectModifiers += ModSettings.HeadMaxModifier * PercentHead(mech);
+                Debug($"Head damage adds {ModSettings.HeadMaxModifier * PercentHead(mech)}, modifier now at {ejectModifiers}.");
             }
 
             // CT  
-            var ctPercent = (mech.CenterTorsoFrontArmor + mech.CenterTorsoStructure + mech.CenterTorsoRearArmor) / (mech.GetMaxArmor(ArmorLocation.CenterTorso) + mech.GetMaxStructure(ChassisLocations.CenterTorso));
-            if (ctPercent < 1)
+            if (PercentCenterTorso(mech) < 1)
             {
-                ejectModifiers += ModSettings.CenterTorsoMaxModifier * (1f - ctPercent);
-                Debug($"CT Damage: {ejectModifiers}");
+                ejectModifiers += ModSettings.CenterTorsoMaxModifier * PercentCenterTorso(mech);
+                Debug($"CT damage adds {ModSettings.CenterTorsoMaxModifier * PercentCenterTorso(mech)}, modifier now at {ejectModifiers}.");
             }
 
             // LT/RT
-            var ltStructurePercent = mech.LeftTorsoStructure / mech.GetMaxStructure(ChassisLocations.LeftTorso);
-            if (ltStructurePercent < 1)
+            if (PercentLeftTorso(mech) < 1)
             {
-                ejectModifiers += ModSettings.SideTorsoMaxModifier * (1f - ltStructurePercent);
+                ejectModifiers += ModSettings.SideTorsoMaxModifier * PercentLeftTorso(mech);
+                Debug($"LT damage adds {ModSettings.SideTorsoMaxModifier * PercentLeftTorso(mech)}, modifier now at {ejectModifiers}.");
             }
 
-            Debug($"LT Damage: {ejectModifiers}");
-
-            var rtStructurePercent = mech.RightTorsoStructure / mech.GetMaxStructure(ChassisLocations.RightTorso);
-            if (rtStructurePercent < 1)
+            if (PercentRightTorso(mech) < 1)
             {
-                ejectModifiers += ModSettings.SideTorsoMaxModifier * (1f - rtStructurePercent);
-                Debug($"RT Damage: {ejectModifiers}");
+                ejectModifiers += ModSettings.SideTorsoMaxModifier * PercentRightTorso(mech);
+                Debug($"RT damage adds {ModSettings.SideTorsoMaxModifier * PercentRightTorso(mech)}, modifier now at {ejectModifiers}.");
             }
 
             // weaponless
             if (weapons.TrueForAll(w => w.DamageLevel == ComponentDamageLevel.Destroyed))
             {
                 ejectModifiers += ModSettings.WeaponlessModifier;
-                Debug($"Weaponless: {ejectModifiers}");
+                Debug($"Weaponless adds {ModSettings.WeaponlessModifier}, modifier now at {ejectModifiers}.");
             }
 
             // alone
             if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m == mech as AbstractActor || m.IsDead))
             {
                 ejectModifiers += ModSettings.AloneModifier;
-                Debug($"Sole Survivor: {ejectModifiers}");
+                Debug($"Sole survivor adds {ModSettings.AloneModifier}, modifier now at {ejectModifiers}.");
             }
 
             if (mech.team == mech.Combat.LocalPlayerTeam)
             {
-                ejectModifiers -= (mech.Combat.LocalPlayerTeam.Morale - ModSettings.MedianMorale) / 8;
-                Debug($"Morale: {ejectModifiers}");
+                var moraleModifier = ModSettings.MoraleMaxModifier * (mech.Combat.LocalPlayerTeam.Morale - ModSettings.MedianMorale) / ModSettings.MedianMorale;
+                ejectModifiers += moraleModifier;
+                Debug($"Curren morale {mech.Combat.LocalPlayerTeam.Morale} adds {moraleModifier:0.###}, modifier now at {ejectModifiers:0.###}.");
             }
 
             if (ModSettings.QuirksEnabled && pilot.pilotDef.PilotTags.Contains("pilot_dependable"))
             {
                 ejectModifiers -= ModSettings.DependableModifier;
-                Debug($"Dependable: {ejectModifiers}");
+                Debug($"Dependable adds {ModSettings.DependableModifier}, modifier now at {ejectModifiers}.");
             }
 
             // calculate result

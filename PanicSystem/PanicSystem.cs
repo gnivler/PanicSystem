@@ -11,12 +11,13 @@ using static PanicSystem.Controller;
 // HUGE thanks to RealityMachina and mpstark for their work, outstanding.
 namespace PanicSystem
 {
-    public static class PanicSystem
+    public class PanicSystem
     {
         internal static Settings ModSettings = new Settings();
         public static string ActiveJsonPath; //store current tracker here
         public static string StorageJsonPath; //store our meta trackers here
         public static string ModDirectory;
+        public static bool KlutzEject = false;
 
         public static Random RNG = new Random();
 
@@ -55,14 +56,16 @@ namespace PanicSystem
         /// <returns></returns>
         public static bool ShouldPanic(Mech mech, AttackDirector.AttackSequence attackSequence)
         {
+/*
             var sb = new StringBuilder();
-            sb.Append(new string(c: '-', count:60));
-            sb.Append($"from Mech\nStructure: {mech.LeftLegStructure} {mech.RightLegStructure}\nArmor: {mech.LeftLegArmor} {mech.RightLegArmor}");
-            sb.Append($"Max? {mech.MaxArmorForLocation(64)} {mech.MaxArmorForLocation(128)}");
-            sb.Append($"from MechDef.  Structure: {mech.MechDef.LeftLeg.CurrentInternalStructure} {mech.MechDef.RightLeg.CurrentInternalStructure}\n");
-            sb.Append($"Armor: {mech.MechDef.LeftLeg.CurrentArmor} {mech.MechDef.RightLeg.CurrentArmor}");
-            sb.Append($"Max? {mech.MechDef.LeftLeg.AssignedArmor} {mech.MechDef.RightLeg.AssignedArmor}");
-            Logger.Debug(sb.ToString()); 
+            sb.Append(new string(c: '-', count: 60));
+            sb.Append($"\nfrom Mech\nStructure: LL {mech.LeftLegStructure} RL {mech.RightLegStructure}\nArmor: LL {mech.LeftLegArmor} RL{mech.RightLegArmor}\n");
+            sb.Append($"Max armor? LL {mech.MaxArmorForLocation(64)} RL {mech.MaxArmorForLocation((int) ChassisLocations.RightLeg)}\n");
+            sb.Append($"from MechDef.  Structure: LL {mech.MechDef.LeftLeg.CurrentInternalStructure} RL {mech.MechDef.RightLeg.CurrentInternalStructure}\n");
+            sb.Append($"Armor: LL {mech.MechDef.LeftLeg.CurrentArmor} RL {mech.MechDef.RightLeg.CurrentArmor}\n");
+            sb.Append($"Max armor? LL {mech.MechDef.LeftLeg.AssignedArmor} RL {mech.MechDef.RightLeg.AssignedArmor}\n");
+            Logger.Debug(sb.ToString());
+*/
 
             if (!CheckCanPanic(mech, attackSequence))
             {
@@ -73,65 +76,114 @@ namespace PanicSystem
             var weapons = mech.Weapons;
             int index = -1;
             float gutAndTacticsSum = mech.SkillGuts * ModSettings.GutsEjectionResistPerPoint + mech.SkillTactics * ModSettings.TacticsEjectionResistPerPoint;
+            float panicModifiers = 0;
 
             index = GetTrackedPilotIndex(mech);
-            float panicModifiers = 0;
 
             if (LastStraw)
             {
                 return true;
             }
 
-            if (!CheckPanicFromDamage(mech, attackSequence))
+            /*
+                                                                    Panther attacked Shadow Hawk
+                                                                    Attack does 10 armor and 0 structure.
+                                                                    Not enough armor damage (10).
+             */
+            if (!WasEnoughDamageDone(mech, attackSequence)) // TODO 10 damage to -structure- didn't trigger this  
             {
                 return false;
             }
 
             Logger.Debug($"Collecting panic modifiers:");
+
             if (!CheckTrackedPilots(mech, ref index))
             {
                 return false;
             }
-            
-            if (pilot.pilotDef.PilotTags.Contains("pilot_brave") && ModSettings.QuirksEnabled)
+
+            if (ModSettings.QuirksEnabled && pilot.pilotDef.PilotTags.Contains("pilot_brave"))
             {
                 panicModifiers -= ModSettings.BraveModifier;
-                Logger.Debug($"bravery: {panicModifiers}");
+                Logger.Debug($"Bravery subtracts {ModSettings.BraveModifier}, modifier now at {panicModifiers:0.###}.");
             }
 
-            GetPilotHealthModifier(pilot, ref panicModifiers);
-            Logger.Debug($"pilot: {panicModifiers}");
+            if (PercentPilot(pilot) < 1)
+            {
+                panicModifiers += ModSettings.PilotHealthMaxModifier * (PercentPilot(pilot)); // TODO verify against upstream
+                Logger.Debug($"Pilot injuries add {ModSettings.PilotHealthMaxModifier * (PercentPilot(pilot)):0.###}, modifier now at {panicModifiers:0.###}.");
+            }
 
-            GetUnsteadyModifier(mech, ref panicModifiers);
-            Logger.Debug($"unsteady: {panicModifiers}");
+            if (mech.IsUnsteady)
+            {
+                panicModifiers += ModSettings.UnsteadyModifier;
+                Logger.Debug($"Unsteady damage adds {ModSettings.UnsteadyModifier}, modifier now at {panicModifiers:0.###}.");
+            }
 
-            GetHeadModifier(mech, ref panicModifiers);
-            Logger.Debug($"head: {panicModifiers}");
+            if (mech.IsFlaggedForKnockdown)
+            {
+                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
+                    (new ShowActorInfoSequence(mech, $"OH SHIT...", FloatieMessage.MessageNature.Debuff, true)));
+                if (pilot.pilotDef.PilotTags.Contains("pilot_klutz"))
+                {
+                    Logger.Debug($"Klutz!");
+                    if (RNG.Next(1, 101) == 13)
+                    {
+                        Logger.Debug($"Very klutzy!");
+                        KlutzEject = true;
+                        return true;
+                    }
+                }
+                else
+                {
+                    panicModifiers += ModSettings.UnsteadyModifier;
+                    Logger.Debug($"Knockdown adds {ModSettings.UnsteadyModifier}, modifier now at {panicModifiers:0.###}.");
+                }
+            }
 
-            GetCTModifier(mech, ref panicModifiers);
-            Logger.Debug($"CT: {panicModifiers}");
+            if (mech.HeadDamageLevel == LocationDamageLevel.Penalized)
+            {
+                panicModifiers += ModSettings.HeadMaxModifier * (PercentHead(mech));
+                Logger.Debug($"Head damage adds {ModSettings.HeadMaxModifier * (PercentHead(mech)):0.###}, modifier now at {panicModifiers:0.###}.");
+            }
 
-            GetLTModifier(mech, ref panicModifiers);
-            Logger.Debug($"LT: {panicModifiers}");
+            //if (PercentCenterTorso(mech) < 1)
+            if (mech.CenterTorsoDamageLevel == LocationDamageLevel.Penalized)
+            {
+                panicModifiers += ModSettings.CenterTorsoMaxModifier * (PercentCenterTorso(mech));
+                Logger.Debug($"CT damage adds {ModSettings.CenterTorsoMaxModifier * (PercentCenterTorso(mech)):0.###}, modifier now at {panicModifiers:0.###}.");
+            }
 
-            CheckRT(mech, ref panicModifiers);
-            Logger.Debug($"RT: {panicModifiers}");
+            // these methods deal with missing limbs (0 modifiers get replaced with max modifiers)
+            LeftTorso(mech, ref panicModifiers);
+            RightTorso(mech, ref panicModifiers);
+            LeftLeg(mech, ref panicModifiers);
+            RightLeg(mech, ref panicModifiers);
 
-            GetLegModifier(mech, ref panicModifiers);
-            Logger.Debug($"Legs: {panicModifiers}");
+            if (weapons.TrueForAll(w => w.DamageLevel == ComponentDamageLevel.Destroyed)) // only fully unusable
+            {
+                panicModifiers += ModSettings.WeaponlessModifier;
+                Logger.Debug($"Weaponless adds {ModSettings.WeaponlessModifier}.");
+            }
 
-            CheckLastStraws(mech, ref panicModifiers, weapons);
-            Logger.Debug($"LastStraw: {panicModifiers}");
+            // alone
+            if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m == mech as AbstractActor))
+            {
+                panicModifiers += ModSettings.AloneModifier;
+                Logger.Debug($"Being alone adds {ModSettings.AloneModifier}, now {panicModifiers:0.###}.");
+            }
 
             panicModifiers -= gutAndTacticsSum;
-            Logger.Debug($"Guts and Tactics: {panicModifiers} ({mech.SkillGuts}x{ModSettings.GutsEjectionResistPerPoint} + {mech.SkillTactics}x{ModSettings.TacticsEjectionResistPerPoint})");
+            Logger.Debug($"Guts and Tactics subtracts {gutAndTacticsSum}, modifier now at {panicModifiers:0.###}.");
 
+/*  TODO fix morale
             if (mech.team == mech.Combat.LocalPlayerTeam)
             {
-                var moraleModifier = (mech.Combat.LocalPlayerTeam.Morale - ModSettings.MedianMorale) / 8;
+                var moraleModifier = (mech.Combat.LocalPlayerTeam.Morale - ModSettings.MedianMorale);
                 panicModifiers -= moraleModifier;
-                Logger.Debug($"Morale: {panicModifiers}");
+                Logger.Debug($"Morale subtracts {moraleModifier} now {panicModifiers:0.###}.");
             }
+*/
 
             panicModifiers = (float) Math.Max(0f, Math.Round(panicModifiers));
             Logger.Debug($"Roll to beat: {panicModifiers}");
@@ -143,23 +195,76 @@ namespace PanicSystem
             {
                 Logger.Debug($"FAILED {panicModifiers}% PANIC SAVE!");
                 mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"FAILED {panicModifiers}% PANIC SAVE!", FloatieMessage.MessageNature.Debuff, true)));
-
                 ApplyPanicDebuff(mech, index);
+                return true;
             }
-            else if (panicModifiers >= 0)
+            else if (panicModifiers >= 0 && panicModifiers != 0)
             {
-                if (panicModifiers != 0)
-                {
-                    mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"MADE {panicModifiers}% PANIC SAVE!", FloatieMessage.MessageNature.Buff, true)));
-                }
+                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"MADE {panicModifiers}% PANIC SAVE!", FloatieMessage.MessageNature.Buff, true)));
                 Logger.Debug($"MADE {panicModifiers}% PANIC SAVE!");
             }
 
             return false;
         }
 
+        private static void RightLeg(Mech mech, ref float panicModifiers)
+        {
+            if (mech.RightLegDamageLevel == LocationDamageLevel.Destroyed)
+            {
+                panicModifiers += ModSettings.LeggedMaxModifier;
+                Logger.Debug($"RL damage adds {ModSettings.LeggedMaxModifier}, modifier now at {panicModifiers:0.###}.");
+            }
+            else if (mech.RightLegDamageLevel == LocationDamageLevel.Penalized)
+            {
+                panicModifiers += ModSettings.LeggedMaxModifier * PercentRightLeg(mech);
+                Logger.Debug($"RL damage adds {ModSettings.LeggedMaxModifier * PercentRightLeg(mech):0.###}, modifier now at {panicModifiers:0.###}.");
+            }
+        }
+
+        private static void LeftLeg(Mech mech, ref float panicModifiers)
+        {
+            if (mech.LeftLegDamageLevel == LocationDamageLevel.Destroyed)
+            {
+                panicModifiers += ModSettings.LeggedMaxModifier;
+                Logger.Debug($"LL destroyed, damage adds {ModSettings.LeggedMaxModifier}, modifier now at {panicModifiers:0.###}.");
+            }
+            else if (mech.LeftLegDamageLevel == LocationDamageLevel.Penalized)
+            {
+                panicModifiers += ModSettings.LeggedMaxModifier * PercentLeftLeg(mech);
+                Logger.Debug($"LL damage adds {ModSettings.LeggedMaxModifier * PercentLeftLeg(mech):0.###}, modifier now at {panicModifiers:0.###}.");
+            }
+        }
+
+        private static void RightTorso(Mech mech, ref float panicModifiers)
+        {
+            if (mech.RightTorsoDamageLevel == LocationDamageLevel.Destroyed)
+            {
+                panicModifiers += ModSettings.SideTorsoMaxModifier;
+                Logger.Debug($"RT destroyed, damage adds {ModSettings.SideTorsoMaxModifier}, modifier now at {panicModifiers:0.###}.");
+            }
+            else if (mech.RightTorsoDamageLevel == LocationDamageLevel.Penalized)
+            {
+                panicModifiers += ModSettings.SideTorsoMaxModifier * PercentRightTorso(mech);
+                Logger.Debug($"RT damage adds {ModSettings.SideTorsoMaxModifier * PercentRightTorso(mech):0.###}, modifier now at {panicModifiers:0.###}.");
+            }
+        }
+
+        private static void LeftTorso(Mech mech, ref float panicModifiers)
+        {
+            if (mech.LeftTorsoDamageLevel == LocationDamageLevel.Destroyed)
+            {
+                panicModifiers += ModSettings.SideTorsoMaxModifier;
+                Logger.Debug($"LT destroyed, damage adds {ModSettings.SideTorsoMaxModifier:0.###}, modifier now at {panicModifiers:0.###}.");
+            }
+            else if (mech.LeftTorsoDamageLevel == LocationDamageLevel.Penalized)
+            {
+                panicModifiers += ModSettings.SideTorsoMaxModifier * PercentLeftTorso(mech);
+                Logger.Debug($"LT damage adds {ModSettings.SideTorsoMaxModifier * PercentLeftTorso(mech):0.###}, modifier now at {panicModifiers:0.###}.");
+            }
+        }
+
         /// <summary>
-        /// true implies an ejection condition was met and ejections occurs
+        /// true implies punchin' out
         /// </summary>
         /// <param name="mech"></param>
         /// <param name="attackSequence"></param>
@@ -172,13 +277,13 @@ namespace PanicSystem
                 return false;
             }
 
-            if (!attackSequence.attackDidDamage)
+            // knocked down mechs cannot eject
+            if (ModSettings.KnockedDownCannotEject && mech.IsProne)
             {
                 return false;
             }
 
-            // knocked down mechs cannot eject
-            if (mech.IsProne && ModSettings.KnockedDownCannotEject)
+            if (!attackSequence.attackDidDamage)
             {
                 return false;
             }
@@ -194,7 +299,7 @@ namespace PanicSystem
             var tactics = mech.SkillTactics;
             var gutsAndTacticsSum = guts + tactics;
 
-            if (!CheckCantEject(mech, guts, pilot, tactics, gutsAndTacticsSum))
+            if (!CanEject(mech, guts, pilot, tactics, gutsAndTacticsSum))
             {
                 return false;
             }
@@ -202,12 +307,12 @@ namespace PanicSystem
             // start building ejectModifiers
             float ejectModifiers = 0;
             Logger.Debug($"Collecting ejection modifiers:");
-            Logger.Debug(new string(c: '-', count: 80));
+            Logger.Debug(new string(c: '-', count: 60));
 
-            if (pilot.pilotDef.PilotTags.Contains("pilot_drunk") && pilot.pilotDef.TimeoutRemaining > 0 && ModSettings.QuirksEnabled)
+            if (ModSettings.QuirksEnabled && pilot.pilotDef.PilotTags.Contains("pilot_drunk") && pilot.pilotDef.TimeoutRemaining > 0)
             {
                 Logger.Debug("Drunkard - not ejecting!");
-                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"..HIC!", FloatieMessage.MessageNature.Buff, true)));
+                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"..HIC!", FloatieMessage.MessageNature.Inspiration, true))); // hopefully this doesn't inspire the lance
                 return false;
             }
 
@@ -230,7 +335,7 @@ namespace PanicSystem
             var headHealthPercent = (mech.HeadArmor + mech.HeadStructure) / (mech.GetMaxArmor(ArmorLocation.Head) + mech.GetMaxStructure(ChassisLocations.Head));
             if (headHealthPercent < 1)
             {
-                ejectModifiers += ModSettings.HeadDamageMaxModifier * (1f - headHealthPercent);
+                ejectModifiers += ModSettings.HeadMaxModifier * (1f - headHealthPercent);
                 Logger.Debug($"Head Damage: {ejectModifiers}");
             }
 
@@ -238,7 +343,7 @@ namespace PanicSystem
             var ctPercent = (mech.CenterTorsoFrontArmor + mech.CenterTorsoStructure + mech.CenterTorsoRearArmor) / (mech.GetMaxArmor(ArmorLocation.CenterTorso) + mech.GetMaxStructure(ChassisLocations.CenterTorso));
             if (ctPercent < 1)
             {
-                ejectModifiers += ModSettings.CTDamageMaxModifier * (1f - ctPercent);
+                ejectModifiers += ModSettings.CenterTorsoMaxModifier * (1f - ctPercent);
                 Logger.Debug($"CT Damage: {ejectModifiers}");
             }
 
@@ -246,7 +351,7 @@ namespace PanicSystem
             var ltStructurePercent = mech.LeftTorsoStructure / mech.GetMaxStructure(ChassisLocations.LeftTorso);
             if (ltStructurePercent < 1)
             {
-                ejectModifiers += ModSettings.SideTorsoInternalDamageMaxModifier * (1f - ltStructurePercent);
+                ejectModifiers += ModSettings.SideTorsoMaxModifier * (1f - ltStructurePercent);
             }
 
             Logger.Debug($"LT Damage: {ejectModifiers}");
@@ -254,7 +359,7 @@ namespace PanicSystem
             var rtStructurePercent = mech.RightTorsoStructure / mech.GetMaxStructure(ChassisLocations.RightTorso);
             if (rtStructurePercent < 1)
             {
-                ejectModifiers += ModSettings.SideTorsoInternalDamageMaxModifier * (1f - rtStructurePercent);
+                ejectModifiers += ModSettings.SideTorsoMaxModifier * (1f - rtStructurePercent);
                 Logger.Debug($"RT Damage: {ejectModifiers}");
             }
 
@@ -277,22 +382,22 @@ namespace PanicSystem
                 ejectModifiers -= (mech.Combat.LocalPlayerTeam.Morale - ModSettings.MedianMorale) / 8;
                 Logger.Debug($"Morale: {ejectModifiers}");
             }
-            
-            if (pilot.pilotDef.PilotTags.Contains("pilot_dependable") && ModSettings.QuirksEnabled)
+
+            if (ModSettings.QuirksEnabled && pilot.pilotDef.PilotTags.Contains("pilot_dependable"))
             {
                 ejectModifiers -= ModSettings.DependableModifier;
                 Logger.Debug($"Dependable: {ejectModifiers}");
             }
 
-            //dZ Because this is how it should be. Make this changeable. 
+            // calculate result
             ejectModifiers = Math.Max(0f, (ejectModifiers - ModSettings.BaseEjectionResist - (ModSettings.GutsEjectionResistPerPoint * guts) - (ModSettings.TacticsEjectionResistPerPoint * tactics)) * ModSettings.EjectChanceMultiplier);
             Logger.Debug($"After calculation: {ejectModifiers}");
 
             var rollToBeat = (float) Math.Round(ejectModifiers);
             Logger.Debug($"Final roll to beat: {rollToBeat}");
 
-
-            // passes through if last straw is met to force an ejection roll
+            // TODO improve logging when last straw ejects occur
+            // will pass through if last straw is met to force an ejection roll
             if (rollToBeat <= 0 && !IsLastStrawPanicking(mech, ref panicStarted))
             {
                 mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"RESISTED EJECTION!", FloatieMessage.MessageNature.Buff, true)));
@@ -300,14 +405,8 @@ namespace PanicSystem
                 return false;
             }
 
-            if (!panicStarted)
-            {
-                rollToBeat = Math.Min(rollToBeat, ModSettings.MaxEjectChance);
-            }
-            else
-            {
-                rollToBeat = Math.Min(rollToBeat, ModSettings.MaxEjectChanceWhenEarlyEjectThresholdMet);
-            }
+            // modify the roll based on existing pilot panic, and settings
+            rollToBeat = (!panicStarted) ? Math.Min(rollToBeat, ModSettings.MaxEjectChance) : Math.Min(rollToBeat, ModSettings.MaxEjectChanceWhenEarlyEjectThresholdMet);
 
             var roll = RNG.Next(1, 101);
             Logger.Debug($"RollToBeat: {rollToBeat}");
@@ -324,7 +423,6 @@ namespace PanicSystem
 
             Logger.Debug($"FAILED SAVE: Punchin' Out!!");
             return true;
-            //mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"FAILED SAVE: Punchin' Out!!", FloatieMessage.MessageNature.Debuff, true)));   
         }
 
         private static float GetAllEnemiesHealth(Mech mech)
@@ -339,145 +437,29 @@ namespace PanicSystem
             return enemiesHealth;
         }
 
-        /// <summary>
-        /// returns modifiers
-        /// </summary>
-        /// <param name="mech"></param>
-        /// <param name="panicModifiers"></param>
-        /// <param name="weapons"></param>
-        /// <returns></returns>
-        private static void CheckLastStraws(Mech mech, ref float panicModifiers, List<Weapon> weapons)
-        {
-            // weaponless
-            if (weapons.TrueForAll(w => w.DamageLevel == ComponentDamageLevel.Destroyed || w.DamageLevel == ComponentDamageLevel.NonFunctional))
-            {
-                panicModifiers += ModSettings.WeaponlessModifier;
-            }
+        //TODO add modifier for pending knockdown, overheating, ally destroyed
 
-            // alone
-            if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m == mech as AbstractActor))
-            {
-                panicModifiers += ModSettings.AloneModifier;
-            }
-        }
-        
-// TODO make sure this is using dropped armour
-        
-        /// <summary>
-        /// returns modifiers and updates lowestHealthLethalLocation
-        /// </summary>
-        /// <param name="mech"></param>
-        /// <param name="panicModifiers"></param>
-        /// <returns></returns>
-        private static void GetLegModifier(Mech mech, ref float panicModifiers)
-        {
-            // dZ Check legs independently. Code here significantly improved.  Handles missing legs
-            var legPercentRight = 1 - (mech.RightLegStructure + mech.RightLegArmor) / (mech.GetMaxStructure(ChassisLocations.RightLeg) + mech.GetMaxArmor(ArmorLocation.RightLeg));
-            var legPercentLeft = 1 - (mech.LeftLegStructure + mech.LeftLegArmor) /
-                                 (mech.GetMaxStructure(ChassisLocations.LeftLeg) + mech.GetMaxArmor(ArmorLocation.LeftLeg));
-            if (legPercentRight + legPercentLeft < 2)
-            {
-                panicModifiers += ModSettings.LeggedMaxModifier * (legPercentRight + legPercentLeft);
-            }
-        }
+        private static float PercentPilot(Pilot pilot) => 1 - (float) pilot.Injuries / pilot.Health;
 
-        /// <summary>
-        /// returns modifiers
-        /// </summary>
-        /// <param name="mech"></param>
-        /// <param name="panicModifiers"></param>
-        /// <returns></returns>
-        private static void CheckRT(Mech mech, ref float panicModifiers)
-        {
-            var rtStructurePercent = mech.RightTorsoStructure / mech.GetMaxStructure(ChassisLocations.RightTorso);
-            if (rtStructurePercent < 1)
-            {
-                panicModifiers += ModSettings.SideTorsoInternalDamageMaxModifier * (1 - rtStructurePercent);
-            }
-        }
+        private static float PercentRightTorso(Mech mech) =>
+            1 -
+            (mech.RightTorsoStructure + mech.RightTorsoFrontArmor + mech.RightTorsoRearArmor) /
+            (mech.MaxStructureForLocation((int) ChassisLocations.RightTorso) + mech.MaxArmorForLocation((int) ArmorLocation.RightTorso) + mech.MaxArmorForLocation((int) ArmorLocation.RightTorsoRear));
 
-        /// <summary>
-        /// returns modifiers
-        /// </summary>
-        /// <param name="mech"></param>
-        /// <param name="panicModifiers"></param>
-        /// <returns></returns>
-        private static void GetLTModifier(Mech mech, ref float panicModifiers)
-        {
-            var ltStructurePercent = mech.LeftTorsoStructure / mech.GetMaxStructure(ChassisLocations.LeftTorso);
-            if (ltStructurePercent < 1)
-            {
-                panicModifiers += ModSettings.SideTorsoInternalDamageMaxModifier * (1 - ltStructurePercent);
-            }
-        }
+        private static float PercentLeftTorso(Mech mech) =>
+            1 -
+            (mech.LeftTorsoStructure + mech.LeftTorsoFrontArmor + mech.LeftTorsoRearArmor) /
+            (mech.MaxStructureForLocation((int) ChassisLocations.LeftTorso) + mech.MaxArmorForLocation((int) ArmorLocation.LeftTorso) + mech.MaxArmorForLocation((int) ArmorLocation.LeftTorsoRear));
 
-        /// <summary>
-        /// returns modifiers and updates lowestHealthLethalLocation
-        /// </summary>
-        /// <param name="mech"></param>
-        /// <param name="panicModifiers"></param>
-        /// <returns></returns>
-        private static void GetCTModifier(Mech mech, ref float panicModifiers)
-        {
-            var ctPercent = (mech.CenterTorsoFrontArmor + mech.CenterTorsoStructure + mech.CenterTorsoRearArmor) / (mech.GetMaxArmor(ArmorLocation.CenterTorso) + mech.GetMaxStructure(ChassisLocations.CenterTorso));
-            if (ctPercent < 1)
-            {
-                panicModifiers += ModSettings.CTDamageMaxModifier * (1 - ctPercent);
-            }
-        }
+        private static float PercentCenterTorso(Mech mech) =>
+            1 -
+            (mech.CenterTorsoStructure + mech.CenterTorsoFrontArmor + mech.CenterTorsoRearArmor) /
+            (mech.MaxStructureForLocation((int) ChassisLocations.CenterTorso) + mech.MaxArmorForLocation((int) ArmorLocation.CenterTorso) + mech.MaxArmorForLocation((int) ArmorLocation.CenterTorsoRear));
 
-        /// <summary>
-        /// returns modifiers
-        /// </summary>
-        /// <param name="mech"></param>
-        /// <param name="panicModifiers"></param>
-        /// <returns></returns>
-        private static void GetHeadModifier(Mech mech, ref float panicModifiers)
-        {
-            var headHealthPercent = (mech.HeadArmor + mech.HeadStructure) / (mech.GetMaxArmor(ArmorLocation.Head) + mech.GetMaxStructure(ChassisLocations.Head));
-            if (headHealthPercent < 1)
-            {
-                panicModifiers += ModSettings.HeadDamageMaxModifier * (1 - headHealthPercent);
-            }
-        }
+        private static float PercentLeftLeg(Mech mech) => 1 - (mech.LeftLegStructure + mech.LeftLegArmor) / (mech.MaxStructureForLocation((int) ChassisLocations.LeftLeg) + mech.MaxArmorForLocation((int) ArmorLocation.LeftLeg));
+        private static float PercentRightLeg(Mech mech) => 1 - (mech.RightLegStructure + mech.RightLegArmor) / (mech.MaxStructureForLocation((int) ChassisLocations.RightLeg) + mech.MaxArmorForLocation((int) ArmorLocation.RightLeg));
+        private static float PercentHead(Mech mech) => 1 - (mech.HeadStructure + mech.HeadArmor) / (mech.MaxStructureForLocation((int) ChassisLocations.Head) + mech.MaxArmorForLocation((int) ArmorLocation.Head));
 
-        /// <summary>
-        /// returns modifiers
-        /// </summary>
-        /// <param name="mech"></param>
-        /// <param name="panicModifiers"></param>
-        /// <returns></returns>
-        private static void GetUnsteadyModifier(Mech mech, ref float panicModifiers)
-        {
-            if (mech.IsUnsteady)
-            {
-                panicModifiers += ModSettings.UnsteadyModifier;
-            }
-        }
-
-        /// <summary>
-        /// returns modifiers
-        /// </summary>
-        /// <param name="pilot"></param>
-        /// <param name="panicModifiers"></param>
-        /// <returns></returns>
-        private static void GetPilotHealthModifier(Pilot pilot, ref float panicModifiers)
-        {
-            if (pilot != null)
-            {
-                float pilotHealthPercent = 1f - (float) pilot.Injuries / pilot.Health;
-                if (pilotHealthPercent < 1)
-                {
-                    panicModifiers += ModSettings.PilotHealthMaxModifier * (1 - pilotHealthPercent);
-                }
-            }
-        }
-
-        /// <summary>
-        /// true implies the pilot is tracked
-        /// </summary>
-        /// <param name="mech"></param>
-        /// <returns></returns>
         private static bool CheckTrackedPilots(Mech mech, ref int index)
         {
             if (index < 0)
@@ -503,13 +485,7 @@ namespace PanicSystem
             return true;
         }
 
-        /// <summary>
-        /// returns modifiers
-        /// </summary>
-        /// <param name="mech"></param>
-        /// <param name="attackSequence"></param>
-        /// <returns></returns>
-        private static bool CheckPanicFromDamage(Mech mech, AttackDirector.AttackSequence attackSequence)
+        private static bool WasEnoughDamageDone(Mech mech, AttackDirector.AttackSequence attackSequence)
         {
             if (!attackSequence.attackDidDamage)
             {
@@ -518,16 +494,19 @@ namespace PanicSystem
             }
             else
             {
-                Logger.Debug($"Attack does {attackSequence.attackArmorDamage} armor and {attackSequence.attackStructureDamage} structure.");
+                Logger.Debug($"Attack does {attackSequence.attackArmorDamage} damage, with {attackSequence.attackStructureDamage} to structure.");
             }
 
             if (attackSequence.attackStructureDamage > 0)
             {
-                Logger.Debug($"{attackSequence.attackStructureDamage} structural damage causes a panic check.");
-                return true;
+                {
+                    Logger.Debug($"{attackSequence.attackStructureDamage} structural damage causes a panic check.");
+                    return true;
+                }
             }
 
-            if (attackSequence.attackArmorDamage / (GetCurrentMechArmour(mech) + attackSequence.attackArmorDamage) * 100 < ModSettings.MinimumArmourDamagePercentageRequired)
+            /* + attackSequence.attackArmorDamage believe this isn't necessary because method is called in prefix*/
+            if (attackSequence.attackArmorDamage / (mech.CurrentArmor) * 100 < ModSettings.MinimumArmourDamagePercentageRequired)
             {
                 Logger.Debug($"Not enough armor damage ({attackSequence.attackArmorDamage}).");
                 return false;
@@ -546,7 +525,7 @@ namespace PanicSystem
         /// <param name="tactics"></param>
         /// <param name="gutsAndTacticsSum"></param>
         /// <returns></returns>
-        private static bool CheckCantEject(Mech mech, int guts, Pilot pilot, int tactics, int gutsAndTacticsSum)
+        private static bool CanEject(Mech mech, int guts, Pilot pilot, int tactics, int gutsAndTacticsSum)
         {
             // guts 10 makes you immune, player character cannot be forced to eject
             if ((guts == 10 && ModSettings.GutsTenAlwaysResists) || (ModSettings.PlayerCharacterAlwaysResists && pilot.IsPlayerCharacter))
@@ -604,79 +583,10 @@ namespace PanicSystem
             return true;
         }
 
-        /// <summary>
-        /// sums armour from all locations
-        /// </summary>
-        /// <param name="mech"></param>
-        /// <returns></returns>
-        private static float GetCurrentMechArmour(Mech mech)
-        {
-            float totalArmor = 0;
-            totalArmor += mech.GetCurrentArmor(ArmorLocation.Head);
-            totalArmor += mech.GetCurrentArmor(ArmorLocation.CenterTorso);
-            totalArmor += mech.GetCurrentArmor(ArmorLocation.CenterTorsoRear);
-            totalArmor += mech.GetCurrentArmor(ArmorLocation.LeftTorso);
-            totalArmor += mech.GetCurrentArmor(ArmorLocation.LeftTorsoRear);
-            totalArmor += mech.GetCurrentArmor(ArmorLocation.RightTorso);
-            totalArmor += mech.GetCurrentArmor(ArmorLocation.RightTorsoRear);
-            totalArmor += mech.GetCurrentArmor(ArmorLocation.RightArm);
-            totalArmor += mech.GetCurrentArmor(ArmorLocation.LeftArm);
-            totalArmor += mech.GetCurrentArmor(ArmorLocation.RightLeg);
-            totalArmor += mech.GetCurrentArmor(ArmorLocation.LeftLeg);
-            return totalArmor;
-        }
-
         //TODO add heat modifier
         //TODO check strucure mods
         //TODO extra modifiers for missing limbs on every roll?  same as damage?
         //TODO arms but how to deal with clip-ons
-        
-        private static float GetCurrentMechStructure(Mech mech)
-        {
-            float totalStructure = 0;
-            totalStructure += mech.GetCurrentStructure(ChassisLocations.Head);
-            totalStructure += mech.GetCurrentStructure(ChassisLocations.CenterTorso);
-            totalStructure += mech.GetCurrentStructure(ChassisLocations.LeftTorso);
-            totalStructure += mech.GetCurrentStructure(ChassisLocations.RightTorso);
-            totalStructure += mech.GetCurrentStructure(ChassisLocations.RightArm);
-            totalStructure += mech.GetCurrentStructure(ChassisLocations.LeftArm);
-            totalStructure += mech.GetCurrentStructure(ChassisLocations.RightLeg);
-            totalStructure += mech.GetCurrentStructure(ChassisLocations.LeftLeg);
-            return totalStructure;
-        }
-
-        private static float CurrentArmorTotal(Mech mech)
-        {
-            return mech.MechDef.MechDefCurrentArmor;
-        }
-
-        private static float DroppedArmorTotal(Mech mech)
-        {
-            return mech.MechDef.MechDefAssignedArmor;
-        }
-
-        /// <summary>
-        /// not in use
-        /// </summary>
-        /// <param name="mech"></param>
-        /// <returns></returns>
-        private static float GetTotalMechArmour(Mech mech)
-        {
-            MechDef _mech = mech.MechDef;
-            float maxArmor = 0;
-            maxArmor += mech.GetMaxArmor(ArmorLocation.CenterTorso);
-            maxArmor += mech.GetMaxArmor(ArmorLocation.LeftArm);
-            maxArmor += mech.GetMaxArmor(ArmorLocation.CenterTorsoRear);
-            maxArmor += mech.GetMaxArmor(ArmorLocation.Head);
-            maxArmor += mech.GetMaxArmor(ArmorLocation.LeftTorso);
-            maxArmor += mech.GetMaxArmor(ArmorLocation.RightTorso);
-            maxArmor += mech.GetMaxArmor(ArmorLocation.RightTorsoRear);
-            maxArmor += mech.GetMaxArmor(ArmorLocation.LeftTorsoRear);
-            maxArmor += mech.GetMaxArmor(ArmorLocation.RightArm);
-            maxArmor += mech.GetMaxArmor(ArmorLocation.LeftLeg);
-            maxArmor += mech.GetMaxArmor(ArmorLocation.RightLeg);
-            return maxArmor;
-        }
 
         /// <summary>
         /// applied combat modifiers to tracked mechs based on panic status
@@ -737,6 +647,7 @@ namespace PanicSystem
             if (pilot != null && !pilot.LethalInjuries && pilot.Health - pilot.Injuries <= ModSettings.MinimumHealthToAlwaysEjectRoll)
             {
                 Logger.Debug($"Last straw: Injuries.");
+                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"INJURY PANIC!", FloatieMessage.MessageNature.Debuff, true)));
                 PanicStarted = true;
                 return true;
             }
@@ -744,16 +655,17 @@ namespace PanicSystem
             if (mech.Weapons.TrueForAll(w => w.DamageLevel == ComponentDamageLevel.Destroyed || w.DamageLevel == ComponentDamageLevel.NonFunctional) && ModSettings.ConsiderEjectingWithNoWeaps)
             {
                 Logger.Debug($"Last straw: Weaponless.");
+                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"WEAPONLESS PANIC!", FloatieMessage.MessageNature.Debuff, true)));
                 PanicStarted = true;
                 return true;
             }
 
             var enemyHealth = GetAllEnemiesHealth(mech);
 
-            if (ModSettings.ConsiderEjectingWhenAlone && mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m.GUID == mech.GUID) &&
-                enemyHealth >= (mech.SummaryArmorCurrent + mech.SummaryStructureCurrent) * 3)
+            if (ModSettings.ConsiderEjectingWhenAlone && mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m.GUID == mech.GUID) && enemyHealth >= (mech.SummaryArmorCurrent + mech.SummaryStructureCurrent) * 3)
             {
                 Logger.Debug($"Last straw: Sole Survivor, hopeless situation.");
+                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"HOPELESS SITUATION!", FloatieMessage.MessageNature.Debuff, true)));
                 PanicStarted = true;
                 return true;
             }
@@ -862,14 +774,13 @@ namespace PanicSystem
         }
     }
 
-
     public class Settings
     {
         public bool PlayerCharacterAlwaysResists = true;
         public bool PlayerTeamCanPanic = true;
         public bool EnemiesCanPanic = true;
         public bool Debug = false;
-        public bool EnableDebug = false;  // legacy compatibility
+        public bool EnableDebug = false; // legacy compatibility
 
         //new mechanics for considering when to eject based on mech class
         public bool PlayerLightsConsiderEjectingEarly = false;
@@ -925,19 +836,18 @@ namespace PanicSystem
         public bool TacticsTenAlwaysResists = false;
         public bool KnockedDownCannotEject = false;
 
-
         public bool ConsiderEjectingWithNoWeaps = false;
         public bool ConsiderEjectingWhenAlone = false;
-        
+
         public float BaseEjectionResist = 50;
         public float GutsEjectionResistPerPoint = 2;
         public float TacticsEjectionResistPerPoint = 0;
 
         public float UnsteadyModifier = 10;
         public float PilotHealthMaxModifier = 15;
-        public float HeadDamageMaxModifier = 15;
-        public float CTDamageMaxModifier = 45;
-        public float SideTorsoInternalDamageMaxModifier = 20;
+        public float HeadMaxModifier = 15;
+        public float CenterTorsoMaxModifier = 45;
+        public float SideTorsoMaxModifier = 20;
         public float LeggedMaxModifier = 10;
         public float WeaponlessModifier = 10;
         public float AloneModifier = 10;

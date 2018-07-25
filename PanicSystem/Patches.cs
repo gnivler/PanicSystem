@@ -52,12 +52,13 @@ namespace PanicSystem
                 SerializeActiveJson();
 
                 // ejection check
-                //var shouldEject = RollForEjectionResult(mech, attackCompleteMessage.attackSequence, PanicStarted);
-                if (LastStraw || hasReasonToPanic && RollForEjectionResult(mech, attackCompleteMessage.attackSequence, PanicStarted))
+                if (KlutzEject | LastStraw || hasReasonToPanic && RollForEjectionResult(mech, attackCompleteMessage.attackSequence, PanicStarted))
                 {
                     Logger.Debug($"FAILED SAVE: Punchin' Out!!");
                     mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"FAILED SAVE: Punchin' Out!!", FloatieMessage.MessageNature.Debuff, true)));
-                    // ejecting, clean up
+
+                    // this is necessary to avoid vanilla hangs.  the list has nulls so the try/catch deals with silently
+                    Logger.Debug($"Cancelling all mech effects.");
                     var combat = Traverse.Create(__instance).Property("Combat").GetValue<CombatGameState>();
                     List<Effect> effectsTargeting = combat.EffectManager.GetAllEffectsTargeting(mech);
 
@@ -77,7 +78,6 @@ namespace PanicSystem
                 }
             }
         }
-
 
         [HarmonyPatch(typeof(AbstractActor), "OnNewRound")]
         public static class AbstractActor_BeginNewRound_Patch
@@ -105,7 +105,15 @@ namespace PanicSystem
                 {
                     PanicTracker panicTracker = new PanicTracker(mech);
                     TrackedPilots.Add(panicTracker); //add a new tracker to tracked pilot, then we run it all over again
-                    Prefix();
+                    index = GetTrackedPilotIndex(mech);
+                    if (index > -1)
+                    {
+                        foundPilot = true;
+                    }
+                    else
+                    {
+                        return;
+                    }
                 }
 
                 PanicStatus originalStatus = TrackedPilots[index].PilotStatus;

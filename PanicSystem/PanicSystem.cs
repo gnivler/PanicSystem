@@ -105,19 +105,15 @@ namespace PanicSystem
                 Debug($"Unsteady adds {ModSettings.UnsteadyModifier}, modifier now at {panicModifiers:0.###}.");
             }
 
-            if (mech.IsFlaggedForKnockdown)
+            if (mech.IsFlaggedForKnockdown && pilot.pilotDef.PilotTags.Contains("pilot_klutz"))
             {
-                Debug($"Flagged for knockdown.");
-                if (pilot.pilotDef.PilotTags.Contains("BLACKLISTED"))
+                Debug($"Klutz!");
+                if (RNG.Next(1, 101) == 13)
                 {
-                    Debug($"Klutz!");
-                    //if (RNG.Next(1, 101) == 13)
-                    //{
                     mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"WOOPS!", FloatieMessage.MessageNature.Death, true)));
                     Debug($"Very klutzy!");
                     KlutzEject = true;
                     return true;
-                    //}
                 }
 
                 panicModifiers += ModSettings.UnsteadyModifier;

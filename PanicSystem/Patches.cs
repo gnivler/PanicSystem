@@ -18,15 +18,12 @@ namespace PanicSystem
         {
             public static void Prefix(AttackStackSequence __instance, MessageCenterMessage message)
             {
-                Logger.Debug(new string(c: '-', count: 80));
+                Logger.Debug(new string(c: '-', count: 60));
                 Logger.Debug($"{__instance.owningActor.DisplayName} attacked {__instance.targets.First().DisplayName}");
                 AttackCompleteMessage attackCompleteMessage = message as AttackCompleteMessage;
 
                 Mech mech = null;
-                if (attackCompleteMessage == null || attackCompleteMessage.stackItemUID != __instance.SequenceGUID)
-                {
-                    return;
-                }
+                if (attackCompleteMessage == null || attackCompleteMessage.stackItemUID != __instance.SequenceGUID) return;
 
                 // this bool makes ejection saves harder
                 PanicStarted = false;
@@ -40,7 +37,7 @@ namespace PanicSystem
 
                 if (__instance.directorSequences[0].target is Mech)
                 {
-                    mech = (Mech)__instance.directorSequences[0].target;
+                    mech = (Mech) __instance.directorSequences[0].target;
 
                     // sets global variable that last-straw is met and only when it damages target
                     LastStraw = (IsLastStrawPanicking(mech, ref PanicStarted) && damaged);
@@ -55,12 +52,13 @@ namespace PanicSystem
                 SerializeActiveJson();
 
                 // ejection check
-                //var shouldEject = RollForEjectionResult(mech, attackCompleteMessage.attackSequence, PanicStarted);
-                if (LastStraw || hasReasonToPanic && RollForEjectionResult(mech, attackCompleteMessage.attackSequence, PanicStarted))
+                if (KlutzEject | LastStraw || hasReasonToPanic && RollForEjectionResult(mech, attackCompleteMessage.attackSequence, PanicStarted))
                 {
                     Logger.Debug($"FAILED SAVE: Punchin' Out!!");
                     mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"FAILED SAVE: Punchin' Out!!", FloatieMessage.MessageNature.Debuff, true)));
-                    // ejecting, clean up
+
+                    // this is necessary to avoid vanilla hangs.  the list has nulls so the try/catch deals with silently
+                    Logger.Debug($"Cancelling all mech effects.");
                     var combat = Traverse.Create(__instance).Property("Combat").GetValue<CombatGameState>();
                     List<Effect> effectsTargeting = combat.EffectManager.GetAllEffectsTargeting(mech);
 
@@ -77,11 +75,9 @@ namespace PanicSystem
 
                     Logger.Debug($"Done removing effects.");
                     mech.EjectPilot(mech.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
-
                 }
             }
         }
-
 
         [HarmonyPatch(typeof(AbstractActor), "OnNewRound")]
         public static class AbstractActor_BeginNewRound_Patch
@@ -97,10 +93,7 @@ namespace PanicSystem
                 Pilot pilot = mech.GetPilot();
                 int index = -1;
 
-                if (pilot == null)
-                {
-                    return;
-                }
+                if (pilot == null) return;
 
                 index = GetTrackedPilotIndex(mech);
                 if (index > -1)
@@ -111,7 +104,7 @@ namespace PanicSystem
                 if (!foundPilot)
                 {
                     PanicTracker panicTracker = new PanicTracker(mech);
-                    TrackedPilots.Add(panicTracker); //add a new tracker to tracked pilot, then we run it all over again;;
+                    TrackedPilots.Add(panicTracker); //add a new tracker to tracked pilot, then we run it all over again
                     index = GetTrackedPilotIndex(mech);
                     if (index > -1)
                     {
@@ -153,24 +146,22 @@ namespace PanicSystem
                     if (TrackedPilots[index].PilotStatus == PanicStatus.Unsettled)
                     {
                         Logger.Debug("IMPROVED PANIC TO UNSETTLED!");
-                        __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"IMPROVED PANIC TO UNSETTLED",FloatieMessage.MessageNature.Buff, true)));
-                        __instance.StatCollection.ModifyStat("Panic Turn: Unsettled Aim", -1, "AccuracyModifier",StatCollection.StatOperation.Float_Add, PanicSystem.ModSettings.UnsettledAttackModifier);
+                        __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"IMPROVED PANIC TO UNSETTLED", FloatieMessage.MessageNature.Buff, true)));
+                        __instance.StatCollection.ModifyStat("Panic Turn: Unsettled Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, PanicSystem.ModSettings.UnsettledAttackModifier);
                     }
 
                     else if (TrackedPilots[index].PilotStatus == PanicStatus.Stressed)
                     {
                         Logger.Debug("IMPROVED PANIC TO STRESSED!");
-                        __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"IMPROVED PANIC TO STRESSED",FloatieMessage.MessageNature.Buff, true)));
-                        __instance.StatCollection.ModifyStat("Panic Turn: Stressed Aim", -1, "AccuracyModifier",StatCollection.StatOperation.Float_Add, PanicSystem.ModSettings.StressedAimModifier);
-                        __instance.StatCollection.ModifyStat("Panic Turn: Stressed Defence", -1, "ToHitThisActor",StatCollection.StatOperation.Float_Add, PanicSystem.ModSettings.StressedToHitModifier);
+                        __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"IMPROVED PANIC TO STRESSED", FloatieMessage.MessageNature.Buff, true)));
+                        __instance.StatCollection.ModifyStat("Panic Turn: Stressed Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, PanicSystem.ModSettings.StressedAimModifier);
+                        __instance.StatCollection.ModifyStat("Panic Turn: Stressed Defence", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, PanicSystem.ModSettings.StressedToHitModifier);
                     }
 
                     else
                     {
                         Logger.Debug("IMPROVED PANIC TO CONFIDENT!");
-                        __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
-                            new ShowActorInfoSequence(mech, "IMPROVED PANIC TO CONFIDENT",
-                                FloatieMessage.MessageNature.Buff, true)));
+                        __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, "IMPROVED PANIC TO CONFIDENT", FloatieMessage.MessageNature.Buff, true)));
                     }
                 }
 
@@ -178,7 +169,7 @@ namespace PanicSystem
             }
         }
 
-        [HarmonyPatch(typeof(GameInstance), "LaunchContract", new[] { typeof(Contract), typeof(string) })]
+        [HarmonyPatch(typeof(GameInstance), "LaunchContract", new[] {typeof(Contract), typeof(string)})]
         public static class BattleTech_GameInstance_LaunchContract_Patch
         {
             static void Postfix()
@@ -203,8 +194,7 @@ namespace PanicSystem
             static void Postfix(Mech __instance)
             {
                 var mech = __instance;
-                if (mech == null || mech.IsDead ||
-                    (mech.IsFlaggedForDeath && mech.HasHandledDeath))
+                if (mech == null || mech.IsDead || (mech.IsFlaggedForDeath && mech.HasHandledDeath))
                 {
                     return;
                 }
@@ -217,18 +207,14 @@ namespace PanicSystem
                         return;
                     }
 
-                    if (TrackedPilots[index].TrackedMech == mech.GUID &&
-                        TrackedPilots[index].ChangedRecently &&
-                        PanicSystem.ModSettings.OneChangePerTurn)
+                    if (TrackedPilots[index].TrackedMech == mech.GUID && TrackedPilots[index].ChangedRecently && PanicSystem.ModSettings.OneChangePerTurn)
                     {
                         return;
                     }
 
                     if (index < 0)
                     {
-                        TrackedPilots.Add(
-                            new PanicTracker(
-                                mech)); //add a new tracker to tracked pilot, then we run it all over again;
+                        TrackedPilots.Add(new PanicTracker(mech)); //add a new tracker to tracked pilot, then we run it all over again;
                         index = GetTrackedPilotIndex(mech);
                         if (index < 0) // G  Why does this matter?
                         {
@@ -242,7 +228,7 @@ namespace PanicSystem
         }
 
         [HarmonyPatch(typeof(GameInstanceSave))]
-        [HarmonyPatch(new[] { typeof(GameInstance), typeof(SaveReason) })]
+        [HarmonyPatch(new[] {typeof(GameInstance), typeof(SaveReason)})]
         public static class GameInstanceSave_Constructor_Patch
         {
             static void Postfix(GameInstanceSave __instance)
@@ -263,8 +249,7 @@ namespace PanicSystem
         [HarmonyPatch(typeof(SimGameState), "_OnFirstPlayInit")]
         public static class SimGameState_FirstPlayInit_Patch
         {
-            static void
-                Postfix(SimGameState __instance) //we're doing a new campaign, so we need to sync the json with the new addition
+            static void Postfix(SimGameState __instance) //we're doing a new campaign, so we need to sync the json with the new addition
             {
                 SyncNewCampaign();
             }

@@ -23,6 +23,7 @@ namespace PanicSystem
         {
             //do nothing here, if this is called, then JSON is deserializing us
         }
+
         public PanicTracker(Mech mech)
         {
             TrackedMech = mech.GUID;
@@ -37,19 +38,8 @@ namespace PanicSystem
         public DateTime SaveGameTimeStamp { get; set; }
         public string SimGameGUID { get; set; }
 
-        public void SetGameGUID(string GUID)
-        {
-            SimGameGUID = GUID;
-        }
-
-        public void SetSaveGameTime(DateTime savedate)
-        {
-            SaveGameTimeStamp = savedate;
-        }
-
-        public void SetTrackedPilots(List<PanicTracker> trackers)
-        {
-            TrackedPilots = trackers;
-        }
+        public void SetGameGUID(string GUID) => SimGameGUID = GUID;
+        public void SetSaveGameTime(DateTime savedate) => SaveGameTimeStamp = savedate;
+        public void SetTrackedPilots(List<PanicTracker> trackers) => TrackedPilots = trackers;
     }
 }

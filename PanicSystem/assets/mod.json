@@ -3,7 +3,7 @@
 
   "Enabled": true,
 
-  "Version": "2.4",
+  "Version": "2.5",
   "Description": "Adds basic panic system, based on mpstark's Punchin' Out.",
   "Author": "RealityMachina, forked from mpstark's work - Hard forked and Modified by donZappo and gnivler",
   "Website": "https://github.com/gnivler/PanicSystem",
@@ -11,15 +11,15 @@
   "DLL": "PanicSystem.dll",
 
   "Settings": {
-    "Debug": false,
-    "EnableDebug": false, /* legacy compat */
+    "Debug": true,
+    "EnableDebug": true, /* legacy compat */
     "PlayerCharacterAlwaysResists": false,
     "PlayerTeamCanPanic": true,
     "EnemiesCanPanic": true,
 
-    "PlayerLightsConsiderEjectingEarly": false,
+    "PlayerLightsConsiderEjectingEarly": true,
     "EnemyLightsConsiderEjectingEarly": true,
-    "LightMechEarlyPanicThreshold": 2,
+    "LightMechEarlyPanicThreshold": 3, /* stressed */
 
     "PlayerMediumsConsiderEjectingEarly": false,
     "EnemyMediumsConsiderEjectingEarly": false,
@@ -69,9 +69,9 @@
 
     "UnsteadyModifier": 10,
     "PilotHealthMaxModifier": 15,
-    "HeadDamageMaxModifier": 15,
-    "CTDamageMaxModifier": 45,
-    "SideTorsoInternalDamageMaxModifier": 20,
+    "HeadMaxModifier": 15,
+    "CenterTorsoMaxModifier": 45,
+    "SideTorsoMaxModifier": 20,
     "LeggedMaxModifier": 10,
     "WeaponlessModifier": 10,
     "AloneModifier": 10

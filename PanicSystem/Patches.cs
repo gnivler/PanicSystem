@@ -55,7 +55,7 @@ namespace PanicSystem
                 if (KlutzEject | LastStraw || hasReasonToPanic && RollForEjectionResult(mech, attackCompleteMessage.attackSequence, PanicStarted))
                 {
                     Logger.Debug($"FAILED SAVE: Punchin' Out!!");
-                    mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"FAILED SAVE: Punchin' Out!!", FloatieMessage.MessageNature.Debuff, true)));
+                    //mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"FAILED SAVE: Punchin' Out!!", FloatieMessage.MessageNature.Debuff, true)));
 
                     // this is necessary to avoid vanilla hangs.  the list has nulls so the try/catch deals with silently
                     Logger.Debug($"Cancelling all mech effects.");
@@ -145,23 +145,23 @@ namespace PanicSystem
 
                     if (TrackedPilots[index].PilotStatus == PanicStatus.Unsettled)
                     {
-                        Logger.Debug("IMPROVED PANIC TO UNSETTLED!");
-                        __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"IMPROVED PANIC TO UNSETTLED", FloatieMessage.MessageNature.Buff, true)));
+                        Logger.Debug("IMPROVED TO UNSETTLED!");
+                        __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"IMPROVED TO UNSETTLED", FloatieMessage.MessageNature.Buff, true)));
                         __instance.StatCollection.ModifyStat("Panic Turn: Unsettled Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, PanicSystem.ModSettings.UnsettledAttackModifier);
                     }
 
                     else if (TrackedPilots[index].PilotStatus == PanicStatus.Stressed)
                     {
-                        Logger.Debug("IMPROVED PANIC TO STRESSED!");
-                        __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"IMPROVED PANIC TO STRESSED", FloatieMessage.MessageNature.Buff, true)));
+                        Logger.Debug("IMPROVED TO STRESSED!");
+                        __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"IMPROVED TO STRESSED", FloatieMessage.MessageNature.Buff, true)));
                         __instance.StatCollection.ModifyStat("Panic Turn: Stressed Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, PanicSystem.ModSettings.StressedAimModifier);
                         __instance.StatCollection.ModifyStat("Panic Turn: Stressed Defence", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, PanicSystem.ModSettings.StressedToHitModifier);
                     }
 
                     else
                     {
-                        Logger.Debug("IMPROVED PANIC TO CONFIDENT!");
-                        __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, "IMPROVED PANIC TO CONFIDENT", FloatieMessage.MessageNature.Buff, true)));
+                        Logger.Debug("IMPROVED TO CONFIDENT!");
+                        __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, "IMPROVED TO CONFIDENT", FloatieMessage.MessageNature.Buff, true)));
                     }
                 }
 

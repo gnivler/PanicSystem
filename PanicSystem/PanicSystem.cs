@@ -107,30 +107,30 @@ namespace PanicSystem
 
             if (mech.IsFlaggedForKnockdown)
             {
+                Debug($"Flagged for knockdown.");
                 if (pilot.pilotDef.PilotTags.Contains("BLACKLISTED"))
                 {
                     Debug($"Klutz!");
-                   //if (RNG.Next(1, 101) == 13)
-                   //{
-                        mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"WOOPS!", FloatieMessage.MessageNature.Death, true)));
-                        Debug($"Very klutzy!");
-                        KlutzEject = true;
-                        return true;
-                   //}
+                    //if (RNG.Next(1, 101) == 13)
+                    //{
+                    mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"WOOPS!", FloatieMessage.MessageNature.Death, true)));
+                    Debug($"Very klutzy!");
+                    KlutzEject = true;
+                    return true;
+                    //}
                 }
 
                 panicModifiers += ModSettings.UnsteadyModifier;
                 Debug($"Knockdown adds {ModSettings.UnsteadyModifier}, modifier now at {panicModifiers:0.###}.");
             }
 
-            if (mech.HeadDamageLevel == LocationDamageLevel.Penalized)
+            if (PercentHead(mech) < 1)
             {
                 panicModifiers += ModSettings.HeadMaxModifier * (PercentHead(mech));
                 Debug($"Head damage adds {ModSettings.HeadMaxModifier * (PercentHead(mech)):0.###}, modifier now at {panicModifiers:0.###}.");
             }
 
-            //if (PercentCenterTorso(mech) < 1)
-            if (mech.CenterTorsoDamageLevel == LocationDamageLevel.Penalized)
+            if (PercentCenterTorso(mech) < 1)
             {
                 panicModifiers += ModSettings.CenterTorsoMaxModifier * (PercentCenterTorso(mech));
                 Debug($"CT damage adds {ModSettings.CenterTorsoMaxModifier * (PercentCenterTorso(mech)):0.###}, modifier now at {panicModifiers:0.###}.");
@@ -168,14 +168,13 @@ namespace PanicSystem
             panicModifiers = (float) Math.Max(0f, Math.Round(panicModifiers));
             Debug($"Roll to beat: {panicModifiers}");
 
-            var rng = new Random().Next(1, 101);
+            var rng = RNG.Next(1, 101);
             Debug($"Rolled: {rng}");
 
             if (rng < (int) panicModifiers)
             {
                 Debug($"FAILED {panicModifiers}% PANIC SAVE!");
                 ApplyPanicDebuff(mech, index);
-                return true;
             }
             else if (panicModifiers >= 0 && panicModifiers != 0)
             {
@@ -785,7 +784,7 @@ namespace PanicSystem
 
         public float MedianMorale = 25;
         public float MoraleMaxModifier = 10;
-        
+
         //tag effects
         public bool QuirksEnabled = false;
         public float BraveModifier = 5;

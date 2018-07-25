@@ -75,6 +75,7 @@ namespace PanicSystem
 
                     Logger.Debug($"Done removing effects.");
                     mech.EjectPilot(mech.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
+                    KlutzEject = false;
                 }
             }
         }

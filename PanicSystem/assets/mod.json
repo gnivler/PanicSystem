@@ -12,61 +12,15 @@
 
   "Settings": {
     "Debug": false,
-    "PlayerCharacterAlwaysResists": false,
-    "PlayerTeamCanPanic": true,
-    "EnemiesCanPanic": true,
-
-    "PlayerLightsConsiderEjectingEarly": true,
-    "EnemyLightsConsiderEjectingEarly": true,
-    "LightMechEarlyEjecthreshold": 2, /* stressed */
-
-    "PlayerMediumsConsiderEjectingEarly": false,
-    "EnemyMediumsConsiderEjectingEarly": false,
-    "MediumMechEarlyEjectThreshold": 2,
-
-    "PlayerHeaviesConsiderEjectingEarly": false,
-    "EnemyHeaviesConsiderEjectingEarly": false,
-    "HeavyMechEarlyEjectThreshold": 2,
-
-    "PlayerAssaultsConsiderEjectingEarly": false,
-    "EnemyAssaultsConsiderEjectingEarly": false,
-    "AssaultMechEarlyEjectThreshold": 2,
-
-    "MaxEjectChanceWhenEarly": 10,
+    "EnableKnockDownPhrases": false,
     
+    /* panic */
+    "PlayerCharacterAlwaysResists": false,
+    "PlayersCanPanic": true,
+    "EnemiesCanPanic": true,
     "MinimumArmourDamagePercentageRequired": 10,
     "OneChangePerTurn": false,
     "LosingLimbAlwaysPanics": false,
-    
-    "Median Morale": 50,
-    "MoraleMaxModifier": 10,
-    
-    /* Quirks compatibility */
-    "QuirksEnabled": true,
-    "BraveModifier": 5,
-    "DependableModifier": 5,
-
-    "UnsettledAttackModifier": 1,
-    "StressedAimModifier": 1,
-    "StressedToHitModifier": -1,
-    "PanickedAimModifier": 2,
-    "PanickedToHitModifier": -2,
-
-    "MinimumHealthToAlwaysEjectRoll": 1,
-    "MaxEjectChance": 50,
-    "EjectChanceMultiplier": 1,
-    "GutsTenAlwaysResists": false,
-    "ComboTenAlwaysResists": false,
-    "TacticsTenAlwaysResists": false,
-    "KnockedDownCannotEject": false,
-
-    "ConsiderEjectingWithNoWeaps": false,
-    "ConsiderEjectingWhenAlone": false,
-
-    "BaseEjectionResist": 50,
-    "GutsEjectionResistPerPoint": 2,
-    "TacticsEjectionResistPerPoint": 0,
-
     "UnsteadyModifier": 10,
     "PilotHealthMaxModifier": 15,
     "HeadMaxModifier": 15,
@@ -74,6 +28,50 @@
     "SideTorsoMaxModifier": 20,
     "LeggedMaxModifier": 10,
     "WeaponlessModifier": 10,
-    "AloneModifier": 10
+    "AloneModifier": 10,
+    "UnsettledAttackModifier": 1,
+    "StressedAimModifier": 1,
+    "StressedToHitModifier": -1,
+    "PanickedAimModifier": 2,
+    "PanickedToHitModifier": -2,
+    "Median Morale": 50,
+    "MoraleMaxModifier": 10,
+    
+
+    /* Quirks */
+    "QuirksEnabled": true,
+    "BraveModifier": 5,
+    "DependableModifier": 5,
+
+    /* ejection */
+    "EjectEarlyPlayerLight": true,
+    "EjectEarlyEnemyLight": true,
+    "EjectThresholdLight": 2, /* stressed */
+
+    "EjectEarlyPlayerMedium": false,
+    "EjectEarlyEnemyMedium": false,
+    "EjectThresholdMedium": 2,
+
+    "EjectEarlyPlayerHeavy": false,
+    "EjectEarlyEnemyHeavy": false,
+    "EjectThresholdHeavy": 2,
+
+    "EjectEarlyPlayerAssault": false,
+    "EjectEarlyEnemyAssault": false,
+    "EjectThresholdAssault": 2,
+    
+    "MinimumHealthToAlwaysEjectRoll": 1,
+    "MaxEjectChance": 50,
+    "EjectChanceMultiplier": 1,
+    "GutsTenAlwaysResists": false,
+    "ComboTenAlwaysResists": false,
+    "TacticsTenAlwaysResists": false,
+    "KnockedDownCannotEject": false,
+    "ConsiderEjectingWithNoWeaps": false,
+    "ConsiderEjectingWhenAlone": false,
+    "BaseEjectionResist": 50,
+    "GutsEjectionResistPerPoint": 2,
+    "TacticsEjectionResistPerPoint": 0,
+    "MaxEjectChanceWhenEarly": 10,
   }
 }

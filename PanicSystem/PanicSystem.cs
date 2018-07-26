@@ -22,7 +22,7 @@ namespace PanicSystem
         internal static bool KlutzEject;
         internal static readonly Random Rng = new Random();
         internal static List<string> KnockDownPhraseList = new List<string>();
-        internal static string KnockDownPhraseListPath = Path.Combine(ModDirectory, "phrases.txt");
+        internal static string KnockDownPhraseListPath;
 
         // forces ejection saves every attack
         public static bool LastStraw;
@@ -53,6 +53,7 @@ namespace PanicSystem
 
             try
             {
+                KnockDownPhraseListPath = Path.Combine(modDir, "phrases.txt");
                 var reader = new StreamReader(KnockDownPhraseListPath);
                 using (reader)
                 {
@@ -60,6 +61,12 @@ namespace PanicSystem
                     {
                         KnockDownPhraseList.Add(reader.ReadLine());
                     }
+                }
+
+                Debug("Phrase list:");
+                foreach (var phrase in KnockDownPhraseList)
+                {
+                    Debug(phrase);
                 }
             }
             catch (Exception e)
@@ -147,6 +154,13 @@ namespace PanicSystem
 
                 panicModifiers += ModSettings.UnsteadyModifier;
                 Debug($"Knockdown adds {ModSettings.UnsteadyModifier}, modifier now at {panicModifiers:0.###}.");
+            }
+
+            // if the mech will continue to overheat next round as well
+            if (mech.IsPastMaxHeat && mech.CurrentHeat - mech.AdjustedHeatsinkCapacity > mech.MaxHeat)
+            {
+                panicModifiers += ModSettings.HeatModifier;
+                Debug($"Head damage adds {ModSettings.HeatModifier}, modifier now at {panicModifiers:0.###}.");
             }
 
             if (Math.Abs(PercentHead(mech)) != 0 && PercentHead(mech) < 1)
@@ -762,7 +776,7 @@ namespace PanicSystem
     {
         public bool Debug = false;
         public bool EnableKnockDownPhrases = false;
-        
+
         // panic
         public bool PlayerCharacterAlwaysResists = true;
         public bool PlayersCanPanic = true;
@@ -785,6 +799,7 @@ namespace PanicSystem
         public float PanickedToHitModifier = -2;
         public float MedianMorale = 25;
         public float MoraleMaxModifier = 10;
+        public float HeatModifier = 10;
 
         // Quirks
         public bool QuirksEnabled = false;
@@ -820,6 +835,5 @@ namespace PanicSystem
         public float GutsEjectionResistPerPoint = 2;
         public float TacticsEjectionResistPerPoint = 0;
         public float MaxEjectChanceWhenEarly = 10;
-
     }
 }

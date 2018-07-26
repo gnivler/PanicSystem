@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using BattleTech;
+// ReSharper disable All
 
 // HUGE thanks to RealityMachina and mpstark for their work, outstanding.
 namespace PanicSystem
@@ -15,9 +16,9 @@ namespace PanicSystem
 
     public class PanicTracker
     {
+        public bool ChangedRecently;
         public PanicStatus PilotStatus;
         public string TrackedMech;
-        public bool ChangedRecently;
 
         public PanicTracker()
         {
@@ -38,8 +39,19 @@ namespace PanicSystem
         public DateTime SaveGameTimeStamp { get; set; }
         public string SimGameGUID { get; set; }
 
-        public void SetGameGUID(string GUID) => SimGameGUID = GUID;
-        public void SetSaveGameTime(DateTime savedate) => SaveGameTimeStamp = savedate;
-        public void SetTrackedPilots(List<PanicTracker> trackers) => TrackedPilots = trackers;
+        public void SetGameGUID(string GUID)
+        {
+            SimGameGUID = GUID;
+        }
+
+        public void SetSaveGameTime(DateTime savedate)
+        {
+            SaveGameTimeStamp = savedate;
+        }
+
+        public void SetTrackedPilots(List<PanicTracker> trackers)
+        {
+            TrackedPilots = trackers;
+        }
     }
 }

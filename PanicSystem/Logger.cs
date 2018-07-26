@@ -16,9 +16,10 @@ namespace PanicSystem
             }
         }
 
-        public static void Debug(String line)
+        public static void Debug(string line)
         {
             if (!PanicSystem.ModSettings.Debug) return;
+
             using (var writer = new StreamWriter(LogFilePath, true))
             {
                 writer.WriteLine(line);

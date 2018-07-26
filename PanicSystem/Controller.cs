@@ -4,7 +4,6 @@ using System.IO;
 using BattleTech;
 using Newtonsoft.Json;
 using static PanicSystem.PanicSystem;
-// ReSharper disable All
 
 // HUGE thanks to RealityMachina and mpstark for their work, outstanding.
 namespace PanicSystem
@@ -24,11 +23,12 @@ namespace PanicSystem
         {
             DeserializeStorageJson();
             var index = FindTrackerByTime(previousSaveTime);
-
             if (index > -1)
             {
-                if (MetaTrackers[index].TrackedPilots != null) // part where everything seems to fall apart?
+                if (MetaTrackers[index].TrackedPilots != null) // part where everything seems to fall apart?  (legacy comment)
+                {
                     TrackedPilots = MetaTrackers[index].TrackedPilots;
+                }
 
                 CurrentIndex = index;
             }
@@ -48,7 +48,6 @@ namespace PanicSystem
             if (MetaTrackers != null) //we were unable to find a tracker, add our own
             {
                 var tracker = new MetaTracker();
-
                 tracker.SetTrackedPilots(TrackedPilots);
                 MetaTrackers.Add(tracker);
                 CurrentIndex = MetaTrackers.Count - 1; // -1 due to zero-based arrays
@@ -58,10 +57,13 @@ namespace PanicSystem
         public static int FindTrackerByTime(DateTime previousSaveTime)
         {
             if (MetaTrackers == null) return -1;
-
             for (var i = 0; i < MetaTrackers.Count; i++)
+            {
                 if (MetaTrackers[i].SaveGameTimeStamp == previousSaveTime)
+                {
                     return i;
+                }
+            }
 
             return -1;
         }
@@ -75,21 +77,35 @@ namespace PanicSystem
             else if (CurrentIndex > -1)
             {
                 var index = CurrentIndex;
-                if (MetaTrackers[index] != null) MetaTrackers[index].SetTrackedPilots(TrackedPilots); //have our meta tracker get the latest data
+                if (MetaTrackers[index] != null) //have our meta tracker get the latest data
+                {
+                    MetaTrackers[index].SetTrackedPilots(TrackedPilots);
+                }
 
-                if (dateTime != null) MetaTrackers[index].SetSaveGameTime(dateTime);
+                if (dateTime != null)
+                {
+                    MetaTrackers[index].SetSaveGameTime(dateTime);
+                }
 
                 if (GUID != null) //set GUID if it's applicable
+                {
                     if (MetaTrackers[index].SimGameGUID != GUID)
+                    {
                         MetaTrackers[index].SetGameGUID(GUID);
-            }
+                    }
+                }
 
-            try
-            {
-                if (MetaTrackers != null) File.WriteAllText(StorageJsonPath, JsonConvert.SerializeObject(MetaTrackers));
-            }
-            catch (Exception)
-            {
+                try
+                {
+                    if (MetaTrackers != null)
+                    {
+                        File.WriteAllText(StorageJsonPath, JsonConvert.SerializeObject(MetaTrackers));
+                    }
+                }
+                catch (Exception e)
+                {
+                    Logger.Error(e);
+                }
             }
         }
 
@@ -100,25 +116,34 @@ namespace PanicSystem
             {
                 trackers = JsonConvert.DeserializeObject<List<MetaTracker>>(File.ReadAllText(StorageJsonPath));
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                Logger.Error(e);
                 trackers = null;
             }
 
             if (trackers == null)
+            {
                 MetaTrackers = new List<MetaTracker>();
+            }
             else
+            {
                 MetaTrackers = trackers;
+            }
         }
 
         public static void SerializeActiveJson()
         {
             try
             {
-                if (TrackedPilots != null) File.WriteAllText(ActiveJsonPath, JsonConvert.SerializeObject(TrackedPilots));
+                if (TrackedPilots != null)
+                {
+                    File.WriteAllText(ActiveJsonPath, JsonConvert.SerializeObject(TrackedPilots));
+                }
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                Logger.Error(e);
             }
         }
 
@@ -126,33 +151,47 @@ namespace PanicSystem
         {
             if (TrackedPilots == null) //we only need to deserialize if we have nothing here: this way resets should work properly
             {
-                // read all text, then deserialize into an object
                 List<PanicTracker> panicTrackers;
                 try
                 {
-                    panicTrackers = JsonConvert.DeserializeObject<List<PanicTracker>>(File.ReadAllText(ActiveJsonPath));
+                    panicTrackers = JsonConvert.DeserializeObject<List<PanicTracker>>(File.ReadAllText(ActiveJsonPath)); // read all text, then deserialize into an object
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
+                    Logger.Error(e);
                     panicTrackers = null;
                 }
 
                 if (panicTrackers == null)
+                {
                     TrackedPilots = new List<PanicTracker>();
+                }
                 else
+                {
                     TrackedPilots = panicTrackers;
+                }
             }
         }
 
         public static int GetTrackedPilotIndex(Mech mech)
         {
-            if (mech == null) return -1;
+            if (mech == null)
+            {
+                return -1;
+            }
 
-            if (TrackedPilots == null) DeserializeActiveJson();
+            if (TrackedPilots == null)
+            {
+                DeserializeActiveJson();
+            }
 
             for (var i = 0; i < TrackedPilots.Count; i++)
+            {
                 if (TrackedPilots[i].TrackedMech == mech.GUID)
+                {
                     return i;
+                }
+            }
 
             return -1;
         }

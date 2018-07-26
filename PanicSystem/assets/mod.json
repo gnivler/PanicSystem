@@ -18,7 +18,7 @@
 
     "PlayerLightsConsiderEjectingEarly": true,
     "EnemyLightsConsiderEjectingEarly": true,
-    "LightMechEarlyEjecthreshold": 3, /* stressed */
+    "LightMechEarlyEjecthreshold": 2, /* stressed */
 
     "PlayerMediumsConsiderEjectingEarly": false,
     "EnemyMediumsConsiderEjectingEarly": false,

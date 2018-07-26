@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using BattleTech;
-// ReSharper disable All
 
 // HUGE thanks to RealityMachina and mpstark for their work, outstanding.
 namespace PanicSystem

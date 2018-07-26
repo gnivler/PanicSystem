@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using Harmony;
 
 namespace PanicSystem
 {
@@ -15,15 +16,28 @@ namespace PanicSystem
                 writer.WriteLine($"StackTrace: {ex.StackTrace}");
             }
         }
-
+       
+        
+        
+        
         public static void Debug(string line)
         {
-            if (!PanicSystem.ModSettings.Debug) return;
-
-            using (var writer = new StreamWriter(LogFilePath, true))
+            try
             {
-                writer.WriteLine(line);
+                
+
+                if (!PanicSystem.ModSettings.Debug) return;
+                using (var writer = new StreamWriter(LogFilePath, true))
+                {
+                    writer.WriteLine(line);
+                }
             }
+            catch (Exception e)
+            {
+                FileLog.Log($"{e.Message}\n{e.StackTrace}\n");
+            }
+
+            
         }
 
         public static void Clear()

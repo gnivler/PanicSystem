@@ -7,7 +7,6 @@ using Harmony;
 using Newtonsoft.Json;
 using static PanicSystem.Controller;
 //using static PanicSystem.Logger;
-// ReSharper disable All
 
 // HUGE thanks to RealityMachina and mpstark for their work, outstanding.
 namespace PanicSystem
@@ -38,10 +37,12 @@ namespace PanicSystem
             try
             {
                 ModSettings = JsonConvert.DeserializeObject<Settings>(modSettings);
-                if (ModSettings.Debug) Logger.Clear();
+                FileLog.Log(PanicSystem.ModSettings.Debug.ToString());
+                if (ModSettings.Debug) Logger.Clear();                
             }
-            catch
+            catch (Exception e)
             {
+                Logger.Error(e);
                 ModSettings = new Settings();
             }
         }
@@ -75,6 +76,7 @@ namespace PanicSystem
             if (ModSettings.QuirksEnabled && pilot.pilotDef.PilotTags.Contains("pilot_brave"))
             {
                 panicModifiers -= ModSettings.BraveModifier;
+                
                 Logger.Debug($"Bravery adds -{ModSettings.BraveModifier}, modifier now at {panicModifiers:0.###}.");
             }
 
@@ -678,7 +680,7 @@ namespace PanicSystem
                     return false;
                 }
 
-                Logger.Debug($"Considering enemy mech {mech.VariantName}");
+                Logger.Debug($"Considering enemy mech {mech.DisplayName}");
                 if (ModSettings.EnemyLightsConsiderEjectingEarly && mech.weightClass == WeightClass.LIGHT)
                 {
                     Logger.Debug($"Settings can eject early");

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using BattleTech;
 using BattleTech.Save;
@@ -7,7 +8,6 @@ using BattleTech.UI;
 using Harmony;
 using static PanicSystem.Controller;
 using static PanicSystem.PanicSystem;
-// ReSharper disable All
 
 // HUGE thanks to RealityMachina and mpstark for their work, outstanding.
 namespace PanicSystem
@@ -19,25 +19,24 @@ namespace PanicSystem
         {
             public static void Prefix(AttackStackSequence __instance, MessageCenterMessage message)
             {
-                Logger.Debug(new string('-', 60));
-                Logger.Debug($"{__instance.owningActor.VariantName} attacked {(__instance.targets.First() as AbstractActor).VariantName}");
+
+
                 var attackCompleteMessage = message as AttackCompleteMessage;
 
                 Mech mech = null;
                 if (attackCompleteMessage == null || attackCompleteMessage.stackItemUID != __instance.SequenceGUID) return;
 
-                // this bool makes ejection saves harder
-                PanicStarted = false;
-
-                // this bool is the normal panic reason, which can be saved against
-                var hasReasonToPanic = false;
+                PanicStarted = false; //  makes ejection saves harder
+                var hasReasonToPanic = false; // is the normal panic reason, which can be saved against
 
                 // simple flag to see if damage was done
                 var attack = Traverse.Create(__instance).Field("directorSequences").GetValue<List<AttackDirector.AttackSequence>>();
                 var damaged = attack.Any(x => x.attackDidDamage);
 
-                if (__instance.directorSequences[0].target is Mech)
+                if (__instance.directorSequences[0].target is Mech) // can't do stuff with vehicles and buildings
                 {
+                    Logger.Debug(new string(c: '-', count: 80));
+                    Logger.Debug($"{__instance.directorSequences[0].attacker.LogDisplayName} attacks {__instance.directorSequences[0].target.LogDisplayName}");
                     mech = (Mech) __instance.directorSequences[0].target;
 
                     // sets global variable that last-straw is met and only when it damages target
@@ -66,6 +65,7 @@ namespace PanicSystem
                         catch
                         {
                         }
+                //Logger.Debug(new string('-', 60));
 
                     mech.EjectPilot(mech.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
                     KlutzEject = false;

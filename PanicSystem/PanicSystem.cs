@@ -146,12 +146,9 @@ namespace PanicSystem
             panicModifiers -= gutAndTacticsSum;
             Logger.Debug($"Guts and Tactics subtracts {gutAndTacticsSum}, modifier now at {panicModifiers:0.###}.");
 
-            // if (mech.team == mech.Combat.LocalPlayerTeam)
-            // {
-            var moraleModifier = ModSettings.MoraleMaxModifier * (mech.Combat.LocalPlayerTeam.Morale - ModSettings.MedianMorale) / ModSettings.MedianMorale * -1;
-            panicModifiers += moraleModifier;
-            Logger.Debug($"Current morale {mech.Combat.LocalPlayerTeam.Morale} adds {moraleModifier:0.###}, modifier now at {panicModifiers:0.###}.");
-            //}
+            var moraleModifier = ModSettings.MoraleMaxModifier * (mech.Combat.LocalPlayerTeam.Morale - ModSettings.MedianMorale) / ModSettings.MedianMorale;
+            panicModifiers -= moraleModifier;
+            Logger.Debug($"Current morale {mech.Combat.LocalPlayerTeam.Morale} adds {Math.Abs(moraleModifier):0.###}, modifier now at {panicModifiers:0.###}.");
 
             panicModifiers = (float) Math.Max(0f, Math.Round(panicModifiers));
             Logger.Debug($"Saving throw: {panicModifiers}");
@@ -327,9 +324,9 @@ namespace PanicSystem
 
             //if (mech.team == mech.Combat.LocalPlayerTeam)
             //{
-            var moraleModifier = ModSettings.MoraleMaxModifier * (mech.Combat.LocalPlayerTeam.Morale - ModSettings.MedianMorale) / ModSettings.MedianMorale * -1;
-            ejectModifiers += moraleModifier;
-            Logger.Debug($"Current morale {mech.Combat.LocalPlayerTeam.Morale} adds {moraleModifier:0.###}, modifier now at {ejectModifiers:0.###}.");
+            var moraleModifier = ModSettings.MoraleMaxModifier * (mech.Combat.LocalPlayerTeam.Morale - ModSettings.MedianMorale) / ModSettings.MedianMorale;
+            ejectModifiers -= moraleModifier;
+            Logger.Debug($"Current morale {mech.Combat.LocalPlayerTeam.Morale} adds {Math.Abs(moraleModifier):0.###}, modifier now at {ejectModifiers:0.###}.");
             //}
 
             if (ModSettings.QuirksEnabled && pilot.pilotDef.PilotTags.Contains("pilot_dependable"))
@@ -437,12 +434,21 @@ namespace PanicSystem
             {
                 TrackedPilots.Add(new PanicTracker(mech)); // add a new tracker to tracked pilot, then we run it all over again
                 index = GetTrackedPilotIndex(mech);
-                if (index < 0) return false;
+                if (index < 0)
+                {
+                    return false;
+                }
             }
 
-            if (TrackedPilots[index].TrackedMech != mech.GUID) return false;
+            if (TrackedPilots[index].TrackedMech != mech.GUID)
+            {
+                return false;
+            }
 
-            if (TrackedPilots[index].TrackedMech == mech.GUID && TrackedPilots[index].ChangedRecently && ModSettings.OneChangePerTurn) return false;
+            if (TrackedPilots[index].TrackedMech == mech.GUID && TrackedPilots[index].ChangedRecently && ModSettings.OneChangePerTurn)
+            {
+                return false;
+            }
 
             return true;
         }
@@ -750,7 +756,7 @@ namespace PanicSystem
 
         public float MaxEjectChanceWhenEarly = 10;
 
-        public float MedianMorale = 25;
+        public float MedianMorale = 50;
         public PanicStatus MediumMechEarlyEjectThreshold = PanicStatus.Stressed;
 
         //minmum armour and structure damage

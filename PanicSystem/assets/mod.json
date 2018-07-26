@@ -11,7 +11,7 @@
   "DLL": "PanicSystem.dll",
 
   "Settings": {
-    "Debug": true,
+    "Debug": false,
     "PlayerCharacterAlwaysResists": false,
     "PlayerTeamCanPanic": true,
     "EnemiesCanPanic": true,
@@ -42,7 +42,7 @@
     "MoraleMaxModifier": 10,
     
     /* Quirks compatibility */
-    "QuirksEnabled": false,
+    "QuirksEnabled": true,
     "BraveModifier": 5,
     "DependableModifier": 5,
 

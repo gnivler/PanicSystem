@@ -36,7 +36,7 @@ namespace PanicSystem
 
                 if (__instance.directorSequences[0].target is Mech) // can't do stuff with vehicles and buildings
                 {
-                    Logger.Debug(new string(c: '-', count: 80));
+                    Logger.Debug(new string(c: '-', count: 60));
                     Logger.Debug($"{__instance.directorSequences[0].attacker.LogDisplayName}\n-> attacks ->\n{__instance.directorSequences[0].target.LogDisplayName}");
                     mech = (Mech) __instance.directorSequences[0].target;
 

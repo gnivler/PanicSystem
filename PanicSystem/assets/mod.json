@@ -38,7 +38,7 @@
     "OneChangePerTurn": false,
     "LosingLimbAlwaysPanics": false,
     
-    "Median Morale": 25,
+    "Median Morale": 50,
     "MoraleMaxModifier": 10,
     
     /* Quirks compatibility */

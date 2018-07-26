@@ -19,12 +19,13 @@ namespace PanicSystem
         {
             public static void Prefix(AttackStackSequence __instance, MessageCenterMessage message)
             {
-
-
                 var attackCompleteMessage = message as AttackCompleteMessage;
 
                 Mech mech = null;
-                if (attackCompleteMessage == null || attackCompleteMessage.stackItemUID != __instance.SequenceGUID) return;
+                if (attackCompleteMessage == null || attackCompleteMessage.stackItemUID != __instance.SequenceGUID)
+                {
+                    return;
+                }
 
                 PanicStarted = false; //  makes ejection saves harder
                 var hasReasonToPanic = false; // is the normal panic reason, which can be saved against
@@ -36,7 +37,7 @@ namespace PanicSystem
                 if (__instance.directorSequences[0].target is Mech) // can't do stuff with vehicles and buildings
                 {
                     Logger.Debug(new string(c: '-', count: 80));
-                    Logger.Debug($"{__instance.directorSequences[0].attacker.LogDisplayName} attacks {__instance.directorSequences[0].target.LogDisplayName}");
+                    Logger.Debug($"{__instance.directorSequences[0].attacker.LogDisplayName}\n-> attacks ->\n{__instance.directorSequences[0].target.LogDisplayName}");
                     mech = (Mech) __instance.directorSequences[0].target;
 
                     // sets global variable that last-straw is met and only when it damages target
@@ -44,16 +45,19 @@ namespace PanicSystem
                     hasReasonToPanic = ShouldPanic(mech, attackCompleteMessage.attackSequence);
                 }
 
-                if (mech?.GUID == null) return;
+                if (mech?.GUID == null)
+                {
+                    return;
+                }
 
                 SerializeActiveJson();
 
-                // ejection check
+                // Klutz and LastStraw immediately eject, otherwise it has to have a reason and fail a save
                 if (KlutzEject | LastStraw || hasReasonToPanic && RollForEjectionResult(mech, attackCompleteMessage.attackSequence, PanicStarted))
                 {
                     Logger.Debug($"FAILED SAVE: Punchin' Out!!");
 
-                    // this is necessary to avoid vanilla hangs.  the list has nulls so the try/catch deals with silently
+                    // this is necessary to avoid vanilla hangs.  the list has nulls so the try/catch deals with silently.  thanks jo
                     var combat = Traverse.Create(__instance).Property("Combat").GetValue<CombatGameState>();
                     var effectsTargeting = combat.EffectManager.GetAllEffectsTargeting(mech);
 
@@ -62,13 +66,12 @@ namespace PanicSystem
                         {
                             mech.CancelEffect(effect);
                         }
-                        catch
+                        catch // deliberately silent
                         {
                         }
-                //Logger.Debug(new string('-', 60));
 
                     mech.EjectPilot(mech.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
-                    KlutzEject = false;
+                    KlutzEject = false; // reset global variable after ejecting pilot
                 }
             }
         }
@@ -78,16 +81,25 @@ namespace PanicSystem
         {
             public static void Prefix(AbstractActor __instance)
             {
-                if (!(__instance is Mech mech) || mech.IsDead || mech.IsFlaggedForDeath && mech.HasHandledDeath) return;
+                if (!(__instance is Mech mech) || mech.IsDead || mech.IsFlaggedForDeath && mech.HasHandledDeath)
+                {
+                    return;
+                }
 
                 var foundPilot = false;
                 var pilot = mech.GetPilot();
                 var index = -1;
 
-                if (pilot == null) return;
+                if (pilot == null)
+                {
+                    return;
+                }
 
                 index = GetTrackedPilotIndex(mech);
-                if (index > -1) foundPilot = true;
+                if (index > -1)
+                {
+                    foundPilot = true;
+                }
 
                 if (!foundPilot)
                 {
@@ -95,13 +107,18 @@ namespace PanicSystem
                     TrackedPilots.Add(panicTracker); //add a new tracker to tracked pilot, then we run it all over again
                     index = GetTrackedPilotIndex(mech);
                     if (index > -1)
+                    {
                         foundPilot = true;
+                    }
                     else
+                    {
                         return;
+                    }
                 }
 
                 var originalStatus = TrackedPilots[index].PilotStatus;
                 if (foundPilot && !TrackedPilots[index].ChangedRecently)
+                {
                     switch (TrackedPilots[index].PilotStatus)
                     {
                         case PanicStatus.Unsettled:
@@ -114,8 +131,9 @@ namespace PanicSystem
                             TrackedPilots[index].PilotStatus = PanicStatus.Stressed;
                             break;
                     }
+                }
 
-                //reset panic values to account for panic level changes if we get this far, and we recovered.
+                // reset panic values to account for panic level changes if we get this far, and we recovered
                 if (TrackedPilots[index].ChangedRecently)
                 {
                     TrackedPilots[index].ChangedRecently = false;
@@ -131,7 +149,6 @@ namespace PanicSystem
                         __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"IMPROVED TO UNSETTLED", FloatieMessage.MessageNature.Buff, true)));
                         __instance.StatCollection.ModifyStat("Panic Turn: Unsettled Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, ModSettings.UnsettledAttackModifier);
                     }
-
                     else if (TrackedPilots[index].PilotStatus == PanicStatus.Stressed)
                     {
                         Logger.Debug("IMPROVED TO STRESSED!");
@@ -139,7 +156,6 @@ namespace PanicSystem
                         __instance.StatCollection.ModifyStat("Panic Turn: Stressed Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, ModSettings.StressedAimModifier);
                         __instance.StatCollection.ModifyStat("Panic Turn: Stressed Defence", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, ModSettings.StressedToHitModifier);
                     }
-
                     else
                     {
                         Logger.Debug("IMPROVED TO CONFIDENT!");

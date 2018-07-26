@@ -6,7 +6,6 @@ using BattleTech;
 using Harmony;
 using Newtonsoft.Json;
 using static PanicSystem.Controller;
-//using static PanicSystem.Logger;
 
 // HUGE thanks to RealityMachina and mpstark for their work, outstanding.
 namespace PanicSystem
@@ -37,8 +36,10 @@ namespace PanicSystem
             try
             {
                 ModSettings = JsonConvert.DeserializeObject<Settings>(modSettings);
-                FileLog.Log(PanicSystem.ModSettings.Debug.ToString());
-                if (ModSettings.Debug) Logger.Clear();                
+                if (ModSettings.Debug)
+                {
+                    Logger.Clear();
+                }
             }
             catch (Exception e)
             {
@@ -48,7 +49,7 @@ namespace PanicSystem
         }
 
         /// <summary>
-        ///     true implies a panic condition was met
+        /// true implies a panic condition was met
         /// </summary>
         /// <param name="mech"></param>
         /// <param name="attackSequence"></param>
@@ -76,7 +77,7 @@ namespace PanicSystem
             if (ModSettings.QuirksEnabled && pilot.pilotDef.PilotTags.Contains("pilot_brave"))
             {
                 panicModifiers -= ModSettings.BraveModifier;
-                
+
                 Logger.Debug($"Bravery adds -{ModSettings.BraveModifier}, modifier now at {panicModifiers:0.###}.");
             }
 
@@ -147,26 +148,29 @@ namespace PanicSystem
 
             // if (mech.team == mech.Combat.LocalPlayerTeam)
             // {
-            var moraleModifier = ModSettings.MoraleMaxModifier * (mech.Combat.LocalPlayerTeam.Morale - ModSettings.MedianMorale) / ModSettings.MedianMorale;
+            var moraleModifier = ModSettings.MoraleMaxModifier * (mech.Combat.LocalPlayerTeam.Morale - ModSettings.MedianMorale) / ModSettings.MedianMorale * -1;
             panicModifiers += moraleModifier;
-            Logger.Debug($"Curren morale {mech.Combat.LocalPlayerTeam.Morale} adds {moraleModifier:0.###}, modifier now at {panicModifiers:0.###}.");
+            Logger.Debug($"Current morale {mech.Combat.LocalPlayerTeam.Morale} adds {moraleModifier:0.###}, modifier now at {panicModifiers:0.###}.");
             //}
 
             panicModifiers = (float) Math.Max(0f, Math.Round(panicModifiers));
-            Logger.Debug($"Roll to beat: {panicModifiers}");
+            Logger.Debug($"Saving throw: {panicModifiers}");
 
             var rng = RNG.Next(1, 101);
             Logger.Debug($"Rolled: {rng}");
 
             if (rng < (int) panicModifiers)
             {
-                Logger.Debug($"FAILED {panicModifiers}% PANIC SAVE!");
+                Logger.Debug($"Failed saving throw.");
                 ApplyPanicDebuff(mech, index);
-                return true;
+                var i = GetTrackedPilotIndex(mech);
+                if (CanEjectBeforePanicked(mech, i))
+                {
+                    return true;
+                }
             }
 
-            if (panicModifiers >= 0 && panicModifiers != 0) Logger.Debug($"MADE {panicModifiers}% PANIC SAVE!");
-
+            Logger.Debug($"Made saving throw.");
             return false;
         }
 
@@ -175,7 +179,7 @@ namespace PanicSystem
             if (mech.RightLegDamageLevel == LocationDamageLevel.Destroyed)
             {
                 panicModifiers += ModSettings.LeggedMaxModifier;
-                Logger.Debug($"RL damage adds {ModSettings.LeggedMaxModifier}, modifier now at {panicModifiers:0.###}.");
+                Logger.Debug($"RL destroyed, adds {ModSettings.LeggedMaxModifier}, modifier now at {panicModifiers:0.###}.");
             }
             else if (PercentRightLeg(mech) != 0 && PercentRightLeg(mech) < 1)
             {
@@ -189,7 +193,7 @@ namespace PanicSystem
             if (mech.LeftLegDamageLevel == LocationDamageLevel.Destroyed)
             {
                 panicModifiers += ModSettings.LeggedMaxModifier;
-                Logger.Debug($"LL destroyed, damage adds {ModSettings.LeggedMaxModifier}, modifier now at {panicModifiers:0.###}.");
+                Logger.Debug($"LL destroyed, adds {ModSettings.LeggedMaxModifier}, modifier now at {panicModifiers:0.###}.");
             }
             else if (PercentLeftLeg(mech) != 0 && PercentLeftLeg(mech) < 1)
             {
@@ -203,7 +207,7 @@ namespace PanicSystem
             if (mech.RightTorsoDamageLevel == LocationDamageLevel.Destroyed)
             {
                 panicModifiers += ModSettings.SideTorsoMaxModifier;
-                Logger.Debug($"RT destroyed, damage adds {ModSettings.SideTorsoMaxModifier}, modifier now at {panicModifiers:0.###}.");
+                Logger.Debug($"RT destroyed, adds {ModSettings.SideTorsoMaxModifier}, modifier now at {panicModifiers:0.###}.");
             }
             else if (PercentRightTorso(mech) != 0 && PercentRightTorso(mech) < 1)
             {
@@ -217,7 +221,7 @@ namespace PanicSystem
             if (mech.LeftTorsoDamageLevel == LocationDamageLevel.Destroyed)
             {
                 panicModifiers += ModSettings.SideTorsoMaxModifier;
-                Logger.Debug($"LT destroyed, damage adds {ModSettings.SideTorsoMaxModifier:0.###}, modifier now at {panicModifiers:0.###}.");
+                Logger.Debug($"LT destroyed, adds {ModSettings.SideTorsoMaxModifier:0.###}, modifier now at {panicModifiers:0.###}.");
             }
             else if (PercentLeftTorso(mech) != 0 && PercentLeftTorso(mech) < 1)
             {
@@ -235,7 +239,7 @@ namespace PanicSystem
         /// <returns></returns>
         public static bool RollForEjectionResult(Mech mech, AttackDirector.AttackSequence attackSequence, bool panicStarted)
         {
-            Logger.Debug($"EJECTION CHANCE!");
+            Logger.Debug($"In RollForEjectionResult()");
             if (mech == null || mech.IsDead || mech.IsFlaggedForDeath && !mech.HasHandledDeath) return false;
 
             // knocked down mechs cannot eject
@@ -325,7 +329,7 @@ namespace PanicSystem
             //{
             var moraleModifier = ModSettings.MoraleMaxModifier * (mech.Combat.LocalPlayerTeam.Morale - ModSettings.MedianMorale) / ModSettings.MedianMorale * -1;
             ejectModifiers += moraleModifier;
-            Logger.Debug($"Current morale {mech.Combat.LocalPlayerTeam.Morale} adds -{moraleModifier:0.###}, modifier now at {ejectModifiers:0.###}.");
+            Logger.Debug($"Current morale {mech.Combat.LocalPlayerTeam.Morale} adds {moraleModifier:0.###}, modifier now at {ejectModifiers:0.###}.");
             //}
 
             if (ModSettings.QuirksEnabled && pilot.pilotDef.PilotTags.Contains("pilot_dependable"))
@@ -535,12 +539,12 @@ namespace PanicSystem
         }
 
         //TODO add heat modifier
-        //TODO check strucure mods
-        //TODO extra modifiers for missing limbs on every roll?  same as damage?
-        //TODO arms but how to deal with clip-ons
+        //TODO check strucure mods for damaged drops
+        //TODO sole survivor maybe becomes per-dead lancemate
+        //TODO arms modifiers but how to deal with clip-ons
 
         /// <summary>
-        ///     applied combat modifiers to tracked mechs based on panic status
+        /// applies combat modifiers to tracked mechs based on panic status
         /// </summary>
         /// <param name="mech"></param>
         /// <param name="index"></param>
@@ -648,7 +652,7 @@ namespace PanicSystem
             {
                 if (mech.team.IsLocalPlayer)
                 {
-                    Logger.Debug($"Considering player mech {mech.VariantName}");
+                    Logger.Debug($"Considering player mech {mech.DisplayName}");
                     if (ModSettings.PlayerLightsConsiderEjectingEarly && mech.weightClass == WeightClass.LIGHT)
                     {
                         Logger.Debug($"Settings can eject early");

@@ -7,7 +7,6 @@ namespace PanicSystem
     public static class Logger
     {
         private static string LogFilePath => $"{PanicSystem.ModDirectory}/log.txt";
-
         public static void Error(Exception ex)
         {
             using (var writer = new StreamWriter(LogFilePath, true))
@@ -16,28 +15,14 @@ namespace PanicSystem
                 writer.WriteLine($"StackTrace: {ex.StackTrace}");
             }
         }
-       
-        
-        
-        
+
         public static void Debug(string line)
         {
-            try
+            if (!PanicSystem.ModSettings.Debug) return;
+            using (var writer = new StreamWriter(LogFilePath, true))
             {
-                
-
-                if (!PanicSystem.ModSettings.Debug) return;
-                using (var writer = new StreamWriter(LogFilePath, true))
-                {
-                    writer.WriteLine(line);
-                }
+                writer.WriteLine(line);
             }
-            catch (Exception e)
-            {
-                FileLog.Log($"{e.Message}\n{e.StackTrace}\n");
-            }
-
-            
         }
 
         public static void Clear()

@@ -19,94 +19,93 @@ namespace PanicSystem
             TrackedPilots = new List<PanicTracker>();
         }
 
-        public static void Resync(DateTime previousSaveTime) //fired before a save deserializes itself through a patch on GameInstanceSave's PostDeserialization
+        public static void Resync(DateTime previousSaveTime) // fired before a save deserializes itself through a patch on GameInstanceSave's PostDeserialization
         {
             DeserializeStorageJson();
-            int index = FindTrackerByTime(previousSaveTime);
-
-            if(index > -1)
+            var index = FindTrackerByTime(previousSaveTime);
+            if (index > -1)
             {
-                if(MetaTrackers[index].TrackedPilots != null) //part where everything seems to fall apart?
+                if (MetaTrackers[index].TrackedPilots != null) // part where everything seems to fall apart?  (legacy comment)
                 {
                     TrackedPilots = MetaTrackers[index].TrackedPilots;
                 }
+
                 CurrentIndex = index;
             }
-            else if(MetaTrackers != null)//we were unable to find a tracker, add our own
+            else if (MetaTrackers != null) // we were unable to find a tracker, add our own
             {
-                MetaTracker tracker = new MetaTracker();
+                var tracker = new MetaTracker();
 
                 tracker.SetTrackedPilots(TrackedPilots);
                 MetaTrackers.Add(tracker);
                 CurrentIndex = MetaTrackers.Count - 1; // -1 due to zero-based arrays
-
             }
         }
 
         public static void SyncNewCampaign() //fired when player starts a new campaign
         {
             DeserializeStorageJson();
-            if (MetaTrackers != null)//we were unable to find a tracker, add our own
+            if (MetaTrackers != null) //we were unable to find a tracker, add our own
             {
-                MetaTracker tracker = new MetaTracker();
-
+                var tracker = new MetaTracker();
                 tracker.SetTrackedPilots(TrackedPilots);
                 MetaTrackers.Add(tracker);
                 CurrentIndex = MetaTrackers.Count - 1; // -1 due to zero-based arrays
-
             }
         }
 
         public static int FindTrackerByTime(DateTime previousSaveTime)
         {
-            if(MetaTrackers == null)
+            if (MetaTrackers == null) return -1;
+            for (var i = 0; i < MetaTrackers.Count; i++)
             {
-                return -1;
-            }
-            for(int i = 0; i < MetaTrackers.Count; i++)
-            {
-                if(MetaTrackers[i].SaveGameTimeStamp == previousSaveTime)
+                if (MetaTrackers[i].SaveGameTimeStamp == previousSaveTime)
                 {
                     return i;
                 }
             }
+
             return -1;
         }
 
         public static void SerializeStorageJson(string GUID, DateTime dateTime) //fired when a save game is made
         {
-            if(MetaTrackers == null)
+            if (MetaTrackers == null)
             {
                 MetaTrackers = new List<MetaTracker>();
             }
             else if (CurrentIndex > -1)
             {
-                int index = CurrentIndex;
-                if(MetaTrackers[index] != null)
+                var index = CurrentIndex;
+                if (MetaTrackers[index] != null) //have our meta tracker get the latest data
                 {
-                    MetaTrackers[index].SetTrackedPilots(TrackedPilots); //have our meta tracker get the latest data
+                    MetaTrackers[index].SetTrackedPilots(TrackedPilots);
                 }
-                if(dateTime != null)
+
+                if (dateTime != null)
                 {
                     MetaTrackers[index].SetSaveGameTime(dateTime);
                 }
+
                 if (GUID != null) //set GUID if it's applicable
                 {
-                    if(MetaTrackers[index].SimGameGUID != GUID)
+                    if (MetaTrackers[index].SimGameGUID != GUID)
                     {
                         MetaTrackers[index].SetGameGUID(GUID);
                     }
                 }
-            }
-            try
-            {
-                if (MetaTrackers != null)
+
+                try
                 {
-                    File.WriteAllText(StorageJsonPath, JsonConvert.SerializeObject(MetaTrackers));
+                    if (MetaTrackers != null)
+                    {
+                        File.WriteAllText(StorageJsonPath, JsonConvert.SerializeObject(MetaTrackers));
+                    }
                 }
-            }
-            catch (Exception)
-            {
+                catch (Exception e)
+                {
+                    Logger.Error(e);
+                }
             }
         }
 
@@ -117,11 +116,13 @@ namespace PanicSystem
             {
                 trackers = JsonConvert.DeserializeObject<List<MetaTracker>>(File.ReadAllText(StorageJsonPath));
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                Logger.Error(e);
                 trackers = null;
             }
-            if(trackers == null)
+
+            if (trackers == null)
             {
                 MetaTrackers = new List<MetaTracker>();
             }
@@ -140,8 +141,9 @@ namespace PanicSystem
                     File.WriteAllText(ActiveJsonPath, JsonConvert.SerializeObject(TrackedPilots));
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                Logger.Error(e);
             }
         }
 
@@ -149,16 +151,17 @@ namespace PanicSystem
         {
             if (TrackedPilots == null) //we only need to deserialize if we have nothing here: this way resets should work properly
             {
-                // read all text, then deserialize into an object
                 List<PanicTracker> panicTrackers;
                 try
                 {
-                    panicTrackers = JsonConvert.DeserializeObject<List<PanicTracker>>(File.ReadAllText(ActiveJsonPath));
+                    panicTrackers = JsonConvert.DeserializeObject<List<PanicTracker>>(File.ReadAllText(ActiveJsonPath)); // read all text, then deserialize into an object
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
+                    Logger.Error(e);
                     panicTrackers = null;
                 }
+
                 if (panicTrackers == null)
                 {
                     TrackedPilots = new List<PanicTracker>();
@@ -182,14 +185,14 @@ namespace PanicSystem
                 DeserializeActiveJson();
             }
 
-            for (int i = 0; i < TrackedPilots.Count; i++)
+            for (var i = 0; i < TrackedPilots.Count; i++)
             {
-
                 if (TrackedPilots[i].TrackedMech == mech.GUID)
                 {
                     return i;
                 }
             }
+
             return -1;
         }
     }

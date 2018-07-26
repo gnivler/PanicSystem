@@ -3,7 +3,7 @@
 
   "Enabled": true,
 
-  "Version": "2.5",
+  "Version": "2.6",
   "Description": "Adds basic panic system, based on mpstark's Punchin' Out.",
   "Author": "RealityMachina, forked from mpstark's work - Hard forked and Modified by donZappo and gnivler",
   "Website": "https://github.com/gnivler/PanicSystem",
@@ -11,27 +11,26 @@
   "DLL": "PanicSystem.dll",
 
   "Settings": {
-    "Debug": true,
-    "EnableDebug": true, /* legacy compat */
+    "Debug": false,
     "PlayerCharacterAlwaysResists": false,
     "PlayerTeamCanPanic": true,
     "EnemiesCanPanic": true,
 
     "PlayerLightsConsiderEjectingEarly": true,
     "EnemyLightsConsiderEjectingEarly": true,
-    "LightMechEarlyPanicThreshold": 3, /* stressed */
+    "LightMechEarlyEjecthreshold": 2, /* stressed */
 
     "PlayerMediumsConsiderEjectingEarly": false,
     "EnemyMediumsConsiderEjectingEarly": false,
-    "MediumMechEarlyPanicThreshold": 2,
+    "MediumMechEarlyEjectThreshold": 2,
 
     "PlayerHeaviesConsiderEjectingEarly": false,
     "EnemyHeaviesConsiderEjectingEarly": false,
-    "HeavyMechEarlyPanicThreshold": 2,
+    "HeavyMechEarlyEjectThreshold": 2,
 
     "PlayerAssaultsConsiderEjectingEarly": false,
     "EnemyAssaultsConsiderEjectingEarly": false,
-    "AssaultMechEarlyPanicThreshold": 2,
+    "AssaultMechEarlyEjectThreshold": 2,
 
     "MaxEjectChanceWhenEarly": 10,
     
@@ -39,10 +38,11 @@
     "OneChangePerTurn": false,
     "LosingLimbAlwaysPanics": false,
     
-    "Median Morale": 25,
+    "Median Morale": 50,
+    "MoraleMaxModifier": 10,
     
     /* Quirks compatibility */
-    "QuirksEnabled": false,
+    "QuirksEnabled": true,
     "BraveModifier": 5,
     "DependableModifier": 5,
 

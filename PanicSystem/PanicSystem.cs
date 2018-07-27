@@ -23,12 +23,9 @@ namespace PanicSystem
         internal static List<string> KnockDownPhraseList = new List<string>();
         internal static string KnockDownPhraseListPath;
 
-        // I put in shitty global bools because it was easiest at the time, sorry!
-        // forces ejection saves every attack
+        // I put in shitty global bool because it was easiest at the time, sorry!
+        // forces ejection saves every attack that cause any damage
         public static bool LastStraw;
-
-        // makes saving throws harder
-        public static bool PanicStarted;
 
         public static void Init(string modDir, string modSettings)
         {
@@ -92,7 +89,6 @@ namespace PanicSystem
             var weapons = mech.Weapons;
             var gutsAndTacticsSum = mech.SkillGuts * ModSettings.GutsEjectionResistPerPoint + mech.SkillTactics * ModSettings.TacticsEjectionResistPerPoint;
             float panicModifiers = 0;
-// TODO make sure this isn't fucked
             var index = GetTrackedPilotIndex(mech);
 
             if (!CheckTrackedPilots(mech, ref index))
@@ -163,13 +159,12 @@ namespace PanicSystem
             }
 
             // these methods deal with missing limbs (0 modifiers get replaced with max modifiers)
-            LeftTorso(mech, ref panicModifiers);
-            RightTorso(mech, ref panicModifiers);
-            LeftLeg(mech, ref panicModifiers);
-            RightLeg(mech, ref panicModifiers);
+            EvalLeftTorso(mech, ref panicModifiers);
+            EvalRightTorso(mech, ref panicModifiers);
+            EvalLeftLeg(mech, ref panicModifiers);
+            EvalRightLeg(mech, ref panicModifiers);
 
             // weaponless
-            foreach (var weapon in weapons)
             if (weapons.TrueForAll(w => w.DamageLevel != ComponentDamageLevel.Functional || w.ammoBoxes.Any())) // only fully unusable
             {
                 panicModifiers += ModSettings.WeaponlessModifier;
@@ -225,7 +220,7 @@ namespace PanicSystem
             }
         }
 
-        private static void RightLeg(Mech mech, ref float panicModifiers)
+        private static void EvalRightLeg(Mech mech, ref float panicModifiers)
         {
             if (mech.RightLegDamageLevel == LocationDamageLevel.Destroyed)
             {
@@ -239,7 +234,7 @@ namespace PanicSystem
             }
         }
 
-        private static void LeftLeg(Mech mech, ref float panicModifiers)
+        private static void EvalLeftLeg(Mech mech, ref float panicModifiers)
         {
             if (mech.LeftLegDamageLevel == LocationDamageLevel.Destroyed)
             {
@@ -253,7 +248,7 @@ namespace PanicSystem
             }
         }
 
-        private static void RightTorso(Mech mech, ref float panicModifiers)
+        private static void EvalRightTorso(Mech mech, ref float panicModifiers)
         {
             if (mech.RightTorsoDamageLevel == LocationDamageLevel.Destroyed)
             {
@@ -267,7 +262,7 @@ namespace PanicSystem
             }
         }
 
-        private static void LeftTorso(Mech mech, ref float panicModifiers)
+        private static void EvalLeftTorso(Mech mech, ref float panicModifiers)
         {
             if (mech.LeftTorsoDamageLevel == LocationDamageLevel.Destroyed)
             {
@@ -286,9 +281,8 @@ namespace PanicSystem
         /// </summary>
         /// <param name="mech"></param>
         /// <param name="attackSequence"></param>
-        /// <param name="panicStarted"></param>
         /// <returns></returns>
-        public static bool RollForEjectionResult(Mech mech, AttackDirector.AttackSequence attackSequence, bool panicStarted)
+        public static bool RollForEjectionResult(Mech mech, AttackDirector.AttackSequence attackSequence)
         {
             if (mech == null || mech.IsDead || mech.IsFlaggedForDeath && !mech.HasHandledDeath)
             {
@@ -408,14 +402,14 @@ namespace PanicSystem
             var savingThrow = (float) Math.Round(ejectModifiers);
 
             // will pass through if last straw is met to force an ejection roll
-            if (savingThrow <= 0 && !IsLastStrawPanicking(mech, ref panicStarted))
+            if (savingThrow <= 0 && !IsLastStrawPanicking(mech))
             {
                 Debug($"Resisted ejection");
                 return false;
             }
 
             // modify the roll based on existing pilot panic, and settings
-            savingThrow = !panicStarted ? (int) Math.Min(savingThrow, ModSettings.MaxEjectChance) : (int) Math.Min(savingThrow, ModSettings.MaxEjectChanceWhenEarly);
+            savingThrow = (int) Math.Min(savingThrow, ModSettings.MaxEjectChance);
 
             var roll = Rng.Next(1, 101);
             Debug($"Saving throw: {savingThrow}");
@@ -655,12 +649,11 @@ namespace PanicSystem
         }
 
         /// <summary>
-        ///     returning true and ref true here implies they're on their last straw
+        ///     returning true implies they're on their last straw
         /// </summary>
         /// <param name="mech"></param>
-        /// <param name="panicStarted"></param>
         /// <returns></returns>
-        public static bool IsLastStrawPanicking(Mech mech, ref bool panicStarted)
+        public static bool IsLastStrawPanicking(Mech mech)
         {
             if (mech == null || mech.IsDead || mech.IsFlaggedForDeath && mech.HasHandledDeath)
             {
@@ -674,14 +667,12 @@ namespace PanicSystem
                 (mech.SummaryArmorCurrent + mech.SummaryStructureCurrent) / (mech.SummaryArmorMax + mech.SummaryStructureMax) <= .15)
             {
                 Debug($"Last straw: Health and mech condition");
-                panicStarted = true;
                 return true;
             }
 
             if (ModSettings.ConsiderEjectingWithNoWeaps && mech.Weapons.TrueForAll(w => w.DamageLevel == ComponentDamageLevel.Destroyed))
             {
                 Debug($"Last straw: Weaponless");
-                panicStarted = true;
                 return true;
             }
 
@@ -691,7 +682,6 @@ namespace PanicSystem
                 enemyHealth >= (mech.SummaryArmorCurrent + mech.SummaryStructureCurrent) * 3) // deliberately simple for better or worse (3-to-1 health)
             {
                 Debug($"Last straw: Sole Survivor, hopeless situation");
-                panicStarted = true;
                 return true;
             }
 
@@ -700,7 +690,6 @@ namespace PanicSystem
                 if (TrackedPilots[i].TrackedMech == mech.GUID && TrackedPilots[i].PilotStatus == PanicStatus.Panicked)
                 {
                     Debug($"Pilot is panicked!");
-                    panicStarted = true;
                     return true;
                 }
             }

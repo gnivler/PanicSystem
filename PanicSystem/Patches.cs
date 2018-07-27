@@ -28,7 +28,7 @@ namespace PanicSystem
                     return;
                 }
 
-                PanicStarted = false; //  makes ejection saves harder
+                //PanicStarted = false; //  makes ejection saves harder
                 var hasReasonToPanic = false; // is the normal panic reason, which can be saved against
 
                 // simple flag to see if damage was done
@@ -42,7 +42,7 @@ namespace PanicSystem
                     mech = (Mech) __instance.directorSequences[0].target;
 
                     // sets shittyglobal variable that last-straw is met and only when it damages target
-                    LastStraw = IsLastStrawPanicking(mech, ref PanicStarted) && damaged;
+                    LastStraw = IsLastStrawPanicking(mech) && damaged;
                     hasReasonToPanic = ShouldPanic(mech, attackCompleteMessage.attackSequence);
                 }
 
@@ -55,7 +55,7 @@ namespace PanicSystem
 
                 // Klutz and LastStraw immediately eject, otherwise it has to have a reason and fail a save
                 if (KlutzEject | LastStraw || hasReasonToPanic && TrackedPilots[0].PilotStatus == PanicStatus.Panicked &&
-                    RollForEjectionResult(mech, attackCompleteMessage.attackSequence, PanicStarted))
+                    RollForEjectionResult(mech, attackCompleteMessage.attackSequence))
                 {
                     Logger.Debug($"Failed ejection save");
 

@@ -43,22 +43,6 @@
     "DependableModifier": 5,
 
     /* ejection */
-    "EjectEarlyPlayerLight": true,
-    "EjectEarlyEnemyLight": true,
-    "EjectThresholdLight": 2, /* stressed */
-
-    "EjectEarlyPlayerMedium": false,
-    "EjectEarlyEnemyMedium": false,
-    "EjectThresholdMedium": 2,
-
-    "EjectEarlyPlayerHeavy": false,
-    "EjectEarlyEnemyHeavy": false,
-    "EjectThresholdHeavy": 2,
-
-    "EjectEarlyPlayerAssault": false,
-    "EjectEarlyEnemyAssault": false,
-    "EjectThresholdAssault": 2,
-    
     "MinimumHealthToAlwaysEjectRoll": 1,
     "MaxEjectChance": 50,
     "EjectChanceMultiplier": 1,

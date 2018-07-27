@@ -112,7 +112,6 @@ namespace PanicSystem
 
             Debug($"Collecting panic modifiers:");
 
-
             if (PercentPilot(pilot) < 1)
             {
                 panicModifiers += ModSettings.PilotHealthMaxModifier * PercentPilot(pilot);
@@ -134,7 +133,7 @@ namespace PanicSystem
                     if (Rng.Next(1, 101) == 13)
                     {
                         mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
-                            (new ShowActorInfoSequence(mech, $"WOOPS!", FloatieMessage.MessageNature.Debuff, true)));
+                            (new ShowActorInfoSequence(mech, $"WOOPS!", FloatieMessage.MessageNature.Debuff, false)));
                         Debug($"Very klutzy!");
                         KlutzEject = true;
                         return true;
@@ -144,7 +143,7 @@ namespace PanicSystem
                 {
                     var message = KnockDownPhraseList[Rng.Next(0, KnockDownPhraseList.Count)];
                     mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
-                        (new ShowActorInfoSequence(mech, message, FloatieMessage.MessageNature.Debuff, true)));
+                        (new ShowActorInfoSequence(mech, message, FloatieMessage.MessageNature.Debuff, false)));
                 }
 
                 panicModifiers += ModSettings.UnsteadyModifier;
@@ -169,7 +168,9 @@ namespace PanicSystem
             LeftLeg(mech, ref panicModifiers);
             RightLeg(mech, ref panicModifiers);
 
-            if (weapons.TrueForAll(w => w.DamageLevel == ComponentDamageLevel.Destroyed)) // only fully unusable
+            // weaponless
+            foreach (var weapon in weapons)
+            if (weapons.TrueForAll(w => w.DamageLevel != ComponentDamageLevel.Functional || w.ammoBoxes.Any())) // only fully unusable
             {
                 panicModifiers += ModSettings.WeaponlessModifier;
                 Debug($"Weaponless adds {ModSettings.WeaponlessModifier}");
@@ -204,18 +205,24 @@ namespace PanicSystem
 
             if (roll < (int) panicModifiers)
             {
-                Debug($"Failed saving throw");
+                Debug($"Failed panic save");
                 ApplyPanicDebuff(mech, index);
-                // ReSharper disable once InconsistentNaming
-                var i = GetTrackedPilotIndex(mech);
-                if (CanEjectBeforePanicked(mech, i))
+                if (roll < (int) panicModifiers - 50 | roll == 1 &&
+                    (mech.SummaryArmorCurrent + mech.SummaryStructureCurrent) / (mech.SummaryArmorMax + mech.SummaryStructureMax) <= .9) // only after 10% dmg
                 {
-                    return true;
+                    Debug("Critical failure on panic save");
+                    ApplyPanicDebuff(mech, index);
+                    mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
+                        (new ShowActorInfoSequence(mech, $"PANIC CRIT!", FloatieMessage.MessageNature.Debuff, false)));
                 }
-            }
 
-            Debug($"Made panic saving throw");
-            return false;
+                return true;
+            }
+            else
+            {
+                Debug($"Made panic saving throw");
+                return false;
+            }
         }
 
         private static void RightLeg(Mech mech, ref float panicModifiers)
@@ -370,7 +377,7 @@ namespace PanicSystem
             }
 
             // weaponless
-            if (weapons.TrueForAll(w => w.DamageLevel == ComponentDamageLevel.Destroyed))
+            if (weapons.TrueForAll(w => w.DamageLevel == ComponentDamageLevel.Destroyed || w.DamageLevel == ComponentDamageLevel.NonFunctional))
             {
                 ejectModifiers += ModSettings.WeaponlessModifier;
                 Debug($"Weaponless adds {ModSettings.WeaponlessModifier}, now {ejectModifiers:0.###}");
@@ -577,7 +584,7 @@ namespace PanicSystem
         {
             if (mech == null || mech.IsDead || mech.IsFlaggedForDeath && mech.HasHandledDeath)
             {
-                Debug($"{mech?.DisplayName} incapacitated by {attackSequence.attacker.DisplayName}");
+                Debug($"{mech?.DisplayName} incapacitated by {attackSequence?.attacker?.DisplayName}");
                 return false;
             }
 
@@ -609,29 +616,34 @@ namespace PanicSystem
         /// <param name="index"></param>
         public static void ApplyPanicDebuff(Mech mech, int index)
         {
-            if (TrackedPilots[index].TrackedMech == mech.GUID && TrackedPilots[index].PilotStatus == PanicStatus.Confident)
+            if (TrackedPilots[index].TrackedMech != mech.GUID)
+            {
+                return;
+            }
+
+            if (TrackedPilots[index].PilotStatus == PanicStatus.Confident)
             {
                 Debug("UNSETTLED!");
-                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"UNSETTLED!", FloatieMessage.MessageNature.Debuff, true)));
+                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"UNSETTLED!", FloatieMessage.MessageNature.Debuff, false)));
                 TrackedPilots[index].PilotStatus = PanicStatus.Unsettled;
                 mech.StatCollection.ModifyStat("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f);
                 mech.StatCollection.ModifyStat("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f);
                 mech.StatCollection.ModifyStat("Panic Attack: Unsettled Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, ModSettings.UnsettledAttackModifier);
             }
-            else if (TrackedPilots[index].TrackedMech == mech.GUID && TrackedPilots[index].PilotStatus == PanicStatus.Unsettled)
+            else if (TrackedPilots[index].PilotStatus == PanicStatus.Unsettled)
             {
                 Debug("STRESSED!");
-                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"STRESSED!", FloatieMessage.MessageNature.Debuff, true)));
+                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"STRESSED!", FloatieMessage.MessageNature.Debuff, false)));
                 TrackedPilots[index].PilotStatus = PanicStatus.Stressed;
                 mech.StatCollection.ModifyStat("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f);
                 mech.StatCollection.ModifyStat("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f);
                 mech.StatCollection.ModifyStat("Panic Attack: Stressed Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, ModSettings.StressedAimModifier);
                 mech.StatCollection.ModifyStat("Panic Attack: Stressed Defence", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, ModSettings.StressedToHitModifier);
             }
-            else if (TrackedPilots[index].TrackedMech == mech.GUID && TrackedPilots[index].PilotStatus == PanicStatus.Stressed)
+            else if (TrackedPilots[index].PilotStatus == PanicStatus.Stressed)
             {
                 Debug("PANICKED!");
-                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"PANICKED!", FloatieMessage.MessageNature.Debuff, true)));
+                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"PANICKED!", FloatieMessage.MessageNature.Debuff, false)));
                 TrackedPilots[index].PilotStatus = PanicStatus.Panicked;
                 mech.StatCollection.ModifyStat("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f);
                 mech.StatCollection.ModifyStat("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f);
@@ -650,14 +662,18 @@ namespace PanicSystem
         /// <returns></returns>
         public static bool IsLastStrawPanicking(Mech mech, ref bool panicStarted)
         {
-            if (mech == null || mech.IsDead || mech.IsFlaggedForDeath && mech.HasHandledDeath) return false;
+            if (mech == null || mech.IsDead || mech.IsFlaggedForDeath && mech.HasHandledDeath)
+            {
+                return false;
+            }
 
             var pilot = mech.GetPilot();
             var i = GetTrackedPilotIndex(mech);
 
-            if (pilot != null && !pilot.LethalInjuries && pilot.Health - pilot.Injuries <= ModSettings.MinimumHealthToAlwaysEjectRoll)
+            if (pilot != null && !pilot.LethalInjuries && pilot.Health - pilot.Injuries <= ModSettings.MinimumHealthToAlwaysEjectRoll &&
+                (mech.SummaryArmorCurrent + mech.SummaryStructureCurrent) / (mech.SummaryArmorMax + mech.SummaryStructureMax) <= .15)
             {
-                Debug($"Last straw: Injuries");
+                Debug($"Last straw: Health and mech condition");
                 panicStarted = true;
                 return true;
             }
@@ -687,167 +703,73 @@ namespace PanicSystem
                     panicStarted = true;
                     return true;
                 }
-
-                if (CanEjectBeforePanicked(mech, i))
-                {
-                    Debug($"Early ejection danger!");
-                    panicStarted = true;
-                    return true;
-                }
             }
 
             return false;
         }
 
-        /// <summary>
-        ///  true implies this weight class of mech can eject before reaching Panicked
-        /// </summary>
-        /// <param name="mech"></param>
-        /// <param name="i"></param>
-        /// <returns></returns>
-        private static bool CanEjectBeforePanicked(Mech mech, int i)
+        public class Settings
         {
-            if (TrackedPilots[i].TrackedMech == mech.GUID)
-            {
-                if (mech.team.IsLocalPlayer)
-                {
-                    Debug($"Considering player {mech.DisplayName} for early panic");
-                    if (ModSettings.EjectEarlyPlayerLight && mech.weightClass == WeightClass.LIGHT)
-                    {
-                        if (TrackedPilots[i].PilotStatus >= ModSettings.EjectThresholdLight)
-                        {
-                            Debug($"Pilot can eject early");
-                            return true;
-                        }
-                    }
+            public bool Debug = false;
+            public bool EnableKnockDownPhrases = false;
 
-                    if (ModSettings.EjectEarlyPlayerMedium && mech.weightClass == WeightClass.MEDIUM)
-                    {
-                        if (TrackedPilots[i].PilotStatus >= ModSettings.EjectThresholdMedium)
-                        {
-                            return true;
-                        }
-                    }
+            // panic
+            public bool PlayerCharacterAlwaysResists = true;
+            public bool PlayersCanPanic = true;
+            public bool EnemiesCanPanic = true;
+            public float MinimumArmourDamagePercentageRequired = 10;
+            public bool OneChangePerTurn = false;
+            public bool LosingLimbAlwaysPanics = false;
+            public float UnsteadyModifier = 10;
+            public float PilotHealthMaxModifier = 15;
+            public float HeadMaxModifier = 15;
+            public float CenterTorsoMaxModifier = 45;
+            public float SideTorsoMaxModifier = 20;
+            public float LeggedMaxModifier = 10;
+            public float WeaponlessModifier = 10;
+            public float AloneModifier = 10;
+            public float UnsettledAttackModifier = 1;
+            public float StressedAimModifier = 1;
+            public float StressedToHitModifier = -1;
+            public float PanickedAimModifier = 2;
+            public float PanickedToHitModifier = -2;
+            public float MedianMorale = 25;
+            public float MoraleMaxModifier = 10;
 
-                    if (ModSettings.EjectEarlyPlayerHeavy && mech.weightClass == WeightClass.HEAVY)
-                    {
-                        if (TrackedPilots[i].PilotStatus >= ModSettings.EjectThresholdHeavy)
-                        {
-                            return true;
-                        }
-                    }
+            // Quirks
+            public bool QuirksEnabled = false;
+            public float BraveModifier = 5;
+            public float DependableModifier = 5;
 
-                    if (ModSettings.EjectEarlyPlayerAssault && mech.weightClass == WeightClass.ASSAULT)
-                    {
-                        if (TrackedPilots[i].PilotStatus >= ModSettings.EjectThresholdAssault)
-                        {
-                            return true;
-                        }
-                    }
+            // ejection
+            public bool EjectEarlyPlayerLight = true;
+            public bool EjectEarlyEnemyLight = true;
+            public PanicStatus EjectThresholdLight = PanicStatus.Stressed;
 
-                    return false;
-                }
+            public bool EjectEarlyPlayerMedium = false;
+            public bool EjectEarlyEnemyMedium = false;
+            public PanicStatus EjectThresholdMedium = PanicStatus.Stressed;
 
-                Debug($"Considering enemy {mech.DisplayName} for early panic");
-                if (ModSettings.EjectEarlyEnemyLight && mech.weightClass == WeightClass.LIGHT)
-                {
-                    if (TrackedPilots[i].PilotStatus >= ModSettings.EjectThresholdLight)
-                    {
-                        Debug($"Pilot can eject early");
-                        return true;
-                    }
-                }
+            public bool EjectEarlyPlayerHeavy = false;
+            public bool EjectEarlyEnemyHeavy = false;
+            public PanicStatus EjectThresholdHeavy = PanicStatus.Stressed;
 
-                if (ModSettings.EjectEarlyEnemyMedium && mech.weightClass == WeightClass.MEDIUM)
-                {
-                    if (TrackedPilots[i].PilotStatus >= ModSettings.EjectThresholdMedium)
-                    {
-                        return true;
-                    }
-                }
-
-                if (ModSettings.EjectEarlyEnemyHeavy && mech.weightClass == WeightClass.HEAVY)
-                {
-                    if (TrackedPilots[i].PilotStatus >= ModSettings.EjectThresholdHeavy)
-                    {
-                        return true;
-                    }
-                }
-
-                if (ModSettings.EjectEarlyEnemyAssault && mech.weightClass == WeightClass.ASSAULT)
-                {
-                    if (TrackedPilots[i].PilotStatus >= ModSettings.EjectThresholdAssault)
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
+            public bool EjectEarlyPlayerAssault = false;
+            public bool EjectEarlyEnemyAssault = false;
+            public PanicStatus EjectThresholdAssault = PanicStatus.Stressed;
+            public int MinimumHealthToAlwaysEjectRoll = 1;
+            public float MaxEjectChance = 50;
+            public float EjectChanceMultiplier = 1;
+            public bool GutsTenAlwaysResists = false;
+            public bool ComboTenAlwaysResists = false;
+            public bool TacticsTenAlwaysResists = false;
+            public bool KnockedDownCannotEject = false;
+            public bool ConsiderEjectingWithNoWeaps = false;
+            public bool ConsiderEjectingWhenAlone = false;
+            public float BaseEjectionResist = 50;
+            public float GutsEjectionResistPerPoint = 2;
+            public float TacticsEjectionResistPerPoint = 0;
+            public float MaxEjectChanceWhenEarly = 10;
         }
-    }
-
-    public class Settings
-    {
-        public bool Debug = false;
-        public bool EnableKnockDownPhrases = false;
-
-        // panic
-        public bool PlayerCharacterAlwaysResists = true;
-        public bool PlayersCanPanic = true;
-        public bool EnemiesCanPanic = true;
-        public float MinimumArmourDamagePercentageRequired = 10;
-        public bool OneChangePerTurn = false;
-        public bool LosingLimbAlwaysPanics = false;
-        public float UnsteadyModifier = 10;
-        public float PilotHealthMaxModifier = 15;
-        public float HeadMaxModifier = 15;
-        public float CenterTorsoMaxModifier = 45;
-        public float SideTorsoMaxModifier = 20;
-        public float LeggedMaxModifier = 10;
-        public float WeaponlessModifier = 10;
-        public float AloneModifier = 10;
-        public float UnsettledAttackModifier = 1;
-        public float StressedAimModifier = 1;
-        public float StressedToHitModifier = -1;
-        public float PanickedAimModifier = 2;
-        public float PanickedToHitModifier = -2;
-        public float MedianMorale = 25;
-        public float MoraleMaxModifier = 10;
-
-        // Quirks
-        public bool QuirksEnabled = false;
-        public float BraveModifier = 5;
-        public float DependableModifier = 5;
-
-        // ejection
-        public bool EjectEarlyPlayerLight = true;
-        public bool EjectEarlyEnemyLight = true;
-        public PanicStatus EjectThresholdLight = PanicStatus.Stressed;
-
-        public bool EjectEarlyPlayerMedium = false;
-        public bool EjectEarlyEnemyMedium = false;
-        public PanicStatus EjectThresholdMedium = PanicStatus.Stressed;
-
-        public bool EjectEarlyPlayerHeavy = false;
-        public bool EjectEarlyEnemyHeavy = false;
-        public PanicStatus EjectThresholdHeavy = PanicStatus.Stressed;
-
-        public bool EjectEarlyPlayerAssault = false;
-        public bool EjectEarlyEnemyAssault = false;
-        public PanicStatus EjectThresholdAssault = PanicStatus.Stressed;
-        public int MinimumHealthToAlwaysEjectRoll = 1;
-        public float MaxEjectChance = 50;
-        public float EjectChanceMultiplier = 1;
-        public bool GutsTenAlwaysResists = false;
-        public bool ComboTenAlwaysResists = false;
-        public bool TacticsTenAlwaysResists = false;
-        public bool KnockedDownCannotEject = false;
-        public bool ConsiderEjectingWithNoWeaps = false;
-        public bool ConsiderEjectingWhenAlone = false;
-        public float BaseEjectionResist = 50;
-        public float GutsEjectionResistPerPoint = 2;
-        public float TacticsEjectionResistPerPoint = 0;
-        public float MaxEjectChanceWhenEarly = 10;
     }
 }

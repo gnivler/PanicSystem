@@ -41,7 +41,7 @@ namespace PanicSystem
                     Logger.Debug($"{__instance.directorSequences[0].attacker.LogDisplayName}\n-> attacks ->\n{__instance.directorSequences[0].target.LogDisplayName}");
                     mech = (Mech) __instance.directorSequences[0].target;
 
-                    // sets global variable that last-straw is met and only when it damages target
+                    // sets shittyglobal variable that last-straw is met and only when it damages target
                     LastStraw = IsLastStrawPanicking(mech, ref PanicStarted) && damaged;
                     hasReasonToPanic = ShouldPanic(mech, attackCompleteMessage.attackSequence);
                 }
@@ -54,9 +54,10 @@ namespace PanicSystem
                 SerializeActiveJson();
 
                 // Klutz and LastStraw immediately eject, otherwise it has to have a reason and fail a save
-                if (KlutzEject | LastStraw || hasReasonToPanic && RollForEjectionResult(mech, attackCompleteMessage.attackSequence, PanicStarted))
+                if (KlutzEject | LastStraw || hasReasonToPanic && TrackedPilots[0].PilotStatus == PanicStatus.Panicked &&
+                    RollForEjectionResult(mech, attackCompleteMessage.attackSequence, PanicStarted))
                 {
-                    Logger.Debug($"FAILED SAVE: Punchin' Out!!");
+                    Logger.Debug($"Failed ejection save");
 
                     // this is necessary to avoid vanilla hangs.  the list has nulls so the try/catch deals with silently.  thanks jo
                     var combat = Traverse.Create(__instance).Property("Combat").GetValue<CombatGameState>();
@@ -148,20 +149,20 @@ namespace PanicSystem
                     if (TrackedPilots[index].PilotStatus == PanicStatus.Unsettled)
                     {
                         Logger.Debug("IMPROVED TO UNSETTLED!");
-                        __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"IMPROVED TO UNSETTLED", FloatieMessage.MessageNature.Buff, true)));
+                        __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"IMPROVED TO UNSETTLED", FloatieMessage.MessageNature.Buff, false)));
                         __instance.StatCollection.ModifyStat("Panic Turn: Unsettled Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, ModSettings.UnsettledAttackModifier);
                     }
                     else if (TrackedPilots[index].PilotStatus == PanicStatus.Stressed)
                     {
                         Logger.Debug("IMPROVED TO STRESSED!");
-                        __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"IMPROVED TO STRESSED", FloatieMessage.MessageNature.Buff, true)));
+                        __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"IMPROVED TO STRESSED", FloatieMessage.MessageNature.Buff, false)));
                         __instance.StatCollection.ModifyStat("Panic Turn: Stressed Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, ModSettings.StressedAimModifier);
                         __instance.StatCollection.ModifyStat("Panic Turn: Stressed Defence", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, ModSettings.StressedToHitModifier);
                     }
                     else
                     {
                         Logger.Debug("IMPROVED TO CONFIDENT!");
-                        __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, "IMPROVED TO CONFIDENT", FloatieMessage.MessageNature.Buff, true)));
+                        __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, "IMPROVED TO CONFIDENT", FloatieMessage.MessageNature.Buff, false)));
                     }
                 }
 
@@ -194,7 +195,10 @@ namespace PanicSystem
             private static void Postfix(Mech __instance)
             {
                 var mech = __instance;
-                if (mech == null || mech.IsDead || mech.IsFlaggedForDeath && mech.HasHandledDeath) return;
+                if (mech == null || mech.IsDead || mech.IsFlaggedForDeath && mech.HasHandledDeath)
+                {
+                    return;
+                }
 
                 var index = GetTrackedPilotIndex(mech);
                 if (!ModSettings.LosingLimbAlwaysPanics)
@@ -207,7 +211,7 @@ namespace PanicSystem
                     return;
                 }
 
-                if (TrackedPilots[index].TrackedMech == mech.GUID && TrackedPilots[index].ChangedRecently && ModSettings.OneChangePerTurn)
+                if (TrackedPilots[index].ChangedRecently && ModSettings.OneChangePerTurn)
                 {
                     return;
                 }

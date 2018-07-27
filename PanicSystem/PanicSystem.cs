@@ -286,6 +286,7 @@ namespace PanicSystem
         {
             if (mech == null || mech.IsDead || mech.IsFlaggedForDeath && !mech.HasHandledDeath)
             {
+                Debug($"Should not be here");
                 return false;
             }
 
@@ -295,17 +296,19 @@ namespace PanicSystem
                 return false;
             }
 
+            Debug("1");
             if (!attackSequence.attackDidDamage)
             {
                 return false;
             }
 
+            Debug("2");
             var pilot = mech.GetPilot();
             if (pilot == null)
             {
                 return false;
             }
-
+            Debug("3");
             var weapons = mech.Weapons;
             var guts = mech.SkillGuts;
             var tactics = mech.SkillTactics;
@@ -315,7 +318,7 @@ namespace PanicSystem
             {
                 return false;
             }
-
+            Debug("4");
             // start building ejectModifiers
             float ejectModifiers = 0;
             Debug($"Collecting ejection modifiers:");
@@ -395,8 +398,8 @@ namespace PanicSystem
             }
 
             // calculate result
-            ejectModifiers = Math.Max(0f, (ejectModifiers - ModSettings.BaseEjectionResist -
-                                           ModSettings.GutsEjectionResistPerPoint * guts - ModSettings.TacticsEjectionResistPerPoint * tactics) * ModSettings.EjectChanceMultiplier);
+            ejectModifiers = Math.Max(0f, (ejectModifiers - ModSettings.BaseEjectionResist - ModSettings.GutsEjectionResistPerPoint *
+                                           guts - ModSettings.TacticsEjectionResistPerPoint * tactics) * ModSettings.EjectChanceMultiplier);
             Debug($"After calculation: {ejectModifiers:0.###}");
 
             var savingThrow = (float) Math.Round(ejectModifiers);
@@ -667,13 +670,13 @@ namespace PanicSystem
                 (mech.SummaryArmorCurrent + mech.SummaryStructureCurrent) / (mech.SummaryArmorMax + mech.SummaryStructureMax) <= .15)
             {
                 Debug($"Last straw: Health and mech condition");
-                return true;
-            }
 
-            if (ModSettings.ConsiderEjectingWithNoWeaps && mech.Weapons.TrueForAll(w => w.DamageLevel == ComponentDamageLevel.Destroyed))
-            {
-                Debug($"Last straw: Weaponless");
-                return true;
+
+                if (ModSettings.ConsiderEjectingWithNoWeaps && mech.Weapons.TrueForAll(w => w.DamageLevel == ComponentDamageLevel.Destroyed))
+                {
+                    Debug($"Last straw: Weaponless");
+                    return true;
+                }
             }
 
             var enemyHealth = GetAllEnemiesHealth(mech);
@@ -683,15 +686,6 @@ namespace PanicSystem
             {
                 Debug($"Last straw: Sole Survivor, hopeless situation");
                 return true;
-            }
-
-            if (i > -1)
-            {
-                if (TrackedPilots[i].TrackedMech == mech.GUID && TrackedPilots[i].PilotStatus == PanicStatus.Panicked)
-                {
-                    Debug($"Pilot is panicked!");
-                    return true;
-                }
             }
 
             return false;

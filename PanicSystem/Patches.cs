@@ -35,16 +35,16 @@ namespace PanicSystem
                 var attack = Traverse.Create(__instance).Field("directorSequences").GetValue<List<AttackDirector.AttackSequence>>();
                 var damaged = attack.Any(x => x.attackDidDamage);
 
-                if (__instance.directorSequences[0].target is Mech) // can't do stuff with vehicles and buildings
+                if (!(__instance.directorSequences[0].target is Mech)) // can't do stuff with vehicles and buildings
                 {
-                    Logger.Debug(new string(c: '-', count: 60));
-                    Logger.Debug($"{__instance.directorSequences[0].attacker.LogDisplayName}\n-> attacks ->\n{__instance.directorSequences[0].target.LogDisplayName}");
-                    mech = (Mech) __instance.directorSequences[0].target;
-
-                    // sets shittyglobal variable that last-straw is met and only when it damages target
-                    LastStraw = IsLastStrawPanicking(mech) && damaged;
-                    hasReasonToPanic = ShouldPanic(mech, attackCompleteMessage.attackSequence);
+                    return;
                 }
+
+                Logger.Debug(new string(c: '-', count: 60));
+                Logger.Debug($"{__instance.directorSequences[0].attacker.LogDisplayName}\n-> attacks ->\n{__instance.directorSequences[0].target.LogDisplayName}");
+                mech = (Mech) __instance.directorSequences[0].target;
+
+                hasReasonToPanic = ShouldPanic(mech, attackCompleteMessage.attackSequence);
 
                 if (mech?.GUID == null)
                 {
@@ -54,10 +54,16 @@ namespace PanicSystem
                 SerializeActiveJson();
 
                 // Klutz and LastStraw immediately eject, otherwise it has to have a reason and fail a save
-                if (KlutzEject | LastStraw || hasReasonToPanic && TrackedPilots[0].PilotStatus == PanicStatus.Panicked &&
-                    RollForEjectionResult(mech, attackCompleteMessage.attackSequence))
+                if (!(KlutzEject | IsLastStrawPanicking(mech) && damaged ||
+                      ShouldPanic(mech, attackCompleteMessage.attackSequence) &&
+                      TrackedPilots[0].PilotStatus == PanicStatus.Panicked))
                 {
-                    Logger.Debug($"Failed ejection save");
+                    return;
+                }
+
+                {
+                    RollForEjectionResult(mech, attackCompleteMessage.attackSequence))
+                    //Logger.Debug($"Failed ejection save");
 
                     // this is necessary to avoid vanilla hangs.  the list has nulls so the try/catch deals with silently.  thanks jo
                     var combat = Traverse.Create(__instance).Property("Combat").GetValue<CombatGameState>();

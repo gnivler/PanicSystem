@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using BattleTech;
 using BattleTech.Save;
@@ -9,13 +8,15 @@ using Harmony;
 using static PanicSystem.Controller;
 using static PanicSystem.PanicSystem;
 
+// ReSharper disable UnusedMember.Local
+
 // HUGE thanks to RealityMachina and mpstark for their work, outstanding.
 namespace PanicSystem
 {
     public static class Patches
     {
         [HarmonyPatch(typeof(AttackStackSequence), "OnAttackComplete")]
-        public static class AttackStackSequence_OnAttackComplete_Patch
+        public static class AttackStackSequenceOnAttackCompletePatch
         {
             public static void Prefix(AttackStackSequence __instance, MessageCenterMessage message)
             {
@@ -66,6 +67,7 @@ namespace PanicSystem
                         {
                             mech.CancelEffect(effect);
                         }
+                        // ReSharper disable once EmptyGeneralCatchClause
                         catch // deliberately silent
                         {
                         }
@@ -77,7 +79,7 @@ namespace PanicSystem
         }
 
         [HarmonyPatch(typeof(AbstractActor), "OnNewRound")]
-        public static class AbstractActor_BeginNewRound_Patch
+        public static class AbstractActorBeginNewRoundPatch
         {
             public static void Prefix(AbstractActor __instance)
             {
@@ -88,14 +90,13 @@ namespace PanicSystem
 
                 var foundPilot = false;
                 var pilot = mech.GetPilot();
-                var index = -1;
 
                 if (pilot == null)
                 {
                     return;
                 }
 
-                index = GetTrackedPilotIndex(mech);
+                var index = GetTrackedPilotIndex(mech);
                 if (index > -1)
                 {
                     foundPilot = true;
@@ -116,8 +117,9 @@ namespace PanicSystem
                     }
                 }
 
+// todo make sure this isn't fucked either
                 var originalStatus = TrackedPilots[index].PilotStatus;
-                if (foundPilot && !TrackedPilots[index].ChangedRecently)
+                if (!TrackedPilots[index].ChangedRecently)
                 {
                     switch (TrackedPilots[index].PilotStatus)
                     {
@@ -178,7 +180,7 @@ namespace PanicSystem
         }
 
         [HarmonyPatch(typeof(AAR_SalvageScreen), "OnCompleted")]
-        public static class Battletech_SalvageScreen_Patch
+        public static class BattletechSalvageScreenPatch
         {
             private static void Postfix()
             {
@@ -187,7 +189,7 @@ namespace PanicSystem
         }
 
         [HarmonyPatch(typeof(Mech), "OnLocationDestroyed")]
-        public static class Battletech_Mech_LocationDestroyed_Patch
+        public static class BattletechMechLocationDestroyedPatch
         {
             private static void Postfix(Mech __instance)
             {
@@ -195,28 +197,38 @@ namespace PanicSystem
                 if (mech == null || mech.IsDead || mech.IsFlaggedForDeath && mech.HasHandledDeath) return;
 
                 var index = GetTrackedPilotIndex(mech);
-                if (ModSettings.LosingLimbAlwaysPanics)
+                if (!ModSettings.LosingLimbAlwaysPanics)
                 {
-                    if (TrackedPilots[index].TrackedMech != mech.GUID) return;
-
-                    if (TrackedPilots[index].TrackedMech == mech.GUID && TrackedPilots[index].ChangedRecently && ModSettings.OneChangePerTurn) return;
-
-                    if (index < 0)
-                    {
-                        TrackedPilots.Add(new PanicTracker(mech)); //add a new tracker to tracked pilot, then we run it all over again;
-                        index = GetTrackedPilotIndex(mech);
-                        if (index < 0) // G  Why does this matter?
-                            return;
-                    }
-
-                    ApplyPanicDebuff(mech, index);
+                    return;
                 }
+
+                if (TrackedPilots[index].TrackedMech != mech.GUID)
+                {
+                    return;
+                }
+
+                if (TrackedPilots[index].TrackedMech == mech.GUID && TrackedPilots[index].ChangedRecently && ModSettings.OneChangePerTurn)
+                {
+                    return;
+                }
+
+                if (index < 0)
+                {
+                    TrackedPilots.Add(new PanicTracker(mech)); //add a new tracker to tracked pilot, then we run it all over again;
+                    index = GetTrackedPilotIndex(mech);
+                    if (index < 0) // G  Why does this matter?
+                    {
+                        return;
+                    }
+                }
+
+                ApplyPanicDebuff(mech, index);
             }
         }
 
         [HarmonyPatch(typeof(GameInstanceSave))]
         [HarmonyPatch(new[] {typeof(GameInstance), typeof(SaveReason)})]
-        public static class GameInstanceSave_Constructor_Patch
+        public static class GameInstanceSaveConstructorPatch
         {
             private static void Postfix(GameInstanceSave __instance)
             {
@@ -225,7 +237,7 @@ namespace PanicSystem
         }
 
         [HarmonyPatch(typeof(GameInstance), "Load")]
-        public static class GameInstance_Load_Patch
+        public static class GameInstanceLoadPatch
         {
             private static void Prefix(GameInstanceSave save)
             {
@@ -234,7 +246,7 @@ namespace PanicSystem
         }
 
         [HarmonyPatch(typeof(SimGameState), "_OnFirstPlayInit")]
-        public static class SimGameState_FirstPlayInit_Patch
+        public static class SimGameStateFirstPlayInitPatch
         {
             private static void Postfix(SimGameState __instance) //we're doing a new campaign, so we need to sync the json with the new addition
             {

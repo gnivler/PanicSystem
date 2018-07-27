@@ -3,7 +3,7 @@
 
   "Enabled": true,
 
-  "Version": "2.6",
+  "Version": "2.7",
   "Description": "Adds basic panic system, based on mpstark's Punchin' Out.",
   "Author": "RealityMachina, forked from mpstark's work - Hard forked and Modified by donZappo and gnivler",
   "Website": "https://github.com/gnivler/PanicSystem",
@@ -36,7 +36,6 @@
     "PanickedToHitModifier": -2,
     "Median Morale": 50,
     "MoraleMaxModifier": 10,
-    "HeatModifier": 10,
     
     /* Quirks */
     "QuirksEnabled": true,
@@ -72,6 +71,6 @@
     "BaseEjectionResist": 50,
     "GutsEjectionResistPerPoint": 2,
     "TacticsEjectionResistPerPoint": 0,
-    "MaxEjectChanceWhenEarly": 10,
+    "MaxEjectChanceWhenEarly": 10
   }
 }

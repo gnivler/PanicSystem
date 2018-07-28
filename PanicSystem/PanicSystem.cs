@@ -50,7 +50,7 @@ namespace PanicSystem
                 ModSettings = new Settings();
             }
 
-            if (!ModSettings.EnableKnockDownPhrases)
+            if (!ModSettings.EnableKnockdownPhrases)
             {
                 return;
             }
@@ -141,6 +141,7 @@ namespace PanicSystem
             {
                 return false;
             }
+
 /*
             if (!CheckTrackedPilots(mech))
             {
@@ -191,7 +192,7 @@ namespace PanicSystem
                         return true;
                     }
                 }
-                else if (ModSettings.EnableKnockDownPhrases)
+                else if (ModSettings.EnableKnockdownPhrases)
                 {
                     var message = KnockDownPhraseList[Rng.Next(0, KnockDownPhraseList.Count - 1)];
                     mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
@@ -284,7 +285,11 @@ namespace PanicSystem
                     TrackedPilots[index].PilotStatus = (PanicStatus) status;
                 }
 
-                ShowStatusFloatie(mech);
+                if ((int) TrackedPilots[index].PilotStatus > 0) // prevent floatie if already at Confident (0)
+                {
+                    ShowStatusFloatie(mech);
+                }
+
                 return false;
             }
 
@@ -297,7 +302,7 @@ namespace PanicSystem
             var index = GetTrackedPilotIndex(mech);
             var floatieString = $"{TrackedPilots[index].PilotStatus.ToString()}";
             mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
-                    new ShowActorInfoSequence(mech, floatieString, FloatieMessage.MessageNature.Debuff, false)));
+                new ShowActorInfoSequence(mech, floatieString, FloatieMessage.MessageNature.Debuff, false)));
         }
 
         /// <summary>
@@ -382,7 +387,7 @@ namespace PanicSystem
                         return true;
                     }
                 }
-                else if (ModSettings.EnableKnockDownPhrases)
+                else if (ModSettings.EnableKnockdownPhrases)
                 {
                     var message = KnockDownPhraseList[Rng.Next(0, KnockDownPhraseList.Count - 1)];
                     mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
@@ -711,7 +716,7 @@ namespace PanicSystem
         public class Settings
         {
             public bool Debug = false;
-            public bool EnableKnockDownPhrases = false;
+            public bool EnableKnockdownPhrases = false;
 
             // panic
             public bool PlayersCanPanic = true;

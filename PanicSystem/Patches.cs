@@ -38,7 +38,10 @@ namespace PanicSystem
                       $"{__instance.directorSequences[0].target.LogDisplayName}");
 
                 var mech = (Mech) __instance.directorSequences[0].target;
-                if (!ShouldPanic(mech, attackCompleteMessage?.attackSequence)) return;
+                if (!ShouldPanic(mech, attackCompleteMessage?.attackSequence))
+                {
+                    return;
+                }
 
                 if (KlutzEject)
                 {

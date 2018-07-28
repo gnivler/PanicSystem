@@ -20,18 +20,17 @@ namespace PanicSystem
 {
     public static class Patches
     {
- 
         [HarmonyPatch(typeof(AttackStackSequence), "OnAttackComplete")]
         public static class AttackStackSequenceOnAttackCompletePatch
         {
             public static void Prefix(AttackStackSequence __instance, MessageCenterMessage message)
             {
                 var stopwatch = new Stopwatch();
-                stopwatch.Reset();
                 if (SkipProcessingAttack(__instance, message))
                 {
                     return;
                 }
+
 // TODO test multi-shot
                 var attackCompleteMessage = message as AttackCompleteMessage;
                 Debug(new string(c: '-', count: 60));
@@ -47,12 +46,14 @@ namespace PanicSystem
                     mech.EjectPilot(mech.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
                     KlutzEject = false;
                 }
+
                 stopwatch.Start();
                 if (!FailedPanicSave(mech))
                 {
                     Debug($"Runtime to FailedPanicSave: {stopwatch.ElapsedMilliSeconds}");
                     return;
                 }
+
                 var index = GetTrackedPilotIndex(mech);
                 if (TrackedPilots[index].PilotStatus != PanicStatus.Panicked)
                 {
@@ -162,13 +163,12 @@ namespace PanicSystem
                     if (TrackedPilots[index].PilotStatus == PanicStatus.Unsettled)
                     {
                         Debug("IMPROVED TO UNSETTLED!");
-                        __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"IMPROVED TO UNSETTLED", FloatieMessage.MessageNature.Buff, false)));
+                        __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, "IMPROVED TO UNSETTLED", FloatieMessage.MessageNature.Buff, false)));
                         __instance.StatCollection.ModifyStat("Panic Turn: Unsettled Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, ModSettings.UnsettledAttackModifier);
                     }
                     else if (TrackedPilots[index].PilotStatus == PanicStatus.Stressed)
                     {
                         Debug("IMPROVED TO STRESSED!");
-                        __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, $"IMPROVED TO STRESSED", FloatieMessage.MessageNature.Buff, false)));
                         __instance.StatCollection.ModifyStat("Panic Turn: Stressed Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, ModSettings.StressedAimModifier);
                         __instance.StatCollection.ModifyStat("Panic Turn: Stressed Defence", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, ModSettings.StressedToHitModifier);
                     }
@@ -177,6 +177,8 @@ namespace PanicSystem
                         Debug("IMPROVED TO CONFIDENT!");
                         __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, "IMPROVED TO CONFIDENT", FloatieMessage.MessageNature.Buff, false)));
                     }
+
+                    ShowStatusFloatie(mech, "IMPROVED TO ");
                 }
 
                 SaveTrackedPilots();

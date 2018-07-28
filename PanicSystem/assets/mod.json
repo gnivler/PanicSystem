@@ -15,7 +15,6 @@
     "EnableKnockDownPhrases": false,
     
     /* panic */
-    "PlayerCharacterAlwaysResists": false,
     "PlayersCanPanic": true,
     "EnemiesCanPanic": true,
     "MinimumArmourDamagePercentageRequired": 10,
@@ -36,6 +35,9 @@
     "PanickedToHitModifier": -2,
     "Median Morale": 50,
     "MoraleMaxModifier": 10,
+    "MechHealthAlone": 50,     /* minimum health for 'Alone' last straw */
+    "MechHealthForCrit": 90,   /* minimum healt for panic crits to occur */
+    "CritOver": 70,            /* number by which a save must fail to cause a crit */
     
     /* Quirks */
     "QuirksEnabled": true,
@@ -43,18 +45,13 @@
     "DependableModifier": 5,
 
     /* ejection */
-    "MinimumHealthToAlwaysEjectRoll": 1,
     "MaxEjectChance": 50,
     "EjectChanceMultiplier": 1,
-    "GutsTenAlwaysResists": false,
-    "ComboTenAlwaysResists": false,
-    "TacticsTenAlwaysResists": false,
     "KnockedDownCannotEject": false,
     "ConsiderEjectingWithNoWeaps": false,
     "ConsiderEjectingWhenAlone": false,
     "BaseEjectionResist": 50,
     "GutsEjectionResistPerPoint": 2,
     "TacticsEjectionResistPerPoint": 0,
-    "MaxEjectChanceWhenEarly": 10
   }
 }

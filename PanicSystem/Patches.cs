@@ -135,24 +135,9 @@ namespace PanicSystem
 
                 // reduce panic level
                 var originalStatus = TrackedPilots[index].PilotStatus;
-                if (!TrackedPilots[index].ChangedRecently)
+                if (!TrackedPilots[index].ChangedRecently && (int)TrackedPilots[index].PilotStatus > 0)
                 {
-                    switch (TrackedPilots[index].PilotStatus)
-                    {
-                        case PanicStatus.Unsettled:
-                            TrackedPilots[index].PilotStatus = PanicStatus.Confident;
-                            break;
-                        case PanicStatus.Stressed:
-                            TrackedPilots[index].PilotStatus = PanicStatus.Unsettled;
-                            break;
-                        case PanicStatus.Panicked:
-                            TrackedPilots[index].PilotStatus = PanicStatus.Stressed;
-                            break;
-                    }
-                }
-
-                if (TrackedPilots[index].ChangedRecently)
-                {
+                    TrackedPilots[index].PilotStatus--;
                     TrackedPilots[index].ChangedRecently = false;
                 }
                 else if (TrackedPilots[index].PilotStatus != originalStatus) // status has changed, reset modifiers
@@ -177,7 +162,7 @@ namespace PanicSystem
                         Debug("IMPROVED TO CONFIDENT!");
                         __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, "IMPROVED TO CONFIDENT", FloatieMessage.MessageNature.Buff, false)));
                     }
-
+                    // TODO do we need to add ChangedRecently = true;?
                     ShowStatusFloatie(mech, "IMPROVED TO ");
                 }
 
@@ -188,10 +173,28 @@ namespace PanicSystem
         [HarmonyPatch(typeof(GameInstance), "LaunchContract", new[] {typeof(Contract), typeof(string)})]
         public static class BattleTech_GameInstance_LaunchContract_Patch
         {
-            private static void Postfix()
+            private static void Postfix(GameInstance __instance)
             {
                 // reset on new contracts
                 Reset();
+                Debug("Done reset");
+            }
+        }
+
+        // TODO this may not be necessary but I saw a game where 2 mechs were not tracked for unknown reasons
+        [HarmonyPatch(typeof(CombatGameState), "_Init")]
+        public static class CombatGameStatePatch
+        {
+            public static void Postfix(CombatGameState __instance)
+            {
+                var combat = __instance;
+                Debug($"Trying to initialize CGS, mech list should follow");
+                foreach (var mech in combat.AllMechs)
+                {
+                    Debug($"And: {mech.LogDisplayName}");
+                    CheckTrackedPilots(mech);
+                    Debug($"None of these should be -1: {GetTrackedPilotIndex(mech)}");
+                }
             }
         }
 

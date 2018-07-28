@@ -141,13 +141,12 @@ namespace PanicSystem
             {
                 return false;
             }
-
-            var index = GetTrackedPilotIndex(mech);
-            if (!CheckTrackedPilots(mech, ref index))
+/*
+            if (!CheckTrackedPilots(mech))
             {
                 return false;
             }
-
+*/
             if (WasEnoughDamageDone(mech, attackSequence) || MetLastStraw(mech))
             {
                 return true;
@@ -296,10 +295,8 @@ namespace PanicSystem
         public static void ShowStatusFloatie(Mech mech, string prefix = "")
         {
             var index = GetTrackedPilotIndex(mech);
-            var panicStatus = TrackedPilots[index].PilotStatus;
             var floatieString = $"{TrackedPilots[index].PilotStatus.ToString()}";
-            mech.Combat.MessageCenter.PublishMessage(
-                new AddSequenceToStackMessage(
+            mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
                     new ShowActorInfoSequence(mech, floatieString, FloatieMessage.MessageNature.Debuff, false)));
         }
 
@@ -539,8 +536,9 @@ namespace PanicSystem
         /// <param name="mech"></param>
         /// <param name="index"></param>
         /// <returns></returns>
-        private static bool CheckTrackedPilots(Mech mech, ref int index)
+        public static bool CheckTrackedPilots(Mech mech)
         {
+            var index = GetTrackedPilotIndex(mech);
             if (index < 0)
             {
                 TrackedPilots.Add(new PanicTracker(mech)); // add a new tracker to tracked pilot, then we run it all over again

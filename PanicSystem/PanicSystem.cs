@@ -372,12 +372,6 @@ namespace PanicSystem
                         return true;
                     }
                 }
-                else if (ModSettings.EnableEjectPhrases)
-                {
-                    var message = EjectPhraseList[Rng.Next(0, EjectPhraseList.Count - 1)];
-                    mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
-                        (new ShowActorInfoSequence(mech, message, FloatieMessage.MessageNature.Debuff, false)));
-                }
 
                 ejectModifiers += ModSettings.UnsteadyModifier;
                 Debug($"Knockdown adds {ModSettings.UnsteadyModifier}, now {ejectModifiers:0.###}");

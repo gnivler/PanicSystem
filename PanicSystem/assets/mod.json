@@ -3,7 +3,7 @@
 
   "Enabled": true,
 
-  "Version": "2.7",
+  "Version": "2.8",
   "Description": "Causes pilots to panic and eject based on multiple criteria.",
   "Author": "Hard forked and modified by donZappo and gnivler, with original design by mpstark and RealityMachina",
   "Website": "https://github.com/gnivler/PanicSystem",
@@ -12,46 +12,52 @@
 
   "Settings": {
     "Debug": false,
-    "EnableKnockDownPhrases": false,
+    "EnableEjectPhrases": true, // floaties at eject
     
-    /* panic */
+    /* Panic Settings */
     "PlayersCanPanic": true,
     "EnemiesCanPanic": true,
-    "MinimumArmourDamagePercentageRequired": 10,
+	"KnockedDownCannotEject": false,
+    "ConsiderEjectingWithNoWeaps": false,
+    "ConsiderEjectingWhenAlone": false,
+	"LosingLimbAlwaysPanics": false,
     "OneChangePerTurn": false,
-    "LosingLimbAlwaysPanics": false,
-    "UnsteadyModifier": 10,
-    "PilotHealthMaxModifier": 15,
-    "HeadMaxModifier": 15,
-    "CenterTorsoMaxModifier": 45,
-    "SideTorsoMaxModifier": 20,
-    "LeggedMaxModifier": 10,
-    "WeaponlessModifier": 10,
-    "AloneModifier": 10,
+	"MinimumArmourDamagePercentageRequired": 5,
+
+	/* Effect Modifiers */
+    "UnsteadyModifier": 5,
+    "PilotHealthMaxModifier": 30,
+    "HeadMaxModifier": 30,
+    "CenterTorsoMaxModifier": 75,
+    "SideTorsoMaxModifier": 35,
+    "LeggedMaxModifier": 20,
+    "WeaponlessModifier": 15,
+    "AloneModifier": 20,
+    "MedianMorale": 25,
+    "MoraleMaxModifier": 10,
+
+	/* Ejection Bonuses and Limits */
+    "GutsEjectionResistPerPoint": 4,
+    "TacticsEjectionResistPerPoint": 0,	
+	"BaseEjectionResist": 50,
+	"MaxEjectChance": 50,
+    "EjectChanceMultiplier": 0.75,
+    
+    /* Pilot Quirk Effects */
+    "QuirksEnabled": true,
+    "BraveModifier": 5,
+    "DependableModifier": 5,
+
+	/* Penalties To Panic States */
     "UnsettledAttackModifier": 1,
     "StressedAimModifier": 1,
     "StressedToHitModifier": -1,
     "PanickedAimModifier": 2,
     "PanickedToHitModifier": -2,
-    "Median Morale": 50,
-    "MoraleMaxModifier": 10,
-    "MechHealthAlone": 50,     /* minimum health for 'Alone' last straw */
-    "MechHealthForCrit": 90,   /* minimum healt for panic crits to occur */
-    "CritOver": 70,            /* number by which a save must fail to cause a crit */
-    
-    /* Quirks */
-    "QuirksEnabled": true,
-    "BraveModifier": 5,
-    "DependableModifier": 5,
 
-    /* ejection */
-    "MaxEjectChance": 50,
-    "EjectChanceMultiplier": 1,
-    "KnockedDownCannotEject": false,
-    "ConsiderEjectingWithNoWeaps": false,
-    "ConsiderEjectingWhenAlone": false,
-    "BaseEjectionResist": 50,
-    "GutsEjectionResistPerPoint": 2,
-    "TacticsEjectionResistPerPoint": 0,
-  }
+	/* Critical Panic */
+	"MechHealthAlone": 25,     /* minimum health for 'Alone' last straw */
+    "MechHealthForCrit": 75,   /* minimum health for panic crits to occur */
+    "CritOver": 70,            /* number by which a save must fail to cause a crit */
+	}
 }

@@ -22,8 +22,8 @@ namespace PanicSystem
         internal static string ModDirectory;
         internal static bool KlutzEject;
         internal static readonly Random Rng = new Random();
-        internal static List<string> KnockDownPhraseList = new List<string>();
-        internal static string KnockDownPhraseListPath;
+        internal static List<string> EjectPhraseList = new List<string>();
+        internal static string EjectPhraseListPath;
 
         // I put in shitty global bool because it was easiest at the time, sorry!
         // forces ejection saves every attack that cause any damage
@@ -50,20 +50,20 @@ namespace PanicSystem
                 ModSettings = new Settings();
             }
 
-            if (!ModSettings.EnableKnockdownPhrases)
+            if (!ModSettings.EnableEjectPhrases)
             {
                 return;
             }
 
             try
             {
-                KnockDownPhraseListPath = Path.Combine(modDir, "phrases.txt");
-                var reader = new StreamReader(KnockDownPhraseListPath);
+                EjectPhraseListPath = Path.Combine(modDir, "phrases.txt");
+                var reader = new StreamReader(EjectPhraseListPath);
                 using (reader)
                 {
                     while (!reader.EndOfStream)
                     {
-                        KnockDownPhraseList.Add(reader.ReadLine());
+                        EjectPhraseList.Add(reader.ReadLine());
                     }
                 }
             }
@@ -192,12 +192,6 @@ namespace PanicSystem
                         return true;
                     }
                 }
-                else if (ModSettings.EnableKnockdownPhrases)
-                {
-                    var message = KnockDownPhraseList[Rng.Next(0, KnockDownPhraseList.Count - 1)];
-                    mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
-                        (new ShowActorInfoSequence(mech, message, FloatieMessage.MessageNature.Debuff, false)));
-                }
 
                 panicModifiers += ModSettings.UnsteadyModifier;
                 Debug($"Knockdown adds {ModSettings.UnsteadyModifier}, now {panicModifiers:0.###}");
@@ -285,7 +279,8 @@ namespace PanicSystem
                     TrackedPilots[index].PilotStatus = (PanicStatus) status;
                 }
 
-                if ((int) TrackedPilots[index].PilotStatus > 0) // prevent floatie if already at Confident (0)
+                var pilotStatus = (int) TrackedPilots[index].PilotStatus;
+                if (pilotStatus > 0 && pilotStatus != 3) // prevent floatie if already at Confident (0)
                 {
                     ShowStatusFloatie(mech);
                 }
@@ -387,9 +382,9 @@ namespace PanicSystem
                         return true;
                     }
                 }
-                else if (ModSettings.EnableKnockdownPhrases)
+                else if (ModSettings.EnableEjectPhrases)
                 {
-                    var message = KnockDownPhraseList[Rng.Next(0, KnockDownPhraseList.Count - 1)];
+                    var message = EjectPhraseList[Rng.Next(0, EjectPhraseList.Count - 1)];
                     mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
                         (new ShowActorInfoSequence(mech, message, FloatieMessage.MessageNature.Debuff, false)));
                 }
@@ -716,7 +711,7 @@ namespace PanicSystem
         public class Settings
         {
             public bool Debug = false;
-            public bool EnableKnockdownPhrases = false;
+            public bool EnableEjectPhrases = false;
 
             // panic
             public bool PlayersCanPanic = true;

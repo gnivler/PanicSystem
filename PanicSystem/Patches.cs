@@ -67,13 +67,19 @@ namespace PanicSystem
                 {
                     Debug("Eject");
                     Debug($"Runtime to ejection: {stopwatch.ElapsedMilliSeconds}");
+                    if (ModSettings.EnableEjectPhrases)
+                    {
+                        var ejectMessage = EjectPhraseList[Rng.Next(0, EjectPhraseList.Count - 1)];
+                        mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
+                            (new ShowActorInfoSequence(mech, ejectMessage, FloatieMessage.MessageNature.Debuff, false)));
+                    }
                     mech.EjectPilot(mech.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
                 }
 
                 // never saw over 20ms
                 Debug($"Runtime to exit {stopwatch.ElapsedMilliSeconds}");
 
-/*
+
                 if (!(FailedEjectSave(mech, attackCompleteMessage?.attackSequence)))
                 {
                     return;
@@ -92,7 +98,7 @@ namespace PanicSystem
                     catch // deliberately silent
                     {
                     }
-*/
+
             }
 
             private static bool SkipProcessingAttack(AttackStackSequence __instance, MessageCenterMessage message)

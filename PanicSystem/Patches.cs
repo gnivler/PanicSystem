@@ -52,7 +52,6 @@ namespace PanicSystem
                 stopwatch.Start();
                 if (!FailedPanicSave(mech))
                 {
-                    Debug($"Runtime to FailedPanicSave: {stopwatch.ElapsedMilliSeconds}");
                     return;
                 }
 
@@ -64,7 +63,7 @@ namespace PanicSystem
 
                 if (FailedEjectSave(mech, attackCompleteMessage.attackSequence))
                 {
-                    Debug("Eject");
+                    Debug("Ejecting");
                     if (ModSettings.EnableEjectPhrases)
                     {
                         var ejectMessage = EjectPhraseList[Rng.Next(0, EjectPhraseList.Count - 1)];
@@ -73,6 +72,7 @@ namespace PanicSystem
                     }
 
                     // this is necessary to avoid vanilla hangs.  the list has nulls so the try/catch deals with silently.  thanks jo
+                    Debug("Removing effects");
                     var combat = Traverse.Create(__instance).Property("Combat").GetValue<CombatGameState>();
                     var effectsTargeting = combat.EffectManager.GetAllEffectsTargeting(mech);
 
@@ -87,14 +87,10 @@ namespace PanicSystem
                         }
 
                     mech.EjectPilot(mech.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
+                    Debug("Ejected");
                 }
 
                 Debug($"Runtime to exit {stopwatch.ElapsedMilliSeconds}");
-
-                if (!(FailedEjectSave(mech, attackCompleteMessage?.attackSequence)))
-                {
-                    return;
-                }
             }
 
             private static bool SkipProcessingAttack(AttackStackSequence __instance, MessageCenterMessage message)

@@ -25,10 +25,6 @@ namespace PanicSystem
         internal static List<string> EjectPhraseList = new List<string>();
         internal static string EjectPhraseListPath;
 
-        // I put in shitty global bool because it was easiest at the time, sorry!
-        // forces ejection saves every attack that cause any damage
-        public static bool LastStraw;
-
         public static void Init(string modDir, string modSettings)
         {
             var harmony = HarmonyInstance.Create("com.BattleTech.PanicSystem");
@@ -142,16 +138,9 @@ namespace PanicSystem
                 return false;
             }
 
-            if (WasEnoughDamageDone(mech, attackSequence) || MetLastStraw(mech))
-            {
-                return true;
-            }
-
-            return false;
+            return WasEnoughDamageDone(mech, attackSequence) || MetLastStraw(mech);
         }
 
-        
-        
         public static bool FailedPanicSave(Mech mech)
         {
             var pilot = mech.GetPilot();
@@ -255,12 +244,16 @@ namespace PanicSystem
                 {
                     Debug("Critical failure on panic save");
                     ApplyPanicDebuff(mech);
+                    ShowStatusFloatie(mech);
                     mech.Combat.MessageCenter.PublishMessage(
                         new AddSequenceToStackMessage(
                             new ShowActorInfoSequence(mech, "PANIC CRIT!", FloatieMessage.MessageNature.Debuff, false)));
                 }
 
-                ShowStatusFloatie(mech, "FAILED! ");
+                if ((int) TrackedPilots[index].PilotStatus != 3)
+                {
+                    ShowStatusFloatie(mech); // show both floaties on a panic crit
+                }
                 return true;
             }
 
@@ -270,13 +263,15 @@ namespace PanicSystem
                 if (TrackedPilots[index].PilotStatus != PanicStatus.Panicked &&
                     (int) TrackedPilots[index].PilotStatus > 0) // don't lower below floor
                 {
+                    mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
+                        (new ShowActorInfoSequence(mech, "CRIT SUCCESS!", FloatieMessage.MessageNature.Debuff, false)));
                     var status = (int) TrackedPilots[index].PilotStatus;
                     status--;
                     TrackedPilots[index].PilotStatus = (PanicStatus) status;
                 }
 
                 var pilotStatus = (int) TrackedPilots[index].PilotStatus;
-                if (pilotStatus > 0 && pilotStatus != 3) // prevent floatie if already at Confident (0)
+                if (pilotStatus > 0) // prevent floatie if already at Confident (0) or Panicked (3)
                 {
                     ShowStatusFloatie(mech);
                 }
@@ -449,6 +444,9 @@ namespace PanicSystem
             if (savingThrow <= 0)
             {
                 Debug("Resisted ejection");
+                mech.Combat.MessageCenter.PublishMessage(
+                    new AddSequenceToStackMessage(
+                        new ShowActorInfoSequence(mech, "EJECT SAVE!", FloatieMessage.MessageNature.Debuff, false)));
                 return false;
             }
 

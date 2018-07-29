@@ -142,12 +142,6 @@ namespace PanicSystem
                 return false;
             }
 
-/*
-            if (!CheckTrackedPilots(mech))
-            {
-                return false;
-            }
-*/
             if (WasEnoughDamageDone(mech, attackSequence) || MetLastStraw(mech))
             {
                 return true;
@@ -156,6 +150,8 @@ namespace PanicSystem
             return false;
         }
 
+        
+        
         public static bool FailedPanicSave(Mech mech)
         {
             var pilot = mech.GetPilot();
@@ -163,7 +159,7 @@ namespace PanicSystem
             var gutsAndTacticsSum = mech.SkillGuts * ModSettings.GutsEjectionResistPerPoint +
                                     mech.SkillTactics * ModSettings.TacticsEjectionResistPerPoint;
             float panicModifiers = 0;
-            Debug("Collecting panic modifiers:");
+            Debug("\nCollecting panic modifiers:");
 
             if (PercentPilot(pilot) < 1)
             {
@@ -342,8 +338,7 @@ namespace PanicSystem
 
             // start building ejectModifiers
             float ejectModifiers = 0;
-            Debug("Collecting ejection modifiers:");
-            Debug(new string('-', 60));
+            Debug("\nCollecting ejection modifiers:");
 
             if (ModSettings.QuirksEnabled && pilot.pilotDef.PilotTags.Contains("pilot_drunk") && pilot.pilotDef.TimeoutRemaining > 0)
             {

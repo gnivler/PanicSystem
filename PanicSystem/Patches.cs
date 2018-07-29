@@ -31,7 +31,6 @@ namespace PanicSystem
                     return;
                 }
 
-// TODO test multi-shot
                 var attackCompleteMessage = message as AttackCompleteMessage;
                 Debug(new string(c: '-', count: 60));
                 Debug($"{__instance.directorSequences[0].attacker.LogDisplayName}\n-> attacks ->\n" +
@@ -66,39 +65,36 @@ namespace PanicSystem
                 if (FailedEjectSave(mech, attackCompleteMessage.attackSequence))
                 {
                     Debug("Eject");
-                    Debug($"Runtime to ejection: {stopwatch.ElapsedMilliSeconds}");
                     if (ModSettings.EnableEjectPhrases)
                     {
                         var ejectMessage = EjectPhraseList[Rng.Next(0, EjectPhraseList.Count - 1)];
                         mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
                             (new ShowActorInfoSequence(mech, ejectMessage, FloatieMessage.MessageNature.Debuff, false)));
                     }
+
+                    // this is necessary to avoid vanilla hangs.  the list has nulls so the try/catch deals with silently.  thanks jo
+                    var combat = Traverse.Create(__instance).Property("Combat").GetValue<CombatGameState>();
+                    var effectsTargeting = combat.EffectManager.GetAllEffectsTargeting(mech);
+
+                    foreach (var effect in effectsTargeting)
+                        try
+                        {
+                            mech.CancelEffect(effect);
+                        }
+                        // ReSharper disable once EmptyGeneralCatchClause
+                        catch // deliberately silent
+                        {
+                        }
+
                     mech.EjectPilot(mech.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
                 }
 
-                // never saw over 20ms
                 Debug($"Runtime to exit {stopwatch.ElapsedMilliSeconds}");
-
 
                 if (!(FailedEjectSave(mech, attackCompleteMessage?.attackSequence)))
                 {
                     return;
                 }
-
-                // this is necessary to avoid vanilla hangs.  the list has nulls so the try/catch deals with silently.  thanks jo
-                var combat = Traverse.Create(__instance).Property("Combat").GetValue<CombatGameState>();
-                var effectsTargeting = combat.EffectManager.GetAllEffectsTargeting(mech);
-
-                foreach (var effect in effectsTargeting)
-                    try
-                    {
-                        mech.CancelEffect(effect);
-                    }
-                    // ReSharper disable once EmptyGeneralCatchClause
-                    catch // deliberately silent
-                    {
-                    }
-
             }
 
             private static bool SkipProcessingAttack(AttackStackSequence __instance, MessageCenterMessage message)
@@ -144,7 +140,7 @@ namespace PanicSystem
 
                 // reduce panic level
                 var originalStatus = TrackedPilots[index].PilotStatus;
-                if (!TrackedPilots[index].ChangedRecently && (int)TrackedPilots[index].PilotStatus > 0)
+                if (!TrackedPilots[index].ChangedRecently && (int) TrackedPilots[index].PilotStatus > 0)
                 {
                     TrackedPilots[index].PilotStatus--;
                     TrackedPilots[index].ChangedRecently = false;
@@ -171,6 +167,7 @@ namespace PanicSystem
                         Debug("IMPROVED TO CONFIDENT!");
                         __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, "IMPROVED TO CONFIDENT", FloatieMessage.MessageNature.Buff, false)));
                     }
+
                     // TODO do we need to add ChangedRecently = true;?
                     ShowStatusFloatie(mech, "IMPROVED TO ");
                 }
@@ -197,12 +194,9 @@ namespace PanicSystem
             public static void Postfix(CombatGameState __instance)
             {
                 var combat = __instance;
-                Debug($"Trying to initialize CGS, mech list should follow");
                 foreach (var mech in combat.AllMechs)
                 {
-                    Debug($"And: {mech.LogDisplayName}");
                     CheckTrackedPilots(mech);
-                    Debug($"None of these should be -1: {GetTrackedPilotIndex(mech)}");
                 }
             }
         }

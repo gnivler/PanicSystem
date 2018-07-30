@@ -130,7 +130,7 @@ namespace PanicSystem
                 if (index == -1)
                 {
                     TrackedPilots.Add(new PanicTracker(mech)); // add a new tracker to tracked pilot
-                    SaveTrackedPilots();
+                    SaveTrackedPilots();  // TODO ensure this isn't causing indexing errors by running overlaps or something
                     return;
                 }
 

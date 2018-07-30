@@ -204,7 +204,7 @@ namespace PanicSystem
             if (weapons.TrueForAll(w => w.DamageLevel != ComponentDamageLevel.Functional || !w.HasAmmo)) // only fully unusable
             {
                 panicModifiers += ModSettings.WeaponlessModifier;
-                Debug($"Weaponless adds {ModSettings.WeaponlessModifier}");
+                Debug($"Weaponless adds {ModSettings.WeaponlessModifier}, now {panicModifiers:0.###}");
             }
 
             // alone
@@ -229,6 +229,8 @@ namespace PanicSystem
             }
 
             panicModifiers = (float) Math.Max(0f, Math.Round(panicModifiers));
+            
+            Debug($"After calculation: {panicModifiers:0.###}");
             Debug($"Saving throw: {panicModifiers}");
 
             var index = GetTrackedPilotIndex(mech);
@@ -239,8 +241,7 @@ namespace PanicSystem
             {
                 Debug("Failed panic save");
                 ApplyPanicDebuff(mech);
-                if (roll == 1 || roll < (int) panicModifiers - ModSettings.CritOver &&
-                    (MechHealth(mech) <= ModSettings.MechHealthForCrit))
+                if (roll == 1 || roll < (int) panicModifiers - ModSettings.CritOver && (MechHealth(mech) <= ModSettings.MechHealthForCrit))
                 {
                     Debug("Critical failure on panic save");
                     ApplyPanicDebuff(mech);
@@ -324,7 +325,8 @@ namespace PanicSystem
             var weapons = mech.Weapons;
             var guts = mech.SkillGuts;
             var tactics = mech.SkillTactics;
-            var gutsAndTacticsSum = guts + tactics;
+            var gutsAndTacticsSum = mech.SkillGuts * ModSettings.GutsEjectionResistPerPoint +
+                                    mech.SkillTactics * ModSettings.TacticsEjectionResistPerPoint;
 
             if (!mech.CanBeHeadShot || !pilot.CanEject)
             {
@@ -398,7 +400,7 @@ namespace PanicSystem
             EvalRightLeg(mech, ref ejectModifiers);
 
             // weaponless
-            if (weapons.TrueForAll(w => w.DamageLevel == ComponentDamageLevel.Destroyed || !w.HasAmmo))
+            if (weapons.TrueForAll(w => w.DamageLevel != ComponentDamageLevel.Functional || !w.HasAmmo))
             {
                 ejectModifiers += ModSettings.WeaponlessModifier;
                 Debug($"Weaponless adds {ModSettings.WeaponlessModifier}, now {ejectModifiers:0.###}");
@@ -425,11 +427,8 @@ namespace PanicSystem
             }
 
             // calculate result
-            ejectModifiers = Math.Max(0f, (ejectModifiers -
-                                           ModSettings.BaseEjectionResist -
-                                           ModSettings.GutsEjectionResistPerPoint * guts -
-                                           ModSettings.TacticsEjectionResistPerPoint * tactics) *
-                                          ModSettings.EjectChanceMultiplier);
+            ejectModifiers = Math.Max(0f, (ejectModifiers - ModSettings.BaseEjectionResist) * ModSettings.EjectChanceMultiplier);
+            
             Debug($"After calculation: {ejectModifiers:0.###}");
 
             var savingThrow = (float) Math.Round(ejectModifiers);
@@ -440,7 +439,7 @@ namespace PanicSystem
                 Debug("Resisted ejection");
                 mech.Combat.MessageCenter.PublishMessage(
                     new AddSequenceToStackMessage(
-                        new ShowActorInfoSequence(mech, "EJECT SAVE!", FloatieMessage.MessageNature.Debuff, false)));
+                        new ShowActorInfoSequence(mech, $"EJECT SAVE!{Environment.NewLine}WAWAWA!", FloatieMessage.MessageNature.Debuff, false)));
                 return false;
             }
 

@@ -3,7 +3,7 @@
 
   "Enabled": true,
 
-  "Version": "2.8",
+  "Version": "2.7",
   "Description": "Causes pilots to panic and eject based on multiple criteria.",
   "Author": "Hard forked and modified by donZappo and gnivler, with original design by mpstark and RealityMachina",
   "Website": "https://github.com/gnivler/PanicSystem",
@@ -11,8 +11,8 @@
   "DLL": "PanicSystem.dll",
 
   "Settings": {
-    "Debug": false,
-    "EnableEjectPhrases": true, // floaties at eject
+    "Debug": true,
+    "EnableEjectPhrases": true, // set to true for floaties when at knockdowns
     
     /* Panic Settings */
     "PlayersCanPanic": true,
@@ -25,11 +25,11 @@
 	"MinimumArmourDamagePercentageRequired": 5,
 
 	/* Effect Modifiers */
-    "UnsteadyModifier": 5,
+    "UnsteadyModifier": 10,
     "PilotHealthMaxModifier": 30,
     "HeadMaxModifier": 30,
     "CenterTorsoMaxModifier": 75,
-    "SideTorsoMaxModifier": 35,
+    "SideTorsoMaxModifier": 30,
     "LeggedMaxModifier": 20,
     "WeaponlessModifier": 15,
     "AloneModifier": 20,
@@ -37,11 +37,11 @@
     "MoraleMaxModifier": 10,
 
 	/* Ejection Bonuses and Limits */
-    "GutsEjectionResistPerPoint": 4,
+    "GutsEjectionResistPerPoint": 5,
     "TacticsEjectionResistPerPoint": 0,	
-	"BaseEjectionResist": 50,
+	"BaseEjectionResist": 75,
 	"MaxEjectChance": 50,
-    "EjectChanceMultiplier": 0.75,
+    "EjectChanceMultiplier": 0.5,
     
     /* Pilot Quirk Effects */
     "QuirksEnabled": true,
@@ -57,7 +57,7 @@
 
 	/* Critical Panic */
 	"MechHealthAlone": 25,     /* minimum health for 'Alone' last straw */
-    "MechHealthForCrit": 75,   /* minimum health for panic crits to occur */
-    "CritOver": 70,            /* number by which a save must fail to cause a crit */
+    "MechHealthForCrit": 85,   /* minimum health for panic crits to occur */
+    "CritOver": 50,            /* number by which a save must fail to cause a crit */
 	}
 }

@@ -12,6 +12,8 @@ using static PanicSystem.Controller;
 using static PanicSystem.Logger;
 
 // HUGE thanks to RealityMachina and mpstark for their work, outstanding.
+
+// 2.8 reworked design by don Zappo, balancing and testing by ganimal, and coding by gnivler
 namespace PanicSystem
 {
     public static class PanicSystem
@@ -229,7 +231,7 @@ namespace PanicSystem
             }
 
             panicModifiers = (float) Math.Max(0f, Math.Round(panicModifiers));
-            
+
             Debug($"After calculation: {panicModifiers:0.###}");
             Debug($"Saving throw: {panicModifiers}");
 
@@ -244,17 +246,19 @@ namespace PanicSystem
                 if (roll == 1 || roll < (int) panicModifiers - ModSettings.CritOver && (MechHealth(mech) <= ModSettings.MechHealthForCrit))
                 {
                     Debug("Critical failure on panic save");
-                    ApplyPanicDebuff(mech);
                     ShowStatusFloatie(mech);
+                    ApplyPanicDebuff(mech);
                     mech.Combat.MessageCenter.PublishMessage(
                         new AddSequenceToStackMessage(
                             new ShowActorInfoSequence(mech, "PANIC CRIT!", FloatieMessage.MessageNature.Debuff, false)));
+
+
+                    if ((int) TrackedPilots[index].PilotStatus != 3)
+                    {
+                        ShowStatusFloatie(mech); // show both floaties on a panic crit
+                    }
                 }
 
-                if ((int) TrackedPilots[index].PilotStatus != 3)
-                {
-                    ShowStatusFloatie(mech); // show both floaties on a panic crit
-                }
                 return true;
             }
 
@@ -428,7 +432,7 @@ namespace PanicSystem
 
             // calculate result
             ejectModifiers = Math.Max(0f, (ejectModifiers - ModSettings.BaseEjectionResist) * ModSettings.EjectChanceMultiplier);
-            
+
             Debug($"After calculation: {ejectModifiers:0.###}");
 
             var savingThrow = (float) Math.Round(ejectModifiers);
@@ -437,9 +441,6 @@ namespace PanicSystem
             if (savingThrow <= 0)
             {
                 Debug("Resisted ejection");
-                mech.Combat.MessageCenter.PublishMessage(
-                    new AddSequenceToStackMessage(
-                        new ShowActorInfoSequence(mech, $"EJECT SAVE!{Environment.NewLine}WAWAWA!", FloatieMessage.MessageNature.Debuff, false)));
                 return false;
             }
 
@@ -453,6 +454,9 @@ namespace PanicSystem
             if (roll >= savingThrow)
             {
                 Debug("Made ejection save");
+                mech.Combat.MessageCenter.PublishMessage(
+                    new AddSequenceToStackMessage(
+                        new ShowActorInfoSequence(mech, $"EJECT SAVE!", FloatieMessage.MessageNature.Debuff, false)));
                 return false;
             }
 

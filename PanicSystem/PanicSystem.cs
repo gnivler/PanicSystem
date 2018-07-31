@@ -233,29 +233,29 @@ namespace PanicSystem
             panicModifiers = (float) Math.Max(0f, Math.Round(panicModifiers));
 
             Debug($"After calculation: {panicModifiers:0.###}");
+            Debug($"MechHealth is {MechHealth(mech):0.###}");
             Debug($"Saving throw: {panicModifiers}");
 
             var index = GetTrackedPilotIndex(mech);
             var roll = Rng.Next(1, 101);
             Debug($"Rolled {roll}");
-
             if (roll < (int) panicModifiers)
             {
                 Debug("Failed panic save");
                 ApplyPanicDebuff(mech);
-                if (roll == 1 || roll < (int) panicModifiers - ModSettings.CritOver && (MechHealth(mech) <= ModSettings.MechHealthForCrit))
+                ShowStatusFloatie(mech);
+                if (MechHealth(mech) <= ModSettings.MechHealthForCrit && roll == 1 || roll < (int) panicModifiers - ModSettings.CritOver)
                 {
                     Debug("Critical failure on panic save");
-                    ShowStatusFloatie(mech);
+                    var status = TrackedPilots[index].PilotStatus; // record status to see if it changes after
                     ApplyPanicDebuff(mech);
                     mech.Combat.MessageCenter.PublishMessage(
                         new AddSequenceToStackMessage(
                             new ShowActorInfoSequence(mech, "PANIC CRIT!", FloatieMessage.MessageNature.Debuff, false)));
 
-
-                    if ((int) TrackedPilots[index].PilotStatus != 3)
+                    if ((int) status != 3 | status != TrackedPilots[index].PilotStatus) // show both floaties on a panic crit unless panicked already
                     {
-                        ShowStatusFloatie(mech); // show both floaties on a panic crit
+                        ShowStatusFloatie(mech); 
                     }
                 }
 
@@ -434,6 +434,7 @@ namespace PanicSystem
             ejectModifiers = Math.Max(0f, (ejectModifiers - ModSettings.BaseEjectionResist) * ModSettings.EjectChanceMultiplier);
 
             Debug($"After calculation: {ejectModifiers:0.###}");
+            Debug($"MechHealth is {MechHealth(mech):0.###}");
 
             var savingThrow = (float) Math.Round(ejectModifiers);
 
@@ -450,7 +451,6 @@ namespace PanicSystem
             var roll = Rng.Next(1, 101);
             Debug($"Saving throw: {savingThrow}");
             Debug($"Rolled {roll}");
-
             if (roll >= savingThrow)
             {
                 Debug("Made ejection save");
@@ -624,7 +624,7 @@ namespace PanicSystem
 
             if (TrackedPilots[index].PilotStatus == PanicStatus.Confident)
             {
-                Debug("UNSETTLED!");
+                Debug("Condition: Unsetlled");
                 TrackedPilots[index].PilotStatus = PanicStatus.Unsettled;
                 mech.StatCollection.ModifyStat("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f);
                 mech.StatCollection.ModifyStat("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f);
@@ -632,7 +632,7 @@ namespace PanicSystem
             }
             else if (TrackedPilots[index].PilotStatus == PanicStatus.Unsettled)
             {
-                Debug("STRESSED!");
+                Debug("Condition: Stressed");
                 TrackedPilots[index].PilotStatus = PanicStatus.Stressed;
                 mech.StatCollection.ModifyStat("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f);
                 mech.StatCollection.ModifyStat("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f);
@@ -641,7 +641,7 @@ namespace PanicSystem
             }
             else if (TrackedPilots[index].PilotStatus == PanicStatus.Stressed)
             {
-                Debug("PANICKED!");
+                Debug("Condition: Panicked");
                 TrackedPilots[index].PilotStatus = PanicStatus.Panicked;
                 mech.StatCollection.ModifyStat("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f);
                 mech.StatCollection.ModifyStat("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f);
@@ -687,6 +687,7 @@ namespace PanicSystem
                 return true;
             }
 
+            // no allies and badly outmatched
             var enemyHealth = GetAllEnemiesHealth(mech);
             if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m.GUID == mech.GUID) &&
                 enemyHealth >= (mech.SummaryArmorCurrent + mech.SummaryStructureCurrent) * 3) // deliberately simple for better or worse (3-to-1 health)
@@ -725,7 +726,7 @@ namespace PanicSystem
             public float MedianMorale = 50;
             public float MoraleMaxModifier = 10;
             public float MechHealthAlone = 50;
-            public float MechHealthForCrit = 90;
+            public float MechHealthForCrit = 0.9f;
             public float CritOver = 70;
 
             // Quirks

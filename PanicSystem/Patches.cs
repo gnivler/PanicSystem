@@ -72,7 +72,7 @@ namespace PanicSystem
                     }
 
                     // this is necessary to avoid vanilla hangs.  the list has nulls so the try/catch deals with silently.  thanks jo
-                    Debug("Removing effects");
+                    //Debug("Removing effects");
                     var combat = Traverse.Create(__instance).Property("Combat").GetValue<CombatGameState>();
                     var effectsTargeting = combat.EffectManager.GetAllEffectsTargeting(mech);
 
@@ -90,7 +90,7 @@ namespace PanicSystem
                     Debug("Ejected");
                 }
 
-                Debug($"Runtime to exit {stopwatch.ElapsedMilliSeconds}");
+                Debug($"Runtime to exit {stopwatch.ElapsedMilliSeconds}ms");
             }
 
             private static bool SkipProcessingAttack(AttackStackSequence __instance, MessageCenterMessage message)
@@ -130,7 +130,7 @@ namespace PanicSystem
                 if (index == -1)
                 {
                     TrackedPilots.Add(new PanicTracker(mech)); // add a new tracker to tracked pilot
-                    SaveTrackedPilots();  // TODO ensure this isn't causing indexing errors by running overlaps or something
+                    SaveTrackedPilots(); // TODO ensure this isn't causing indexing errors by running overlaps or something
                     return;
                 }
 

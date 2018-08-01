@@ -68,7 +68,7 @@ namespace PanicSystem
                     {
                         var ejectMessage = EjectPhraseList[Rng.Next(0, EjectPhraseList.Count - 1)];
                         mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
-                            (new ShowActorInfoSequence(mech, ejectMessage, FloatieMessage.MessageNature.Debuff, false)));
+                            (new ShowActorInfoSequence(mech, ejectMessage, FloatieMessage.MessageNature.Debuff, true)));
                     }
 
                     // this is necessary to avoid vanilla hangs.  the list has nulls so the try/catch deals with silently.  thanks jo

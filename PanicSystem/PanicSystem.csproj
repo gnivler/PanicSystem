@@ -57,6 +57,7 @@
   <ItemGroup>
     <Compile Include="Controller.cs" />
     <Compile Include="Logger.cs" />
+    <Compile Include="MechChecks.cs" />
     <Compile Include="PanicSystem.cs" />
     <Compile Include="PanicTracker.cs" />
     <Compile Include="Patches.cs" />

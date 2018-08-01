@@ -12,6 +12,7 @@
 
   "Settings": {
     "Debug": false,
+    "FloatieSpam": false;  /* enables floaties that show saving throws and rolling results */
     "EnableEjectPhrases": true, // set to true for floaties at eject
     
     /* Panic Settings */

@@ -57,6 +57,7 @@
   <ItemGroup>
     <Compile Include="Controller.cs" />
     <Compile Include="Logger.cs" />
+    <Compile Include="MechChecks.cs" />
     <Compile Include="PanicSystem.cs" />
     <Compile Include="PanicTracker.cs" />
     <Compile Include="Patches.cs" />
@@ -65,6 +66,9 @@
   <ItemGroup>
     <None Include="assets\mod.json" />
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="assets\phrases.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

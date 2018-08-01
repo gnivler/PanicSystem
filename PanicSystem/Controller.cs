@@ -68,7 +68,12 @@ namespace PanicSystem
             return -1;
         }
 
-        public static void SerializeStorageJson(string GUID, DateTime dateTime) //fired when a save game is made
+        /// <summary>
+        ///   create or obtain tracker data and save it out
+        /// </summary>
+        /// <param name="GUID"></param>
+        /// <param name="dateTime"></param>
+        public static void SerializeStorageJson(string GUID, DateTime dateTime)
         {
             if (MetaTrackers == null)
             {
@@ -82,10 +87,7 @@ namespace PanicSystem
                     MetaTrackers[index].SetTrackedPilots(TrackedPilots);
                 }
 
-                if (dateTime != null)
-                {
-                    MetaTrackers[index].SetSaveGameTime(dateTime);
-                }
+                MetaTrackers[index].SetSaveGameTime(dateTime);
 
                 if (GUID != null) //set GUID if it's applicable
                 {
@@ -132,7 +134,7 @@ namespace PanicSystem
             }
         }
 
-        public static void SerializeActiveJson()
+        public static void SaveTrackedPilots()
         {
             try
             {

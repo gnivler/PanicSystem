@@ -11,7 +11,7 @@ Install like any ModTek mod.
 
 There are four states for a pilot to be in: Confident, Unsettled, Stressed, and Panicked.
 
-Panic rolls are made when sufficient damage is dealt.  This roll considers multiple factors to calculate a saving throw and a failure will increase panic by one level.  Guts and Tactics can affect this, as well as Quirks from don Zappo's Pilot Quirks mod.  Rolling 100 on a saving throw will reduce panic level by one state.  Succeeding all saving throws in a turn will improve panic state by one level as well.
+Panic rolls are made when sufficient damage is dealt.  This roll considers multiple factors to calculate a saving throw and a failure will increase panic by one level.  Guts and Tactics can affect this, as well as Quirks from don Zappo's [Pilot Quirks mod](https://www.nexusmods.com/battletech/mods/282/).  Lance morale also comes into play.  Rolling 100 on a saving throw will reduce panic level by one state.  Succeeding all saving throws in a turn will improve panic state by one level as well.
 
 Panic save failures lead to ejection rolls when the target is at Panicked state.  Similar calculations are performed to determine a saving throw, where a failure will eject the pilot.
 
@@ -23,8 +23,8 @@ Panic State|To Hit|To Hit Against
 -----------|------|--------------
 Confident|0|0
 Unsettled|+1|0
-Stressed| +2|-1
-Panicked| +3|-2
+Stressed| +1|-1
+Panicked| +2|-2
 
 ## Special Cases
 

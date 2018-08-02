@@ -1,5 +1,7 @@
 # PanicSystem
-ModTek mod that adds a basic panic system for MechWarriors, both playable and non-playable into the game.  Forked from RealityMachina's fork (https://github.com/RealityMachina/Basic-Panic-System) of mpstark's PunchinOut mod (https://github.com/Mpstark/PunchinOut).
+Simulates mechwarrior panic and automatic ejections.  Forked from RealityMachina's fork (https://github.com/RealityMachina/Basic-Panic-System) of mpstark's PunchinOut mod (https://github.com/Mpstark/PunchinOut).
+
+Design improvements by don Zappo, balancing and testing by ganimal, and coding by gnivler.
 
 ## Installation
 
@@ -9,15 +11,11 @@ Install like any ModTek mod.
 
 There are four states for a pilot to be in: Confident, Unsettled, Stressed, and Panicked.
 
-Every time a pilot has their mech take an attack, they roll for panic. This roll is increased in strength by how powerful the attack was, where it hit, how damaged the pilot's mech is in terms of armour and structure, is the rest of their lance dead or gone, etc. It is decreased by a pilot's tactics and guts scores, and their team's morale.
+Panic rolls are made when sufficient damage is dealt.  This roll considers multiple factors to calculate a saving throw and a failure will increase panic by one level.  Guts and Tactics can affect this, as well as Quirks from don Zappo's Pilot Quirks mod.  Rolling 100 on a saving throw will reduce panic level by one state.  Succeeding all saving throws in a turn will improve panic state by one level as well.
 
-If this roll succeeds, they are then knocked down to the next lower state. Once they hit Panicked, they then start rolling for ejection chances. This is affected by the same things as mentioned above.
+Panic save failures lead to ejection rolls when the target is at Panicked state.  Similar calculations are performed to determine a saving throw, where a failure will eject the pilot.
 
-By default, pilots can only get worse in panic states once per turn, to prevent runaway panic attacks from multiple mech attacks. 
-
-For panic recovery, as long as a pilot avoids failing another roll while they're under a panic state, they recover one state up (ie Panicked -> Stressed, or Unsettled -> Confident) (currently bugged).
-
-A typical chain of events under this system is thus something like Confident at start -> Turn 1 during enemy action: takes hit, downgrades to Unsettled -> Turn 2: manages to avoid failing a panic roll -> Turn 3 on pilot's movement: hits Confident again.
+The panic states affect the pilot's to-hit and to-hit-against stats as follows.
 
 ## Panic Effects (defaults)
 
@@ -30,6 +28,4 @@ Panicked| +3|-2
 
 ## Special Cases
 
-Pilots with one point of HP left, have no weapons remaining, or are the last survivor in their lance will always roll for ejection when they receive an attack.
-
-Certain classes of mechs may have their pilots roll for a lower capped chance to eject at an earlier panic state. By default, this applies to *enemy* light mechs only, when they hit the Unsettled panic state.
+Pilots with one health left and a mostly destroyed mech will automatically starting rolling for ejection, skipping panic saving throws.  Pilots who are alone and face unsurmountable odds will also roll for ejection.

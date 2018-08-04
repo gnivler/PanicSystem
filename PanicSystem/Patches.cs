@@ -42,25 +42,52 @@ namespace PanicSystem
                     return;
                 }
 
+                if (mech.IsFlaggedForKnockdown && mech.pilot.pilotDef.PilotTags.Contains("pilot_klutz"))
+                {
+                    if (UnityEngine.Random.Range(1, 100) == 13)
+                    {
+                        mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
+                            (new ShowActorInfoSequence(mech, "WOOPS!", FloatieMessage.MessageNature.Debuff, false)));
+                        Debug("Very klutzy!");
+                        return;
+                    }
+                }
+                
+/*                
                 if (KlutzEject)
                 {
                     Debug("Klutz");
                     mech.EjectPilot(mech.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
                     KlutzEject = false;
                 }
-
+*/
                 stopwatch.Start();
+/*
                 if (!FailedPanicSave(mech))
                 {
                     return;
                 }
-
+*/
+                // panic saving throw
+                if (PanicSave(mech, attackCompleteMessage?.attackSequence))
+                {
+                    return;
+                }
+                
+                // stop if pilot isn't panicked
                 var index = GetTrackedPilotIndex(mech);
                 if (TrackedPilots[index].PilotStatus != PanicStatus.Panicked)
                 {
                     return;
                 }
 
+                // eject saving throw
+
+             //  if (EjectSave(mech, attackCompleteMessage?.attackSequence))
+             //  {
+             //      return;
+             //  }
+                
                 if (FailedEjectSave(mech, attackCompleteMessage.attackSequence))
                 {
                     Debug("Ejecting");
@@ -93,21 +120,7 @@ namespace PanicSystem
                 Debug($"Runtime to exit {stopwatch.ElapsedMilliSeconds}ms");
             }
 
-            private static bool SkipProcessingAttack(AttackStackSequence __instance, MessageCenterMessage message)
-            {
-                var attackCompleteMessage = message as AttackCompleteMessage;
-                if (attackCompleteMessage == null || attackCompleteMessage.stackItemUID != __instance.SequenceGUID)
-                {
-                    return true;
-                }
 
-                if (!(__instance.directorSequences[0].target is Mech)) // can't do stuff with vehicles and buildings
-                {
-                    return true;
-                }
-
-                return __instance.directorSequences[0].target?.GUID == null;
-            }
         }
 
         [HarmonyPatch(typeof(AbstractActor), "OnNewRound")]

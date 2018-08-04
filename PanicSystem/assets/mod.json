@@ -3,17 +3,17 @@
 
   "Enabled": true,
 
-  "Version": "2.8",
+  "Version": "2.7",
   "Description": "Causes pilots to panic and eject based on multiple criteria.",
-  "Author": "2.8 reworked design by don Zappo, balancing and testing by ganimal, and coding by gnivler, with original design by mpstark work by RealityMachina",
+  "Author": "Hard forked and modified by donZappo and gnivler, with original design by mpstark and RealityMachina",
   "Website": "https://github.com/gnivler/PanicSystem",
 
   "DLL": "PanicSystem.dll",
 
   "Settings": {
     "Debug": false,
-    "FloatieSpam": false;  /* enables floaties that show saving throws and rolling results */
-    "EnableEjectPhrases": true, // set to true for floaties at eject
+    "EnableEjectPhrases": true, // set to true for floaties when at knockdowns
+    "FloatieSpam": false,
     
     /* Panic Settings */
     "PlayersCanPanic": true,
@@ -26,23 +26,23 @@
 	"MinimumArmourDamagePercentageRequired": 5,
 
 	/* Effect Modifiers */
-    "UnsteadyModifier": 10,
-    "PilotHealthMaxModifier": 30,
-    "HeadMaxModifier": 30,
-    "CenterTorsoMaxModifier": 75,
-    "SideTorsoMaxModifier": 30,
-    "LeggedMaxModifier": 20,
+    "UnsteadyModifier": 5,
+    "PilotHealthMaxModifier": 25,
+    "HeadMaxModifier": 25,
+    "CenterTorsoMaxModifier": 100,
+    "SideTorsoMaxModifier": 25,
+    "LeggedMaxModifier": 15,
     "WeaponlessModifier": 15,
-    "AloneModifier": 20,
+    "AloneModifier": 10,
     "MedianMorale": 25,
     "MoraleMaxModifier": 10,
 
 	/* Ejection Bonuses and Limits */
-    "GutsEjectionResistPerPoint": 5,
+    "GutsEjectionResistPerPoint": 3,
     "TacticsEjectionResistPerPoint": 0,	
 	"BaseEjectionResist": 75,
-	"MaxEjectChance": 50,
-    "EjectChanceMultiplier": 0.5,
+	"MaxEjectChance": 100,
+    "EjectChanceMultiplier": 1,
     
     /* Pilot Quirk Effects */
     "QuirksEnabled": true,
@@ -58,7 +58,7 @@
 
 	/* Critical Panic */
 	"MechHealthAlone": 25,     /* minimum health for 'Alone' last straw */
-    "MechHealthForCrit": 85,   /* minimum health for panic crits to occur */
-    "CritOver": 50            /* number by which a save must fail to cause a crit */
+    "MechHealthForCrit": 25,   /* minimum health for panic crits to occur */
+    "CritOver": 25,            /* number by which a save must fail to cause a crit */
 	}
 }

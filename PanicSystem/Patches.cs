@@ -42,9 +42,10 @@ namespace PanicSystem
                     return;
                 }
 
+                // TODO test
                 if (mech.IsFlaggedForKnockdown && mech.pilot.pilotDef.PilotTags.Contains("pilot_klutz"))
                 {
-                    if (UnityEngine.Random.Range(1, 100) == 13)
+                    if (Random.Range(1, 100) == 13)
                     {
                         mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
                             (new ShowActorInfoSequence(mech, "WOOPS!", FloatieMessage.MessageNature.Debuff, false)));
@@ -52,28 +53,15 @@ namespace PanicSystem
                         return;
                     }
                 }
-                
-/*                
-                if (KlutzEject)
-                {
-                    Debug("Klutz");
-                    mech.EjectPilot(mech.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
-                    KlutzEject = false;
-                }
-*/
+
                 stopwatch.Start();
-/*
-                if (!FailedPanicSave(mech))
-                {
-                    return;
-                }
-*/
+
                 // panic saving throw
                 if (PanicSave(mech, attackCompleteMessage?.attackSequence))
                 {
                     return;
                 }
-                
+
                 // stop if pilot isn't panicked
                 var index = GetTrackedPilotIndex(mech);
                 if (TrackedPilots[index].PilotStatus != PanicStatus.Panicked)
@@ -83,44 +71,37 @@ namespace PanicSystem
 
                 // eject saving throw
 
-             //  if (EjectSave(mech, attackCompleteMessage?.attackSequence))
-             //  {
-             //      return;
-             //  }
-                
-                if (FailedEjectSave(mech, attackCompleteMessage.attackSequence))
+                if (EjectSave(mech, attackCompleteMessage?.attackSequence))
                 {
-                    Debug("Ejecting");
-                    if (ModSettings.EnableEjectPhrases)
-                    {
-                        var ejectMessage = EjectPhraseList[Rng.Next(0, EjectPhraseList.Count - 1)];
-                        mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
-                            (new ShowActorInfoSequence(mech, ejectMessage, FloatieMessage.MessageNature.Debuff, true)));
-                    }
-
-                    // this is necessary to avoid vanilla hangs.  the list has nulls so the try/catch deals with silently.  thanks jo
-                    //Debug("Removing effects");
-                    var combat = Traverse.Create(__instance).Property("Combat").GetValue<CombatGameState>();
-                    var effectsTargeting = combat.EffectManager.GetAllEffectsTargeting(mech);
-
-                    foreach (var effect in effectsTargeting)
-                        try
-                        {
-                            mech.CancelEffect(effect);
-                        }
-                        // ReSharper disable once EmptyGeneralCatchClause
-                        catch // deliberately silent
-                        {
-                        }
-
-                    mech.EjectPilot(mech.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
-                    Debug("Ejected");
+                    return;
                 }
 
+                Debug("Ejecting");
+                if (ModSettings.EnableEjectPhrases)
+                {
+                    var ejectMessage = EjectPhraseList[Random.Range(0, EjectPhraseList.Count - 1)];
+                    mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
+                        (new ShowActorInfoSequence(mech, ejectMessage, FloatieMessage.MessageNature.Debuff, true)));
+                }
+
+                // this is necessary to avoid vanilla hangs.  the list has nulls so the try/catch deals with silently.  thanks jo
+                var combat = Traverse.Create(__instance).Property("Combat").GetValue<CombatGameState>();
+                var effectsTargeting = combat.EffectManager.GetAllEffectsTargeting(mech);
+
+                foreach (var effect in effectsTargeting)
+                    try
+                    {
+                        mech.CancelEffect(effect);
+                    }
+                    // ReSharper disable once EmptyGeneralCatchClause
+                    catch // deliberately silent
+                    {
+                    }
+
+                mech.EjectPilot(mech.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
+                Debug("Ejected");
                 Debug($"Runtime to exit {stopwatch.ElapsedMilliSeconds}ms");
             }
-
-
         }
 
         [HarmonyPatch(typeof(AbstractActor), "OnNewRound")]

@@ -82,21 +82,21 @@ namespace PanicSystem
                     var ejectMessage = EjectPhraseList[Random.Range(0, EjectPhraseList.Count - 1)];
                     mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
                         (new ShowActorInfoSequence(mech, ejectMessage, FloatieMessage.MessageNature.Debuff, true)));
-                }
 
-                // this is necessary to avoid vanilla hangs.  the list has nulls so the try/catch deals with silently.  thanks jo
-                //    var combat = Traverse.Create(__instance).Property("Combat").GetValue<CombatGameState>();
-                //    var effectsTargeting = combat.EffectManager.GetAllEffectsTargeting(mech);
+                    // this is necessary to avoid vanilla hangs.  the list has nulls so the try/catch deals with silently.  thanks jo
+                    //    var combat = Traverse.Create(__instance).Property("Combat").GetValue<CombatGameState>();
+                    //    var effectsTargeting = combat.EffectManager.GetAllEffectsTargeting(mech);
 
-                foreach (var effect in __instance.Combat.EffectManager.GetAllEffectsTargeting(mech))
-                {
-                    try
+                    foreach (var effect in __instance.Combat.EffectManager.GetAllEffectsTargeting(mech))
                     {
-                        mech.CancelEffect(effect);
-                    }
-                    // ReSharper disable once EmptyGeneralCatchClause
-                    catch // deliberately silent
-                    {
+                        try
+                        {
+                            mech.CancelEffect(effect);
+                        }
+                        // ReSharper disable once EmptyGeneralCatchClause
+                        catch // deliberately silent
+                        {
+                        }
                     }
 
                     mech.EjectPilot(mech.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);

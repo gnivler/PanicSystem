@@ -141,7 +141,7 @@ namespace PanicSystem
             // weaponless
             if (weapons.TrueForAll(w => w.DamageLevel != ComponentDamageLevel.Functional || !w.HasAmmo)) // only fully unusable
             {
-                if (UnityEngine.Random.Range(1,5) == 0) // 20% chance of appearing
+                if (UnityEngine.Random.Range(1, 5) == 0) // 20% chance of appearing
                 {
                     ShowSpamFloatie(mech, "NO WEAPONS!");
                 }
@@ -153,7 +153,7 @@ namespace PanicSystem
             // alone
             if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m == mech as AbstractActor))
             {
-                if (UnityEngine.Random.Range(1,5) == 0) // 20% chance of appearing
+                if (UnityEngine.Random.Range(1, 5) == 0) // 20% chance of appearing
                 {
                     ShowSpamFloatie(mech, "NO ALLIES!");
                 }
@@ -198,15 +198,14 @@ namespace PanicSystem
                 Debug($"Bravery subtracts {ModSettings.BraveModifier}, now {savingThrow:0.###}");
             }
 
-            var panicModifier = 1 * ((int) TrackedPilots[GetTrackedPilotIndex(mech)].PilotStatus) / 100;
+            savingThrow *= GetPanicModifier(TrackedPilots[GetTrackedPilotIndex(mech)].PilotStatus);
+            Debug($"Status modifier is {GetPanicModifier(TrackedPilots[GetTrackedPilotIndex(mech)].PilotStatus)}");
             savingThrow = (float) Math.Max(0f, Math.Round(savingThrow));
             var roll = UnityEngine.Random.Range(1, 100);
 
             Debug($"MechHealth is {MechHealth(mech):0.###}%");
             Debug($"Pilot status is {TrackedPilots[GetTrackedPilotIndex(mech)].PilotStatus}");
 
-            
-            
             Debug($"After calculation: {savingThrow:0.###}");
             Debug($"Saving throw: {savingThrow}  Roll {roll}");
 
@@ -269,6 +268,27 @@ namespace PanicSystem
             }
 
             return false;
+        }
+
+        private static float GetPanicModifier(PanicStatus pilotStatus)
+        {
+            switch (pilotStatus)
+            {
+                case PanicStatus.Unsettled:
+                {
+                    return ModSettings.UnsettledPanicModifier;
+                }
+                case PanicStatus.Stressed:
+                {
+                    return ModSettings.StressedPanicModifier;
+                }
+                case PanicStatus.Panicked:
+                {
+                    return ModSettings.PanickedPanicModifier;
+                }
+                default:
+                    return 1f;
+            }
         }
 
         public static bool EjectSave(Mech mech, AttackDirector.AttackSequence attackSequence)
@@ -551,6 +571,9 @@ namespace PanicSystem
             public float MechHealthAlone = 50;
             public float MechHealthForCrit = 0.9f;
             public float CritOver = 70;
+            public float UnsettledPanicModifier = 1f;
+            public float StressedPanicModifier = 0.66f;
+            public float PanickedPanicModifier = 0.33f;
 
             // Quirks
             public bool QuirksEnabled = true;

@@ -36,6 +36,9 @@
     "AloneModifier": 10,
     "MedianMorale": 25,
     "MoraleMaxModifier": 10,
+    "UnsettledPanicModifier": 1,     /* new in 2.9 */
+    "StressedPanicModifier" : 0.66,  /* new in 2.9 */
+    "PanickedPanicModifier" : 0.33,  /* new in 2.9 */
 
 	/* Ejection Bonuses and Limits */
     "GutsEjectionResistPerPoint": 3,
@@ -58,7 +61,7 @@
 
 	/* Critical Panic */
 	"MechHealthAlone": 25,     /* minimum health for 'Alone' last straw */
-    "MechHealthForCrit": 25,   /* minimum health for panic crits to occur */
+    "MechHealthForCrit": 30,   /* minimum health for panic crits to occur */
     "CritOver": 25,            /* number by which a save must fail to cause a crit */
 	}
 }

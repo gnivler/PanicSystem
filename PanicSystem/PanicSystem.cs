@@ -94,7 +94,6 @@ namespace PanicSystem
         /// <returns></returns>
         public static float GetSavingThrow(Mech mech, AttackDirector.AttackSequence attackSequence = null)
         {
-            //todo rewrite both methods into one
             var pilot = mech.GetPilot();
             var weapons = mech.Weapons;
             var gutsAndTacticsSum = mech.SkillGuts * ModSettings.GutsEjectionResistPerPoint +
@@ -199,11 +198,15 @@ namespace PanicSystem
                 Debug($"Bravery subtracts {ModSettings.BraveModifier}, now {savingThrow:0.###}");
             }
 
+            var panicModifier = 1 * ((int) TrackedPilots[GetTrackedPilotIndex(mech)].PilotStatus) / 100;
             savingThrow = (float) Math.Max(0f, Math.Round(savingThrow));
             var roll = UnityEngine.Random.Range(1, 100);
 
             Debug($"MechHealth is {MechHealth(mech):0.###}%");
             Debug($"Pilot status is {TrackedPilots[GetTrackedPilotIndex(mech)].PilotStatus}");
+
+            
+            
             Debug($"After calculation: {savingThrow:0.###}");
             Debug($"Saving throw: {savingThrow}  Roll {roll}");
 

@@ -23,8 +23,6 @@ namespace PanicSystem
         internal static string ActiveJsonPath; //store current tracker here
         internal static string StorageJsonPath; //store our meta trackers here
         internal static string ModDirectory;
-        internal static bool KlutzEject;
-        internal static readonly Random Rng = new Random();
         internal static List<string> EjectPhraseList = new List<string>();
         internal static string EjectPhraseListPath;
 
@@ -88,144 +86,134 @@ namespace PanicSystem
             return WasEnoughDamageDone(mech, attackSequence) || MetLastStraw(mech);
         }
 
-        public static bool FailedPanicSave(Mech mech)
+        /// <summary>
+        /// true is a successful saving throw
+        /// </summary>
+        /// <param name="mech"></param>
+        /// <param name="attackSequence"></param>
+        /// <returns></returns>
+        public static float GetSavingThrow(Mech mech, AttackDirector.AttackSequence attackSequence = null)
         {
             var pilot = mech.GetPilot();
             var weapons = mech.Weapons;
             var gutsAndTacticsSum = mech.SkillGuts * ModSettings.GutsEjectionResistPerPoint +
                                     mech.SkillTactics * ModSettings.TacticsEjectionResistPerPoint;
-            float panicModifiers = 0;
-            Debug("\nPanic factors:");
+            float totalMultiplier = 0;
+
+            Debug("Factors:");
 
             if (PercentPilot(pilot) < 1)
             {
-                panicModifiers += ModSettings.PilotHealthMaxModifier * PercentPilot(pilot);
-                Debug($"Pilot injuries add {ModSettings.PilotHealthMaxModifier * PercentPilot(pilot):0.###}, now {panicModifiers:0.###}");
+                totalMultiplier += ModSettings.PilotHealthMaxModifier * PercentPilot(pilot);
+                Debug($"Pilot injuries add {ModSettings.PilotHealthMaxModifier * PercentPilot(pilot):0.###}, now {totalMultiplier:0.###}");
             }
 
             if (mech.IsUnsteady)
             {
-                panicModifiers += ModSettings.UnsteadyModifier;
-                Debug($"Unsteady adds {ModSettings.UnsteadyModifier}, now {panicModifiers:0.###}");
+                totalMultiplier += ModSettings.UnsteadyModifier;
+                Debug($"Unsteady adds {ModSettings.UnsteadyModifier}, now {totalMultiplier:0.###}");
             }
 
             if (mech.IsFlaggedForKnockdown)
             {
-                if (pilot.pilotDef.PilotTags.Contains("pilot_klutz"))
-                {
-                    Debug("Klutz!");
-
-                    if (Rng.Next(1, 101) == 13)
-                    {
-                        mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
-                            (new ShowActorInfoSequence(mech, "WOOPS!", FloatieMessage.MessageNature.Debuff, false)));
-                        Debug("Very klutzy!");
-                        KlutzEject = true;
-                        return true;
-                    }
-                }
-
-                panicModifiers += ModSettings.UnsteadyModifier;
-                Debug($"Knockdown adds {ModSettings.UnsteadyModifier}, now {panicModifiers:0.###}");
+                totalMultiplier += ModSettings.UnsteadyModifier;
+                Debug($"Knockdown adds {ModSettings.UnsteadyModifier}, now {totalMultiplier:0.###}");
             }
 
             if (PercentHead(mech) < 1)
             {
-                panicModifiers += ModSettings.HeadMaxModifier * PercentHead(mech);
-                Debug($"Head damage adds {ModSettings.HeadMaxModifier * PercentHead(mech):0.###}, now {panicModifiers:0.###}");
+                totalMultiplier += ModSettings.HeadMaxModifier * PercentHead(mech);
+                Debug($"Head damage adds {ModSettings.HeadMaxModifier * PercentHead(mech):0.###}, now {totalMultiplier:0.###}");
             }
 
             if (PercentCenterTorso(mech) < 1)
             {
-                panicModifiers += ModSettings.CenterTorsoMaxModifier * PercentCenterTorso(mech);
-                Debug($"CT damage adds {ModSettings.CenterTorsoMaxModifier * PercentCenterTorso(mech):0.###}, now {panicModifiers:0.###}");
+                totalMultiplier += ModSettings.CenterTorsoMaxModifier * PercentCenterTorso(mech);
+                Debug($"CT damage adds {ModSettings.CenterTorsoMaxModifier * PercentCenterTorso(mech):0.###}, now {totalMultiplier:0.###}");
             }
 
             // these methods deal with missing limbs (0 modifiers get replaced with max modifiers)
-            EvalLeftTorso(mech, ref panicModifiers);
-            EvalRightTorso(mech, ref panicModifiers);
-            EvalLeftLeg(mech, ref panicModifiers);
-            EvalRightLeg(mech, ref panicModifiers);
+            EvalLeftTorso(mech, ref totalMultiplier);
+            EvalRightTorso(mech, ref totalMultiplier);
+            EvalLeftLeg(mech, ref totalMultiplier);
+            EvalRightLeg(mech, ref totalMultiplier);
 
             // weaponless
             if (weapons.TrueForAll(w => w.DamageLevel != ComponentDamageLevel.Functional || !w.HasAmmo)) // only fully unusable
             {
-                if (Rng.Next(5) == 0) // 20% chance of appearing
+                if (UnityEngine.Random.Range(1, 5) == 0) // 20% chance of appearing
                 {
                     ShowSpamFloatie(mech, "NO WEAPONS!");
                 }
 
-                panicModifiers += ModSettings.WeaponlessModifier;
-                Debug($"Weaponless adds {ModSettings.WeaponlessModifier}, now {panicModifiers:0.###}");
+                totalMultiplier += ModSettings.WeaponlessModifier;
+                Debug($"Weaponless adds {ModSettings.WeaponlessModifier}, now {totalMultiplier:0.###}");
             }
 
             // alone
             if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m == mech as AbstractActor))
             {
-                if (Rng.Next(5) == 0) // 20% chance of appearing
+                if (UnityEngine.Random.Range(1, 5) == 0) // 20% chance of appearing
                 {
                     ShowSpamFloatie(mech, "NO ALLIES!");
                 }
 
-                panicModifiers += ModSettings.AloneModifier;
-                Debug($"Being alone adds {ModSettings.AloneModifier}, now {panicModifiers:0.###}");
+                totalMultiplier += ModSettings.AloneModifier;
+                Debug($"Being alone adds {ModSettings.AloneModifier}, now {totalMultiplier:0.###}");
             }
 
-            panicModifiers -= gutsAndTacticsSum;
-            Debug($"Guts and Tactics subtracts {gutsAndTacticsSum}, now {panicModifiers:0.###}");
+            totalMultiplier -= gutsAndTacticsSum;
+            Debug($"Guts and Tactics subtracts {gutsAndTacticsSum}, now {totalMultiplier:0.###}");
 
             var moraleModifier = ModSettings.MoraleMaxModifier * (mech.Combat.LocalPlayerTeam.Morale - ModSettings.MedianMorale) / ModSettings.MedianMorale;
-            panicModifiers -= moraleModifier;
-            Debug($"Current morale {mech.Combat.LocalPlayerTeam.Morale} subtracts {moraleModifier:0.###}, now {panicModifiers:0.###}");
+            totalMultiplier -= moraleModifier;
+            Debug($"Current morale {mech.Combat.LocalPlayerTeam.Morale} subtracts {moraleModifier:0.###}, now {totalMultiplier:0.###}");
+            return totalMultiplier;
+        }
 
-            if (ModSettings.QuirksEnabled && pilot.pilotDef.PilotTags.Contains("pilot_brave"))
+        public static bool SkipProcessingAttack(AttackStackSequence __instance, MessageCenterMessage message)
+        {
+            var attackCompleteMessage = message as AttackCompleteMessage;
+            if (attackCompleteMessage == null || attackCompleteMessage.stackItemUID != __instance.SequenceGUID)
             {
-                panicModifiers -= ModSettings.BraveModifier;
-
-                Debug($"Bravery subtracts {ModSettings.BraveModifier}, now {panicModifiers:0.###}");
+                return true;
             }
 
-            panicModifiers = (float) Math.Max(0f, Math.Round(panicModifiers));
-            
-            var roll = Rng.Next(1, 101);
+            if (!(__instance.directorSequences[0].target is Mech)) // can't do stuff with vehicles and buildings
+            {
+                return true;
+            }
+
+            return __instance.directorSequences[0].target?.GUID == null;
+        }
+
+        public static bool PanicSave(Mech mech, AttackDirector.AttackSequence attackSequence)
+        {
+            var savingThrow = GetSavingThrow(mech, attackSequence);
+
+            // TODO test
+            if (ModSettings.QuirksEnabled && mech.pilot.pilotDef.PilotTags.Contains("pilot_brave"))
+            {
+                savingThrow -= ModSettings.BraveModifier;
+                Debug($"Bravery subtracts {ModSettings.BraveModifier}, now {savingThrow:0.###}");
+            }
+
+            savingThrow *= GetPanicModifier(TrackedPilots[GetTrackedPilotIndex(mech)].PilotStatus);
+            Debug($"Status modifier is {GetPanicModifier(TrackedPilots[GetTrackedPilotIndex(mech)].PilotStatus)}");
+            savingThrow = (float) Math.Max(0f, Math.Round(savingThrow));
+            var roll = UnityEngine.Random.Range(1, 100);
+
             Debug($"MechHealth is {MechHealth(mech):0.###}%");
             Debug($"Pilot status is {TrackedPilots[GetTrackedPilotIndex(mech)].PilotStatus}");
-            Debug($"After calculation: {panicModifiers:0.###}");
-            Debug($"Saving throw: {panicModifiers}  Roll {roll}");
+
+            Debug($"After calculation: {savingThrow:0.###}");
+            Debug($"Saving throw: {savingThrow}  Roll {roll}");
+
             var index = GetTrackedPilotIndex(mech);
 
-            if (panicModifiers >= 1)
+            if (savingThrow >= 1)
             {
-                ShowSpamFloatie(mech, $"SAVE: {panicModifiers} ROLL {roll}!");
-            }
-
-            if (roll < (int) panicModifiers)
-            {
-                Debug("Failed panic save");
-                ShowSpamFloatie(mech, "SAVE FAIL!");
-                ApplyPanicDebuff(mech);
-                ShowStatusFloatie(mech);
-
-                if (MechHealth(mech) <= ModSettings.MechHealthForCrit)
-                {
-                    if (roll == 1 || roll < (int) panicModifiers - ModSettings.CritOver)
-                    {
-                        Debug("Critical failure on panic save");
-                        var status = TrackedPilots[index].PilotStatus; // record status to see if it changes after
-                        TrackedPilots[index].PilotStatus = PanicStatus.Panicked;
-                        
-                        mech.Combat.MessageCenter.PublishMessage(
-                            new AddSequenceToStackMessage(
-                                new ShowActorInfoSequence(mech, "PANIC LEVEL CRITICAL!", FloatieMessage.MessageNature.Debuff, false)));
-
-                        if ((int) status != 3 | status != TrackedPilots[index].PilotStatus) // show both floaties on a panic crit unless panicked already
-                        {
-                            ShowStatusFloatie(mech);
-                        }
-                    }
-                }
-
-                return true;
+                ShowSpamFloatie(mech, $"SAVE: {savingThrow} ROLL {roll}!");
             }
 
             if (roll == 100)
@@ -235,26 +223,126 @@ namespace PanicSystem
                 if ((int) TrackedPilots[index].PilotStatus > 0) // don't lower below floor
                 {
                     mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
-                        new ShowActorInfoSequence(mech, "CRIT SUCCESS!", FloatieMessage.MessageNature.Buff, false)));
+                        new ShowActorInfoSequence(mech, "CRIT SUCCESS!", FloatieMessage.MessageNature.Inspiration, false)));
                     var status = (int) TrackedPilots[index].PilotStatus;
                     status--;
                     TrackedPilots[index].PilotStatus = (PanicStatus) status;
                 }
 
-                if ((int) TrackedPilots[index].PilotStatus > 0) // prevent floatie if already at Confident (0) or Panicked (3)
+                if ((int) TrackedPilots[index].PilotStatus > 0) // prevent floatie if already at Confident
                 {
                     ShowStatusFloatie(mech);
                 }
 
+                return true;
+            }
+
+            if (roll >= savingThrow)
+            {
+                ShowSpamFloatie(mech, "PANIC SAVE!");
+                Debug("Made panic save");
+                return true;
+            }
+
+            Debug("Failed panic save");
+            ShowSpamFloatie(mech, "SAVE FAIL!");
+            ApplyPanicDebuff(mech);
+            ShowStatusFloatie(mech);
+
+            // check for crit
+            if (MechHealth(mech) <= ModSettings.MechHealthForCrit &&
+                (roll == 1 || roll < (int) savingThrow - ModSettings.CritOver))
+            {
+                Debug("Critical failure on panic save");
+                var status = TrackedPilots[index].PilotStatus; // record status to see if it changes after
+                TrackedPilots[index].PilotStatus = PanicStatus.Panicked;
+                mech.Combat.MessageCenter.PublishMessage(
+                    new AddSequenceToStackMessage(
+                        new ShowActorInfoSequence(mech, "PANIC LEVEL CRITICAL!", FloatieMessage.MessageNature.CriticalHit, false)));
+
+                // show both floaties on a panic crit unless panicked already
+                if ((int) status != 3 && status != TrackedPilots[index].PilotStatus)
+                {
+                    ShowStatusFloatie(mech);
+                }
+            }
+
+            return false;
+        }
+
+        private static float GetPanicModifier(PanicStatus pilotStatus)
+        {
+            switch (pilotStatus)
+            {
+                case PanicStatus.Unsettled:
+                {
+                    return ModSettings.UnsettledPanicModifier;
+                }
+                case PanicStatus.Stressed:
+                {
+                    return ModSettings.StressedPanicModifier;
+                }
+                case PanicStatus.Panicked:
+                {
+                    return ModSettings.PanickedPanicModifier;
+                }
+                default:
+                    return 1f;
+            }
+        }
+
+        public static bool EjectSave(Mech mech, AttackDirector.AttackSequence attackSequence)
+        {
+            // TODO test
+            if (ModSettings.QuirksEnabled && mech.pilot.pilotDef.PilotTags.Contains("pilot_drunk") &&
+                mech.pilot.pilotDef.TimeoutRemaining > 0)
+            {
+                Debug("Drunkard - not ejecting");
+                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
+                    (new ShowActorInfoSequence(mech, "..HIC!  I ain't.. ejettin'", FloatieMessage.MessageNature.PilotInjury, true)));
                 return false;
             }
 
-            if (panicModifiers >= 1)
+            var savingThrow = GetSavingThrow(mech, attackSequence);
+
+            // TODO test
+            if (ModSettings.QuirksEnabled && mech.pilot.pilotDef.PilotTags.Contains("pilot_dependable"))
             {
-                ShowSpamFloatie(mech, "PANIC SAVE!");
+                savingThrow -= ModSettings.DependableModifier;
+                Debug($"Dependable pilot tag subtracts {ModSettings.DependableModifier}, now {savingThrow:0.###}");
             }
 
-            Debug("Made panic save");
+            // calculate result
+            savingThrow = Math.Max(0f, (savingThrow - ModSettings.BaseEjectionResist) * ModSettings.EjectChanceMultiplier);
+
+            Debug($"MechHealth is {MechHealth(mech):0.###}%");
+            Debug($"Pilot status is {TrackedPilots[GetTrackedPilotIndex(mech)].PilotStatus}");
+            Debug($"After calculation: {savingThrow:0.###}");
+            savingThrow = (float) Math.Round(savingThrow);
+
+            // will pass through if last straw is met to force an ejection roll
+            if (savingThrow <= 0)
+            {
+                ShowSpamFloatie(mech, "EJECT RESIST!");
+                Debug("Resisted ejection");
+                return true;
+            }
+
+            // cap the saving throw by the setting
+            savingThrow = (int) Math.Min(savingThrow, ModSettings.MaxEjectChance);
+
+            var roll = UnityEngine.Random.Range(1, 100);
+            Debug($"Saving throw: {savingThrow} Roll {roll}");
+            ShowSpamFloatie(mech, $"SAVE: {savingThrow}  ROLL: {roll}!");
+            if (roll >= savingThrow)
+            {
+                Debug("Made ejection save");
+                ShowSpamFloatie(mech, "EJECT SAVE!");
+                ShowSpamFloatie(mech, $"MECH HEALTH {MechHealth(mech):#.#}%");
+                return true;
+            }
+
+            Debug("Failed ejection save: Punchin\' Out!!");
             return false;
         }
 
@@ -276,189 +364,6 @@ namespace PanicSystem
 
             mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
                 new ShowActorInfoSequence(mech, message, FloatieMessage.MessageNature.Neutral, false)));
-        }
-
-        /// <summary>
-        ///     true implies punchin' out
-        /// </summary>
-        /// <param name="mech"></param>
-        /// <param name="attackSequence"></param>
-        /// <returns></returns>
-        public static bool FailedEjectSave(Mech mech, AttackDirector.AttackSequence attackSequence)
-        {
-            if (mech == null || mech.IsDead || mech.IsFlaggedForDeath && !mech.HasHandledDeath)
-            {
-                return false;
-            }
-
-            // knocked down mechs cannot eject
-            if (ModSettings.KnockedDownCannotEject && mech.IsProne)
-            {
-                return false;
-            }
-
-            if (!attackSequence.attackDidDamage)
-            {
-                return false;
-            }
-
-            var pilot = mech.GetPilot();
-            if (pilot == null)
-            {
-                return false;
-            }
-
-            var weapons = mech.Weapons;
-            var guts = mech.SkillGuts;
-            var tactics = mech.SkillTactics;
-            var gutsAndTacticsSum = mech.SkillGuts * ModSettings.GutsEjectionResistPerPoint +
-                                    mech.SkillTactics * ModSettings.TacticsEjectionResistPerPoint;
-
-            if (!mech.CanBeHeadShot || !pilot.CanEject)
-            {
-                return false;
-            }
-
-            // start building ejectModifiers
-            float ejectModifiers = 0;
-            Debug("\nEjection factors:");
-
-            if (ModSettings.QuirksEnabled && pilot.pilotDef.PilotTags.Contains("pilot_drunk") && pilot.pilotDef.TimeoutRemaining > 0)
-            {
-                Debug("Drunkard - not ejecting");
-                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
-                    (new ShowActorInfoSequence(mech, "..HIC!  I ain't.. ejettin'", FloatieMessage.MessageNature.Buff, true)));
-                return false;
-            }
-
-            // pilot health
-            if (PercentPilot(pilot) < 1)
-            {
-                ejectModifiers += ModSettings.PilotHealthMaxModifier * PercentPilot(pilot);
-                Debug($"Pilot injury adds {ModSettings.PilotHealthMaxModifier * PercentPilot(pilot):0.###}, now {ejectModifiers:0.###}");
-            }
-
-            // unsteady
-            if (mech.IsUnsteady)
-            {
-                ejectModifiers += ModSettings.UnsteadyModifier;
-                Debug($"Unsteady adds {ModSettings.UnsteadyModifier}, now {ejectModifiers:0.###}");
-            }
-
-            if (mech.IsFlaggedForKnockdown)
-            {
-                if (pilot.pilotDef.PilotTags.Contains("pilot_klutz"))
-                {
-                    Debug("Klutz!");
-
-                    if (Rng.Next(1, 101) == 13)
-                    {
-                        mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
-                            (new ShowActorInfoSequence(mech, "WOOPS!", FloatieMessage.MessageNature.Debuff, false)));
-                        Debug("Very klutzy!");
-                        KlutzEject = true;
-                        return true;
-                    }
-                }
-
-                ejectModifiers += ModSettings.UnsteadyModifier;
-                Debug($"Knockdown adds {ModSettings.UnsteadyModifier}, now {ejectModifiers:0.###}");
-            }
-
-            // Head
-            if (PercentHead(mech) < 1)
-            {
-                ejectModifiers += ModSettings.HeadMaxModifier * PercentHead(mech);
-                Debug($"Head damage adds {ModSettings.HeadMaxModifier * PercentHead(mech):0.###}, now {ejectModifiers:0.###}");
-            }
-
-            // CT  
-            if (PercentCenterTorso(mech) < 1)
-            {
-                ejectModifiers += ModSettings.CenterTorsoMaxModifier * PercentCenterTorso(mech);
-                Debug($"CT damage adds {ModSettings.CenterTorsoMaxModifier * PercentCenterTorso(mech):0.###}, now {ejectModifiers:0.###}");
-            }
-
-            // these methods deal with missing limbs (0 modifiers get replaced with max modifiers)
-            EvalLeftTorso(mech, ref ejectModifiers);
-            EvalRightTorso(mech, ref ejectModifiers);
-            EvalLeftLeg(mech, ref ejectModifiers);
-            EvalRightLeg(mech, ref ejectModifiers);
-
-            // weaponless
-            if (weapons.TrueForAll(w => w.DamageLevel != ComponentDamageLevel.Functional || !w.HasAmmo))
-            {
-                ejectModifiers += ModSettings.WeaponlessModifier;
-                Debug($"Weaponless adds {ModSettings.WeaponlessModifier}, now {ejectModifiers:0.###}");
-            }
-
-            // alone
-            if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m == mech as AbstractActor))
-            {
-                ejectModifiers += ModSettings.AloneModifier;
-                Debug($"Sole survivor adds {ModSettings.AloneModifier}, now {ejectModifiers:0.###}");
-            }
-
-            ejectModifiers -= gutsAndTacticsSum;
-            Debug($"Guts and Tactics subtracts {gutsAndTacticsSum}, now {ejectModifiers:0.###}");
-
-            var moraleModifier = ModSettings.MoraleMaxModifier * (mech.Combat.LocalPlayerTeam.Morale - ModSettings.MedianMorale) / ModSettings.MedianMorale;
-            ejectModifiers -= moraleModifier;
-            Debug($"Current morale {mech.Combat.LocalPlayerTeam.Morale} subtracts {moraleModifier:0.###}, now {ejectModifiers:0.###}");
-
-            if (ModSettings.QuirksEnabled && pilot.pilotDef.PilotTags.Contains("pilot_dependable"))
-            {
-                ejectModifiers -= ModSettings.DependableModifier;
-                Debug($"Dependable pilot tag subtracts {ModSettings.DependableModifier}, now {ejectModifiers:0.###}");
-            }
-
-            // calculate result
-            ejectModifiers = Math.Max(0f, (ejectModifiers - ModSettings.BaseEjectionResist) * ModSettings.EjectChanceMultiplier);
-
-            Debug($"MechHealth is {MechHealth(mech):0.###}%");
-            Debug($"Pilot status is {TrackedPilots[GetTrackedPilotIndex(mech)].PilotStatus}");
-            Debug($"After calculation: {ejectModifiers:0.###}");
-            var savingThrow = (float) Math.Round(ejectModifiers);
-
-            // will pass through if last straw is met to force an ejection roll
-            if (savingThrow <= 0)
-            {
-                ShowSpamFloatie(mech, "EJECT RESIST!");
-                Debug("Resisted ejection");
-                return false;
-            }
-
-            // modify the roll based on existing pilot panic, and settings
-            savingThrow = (int) Math.Min(savingThrow, ModSettings.MaxEjectChance);
-
-            var roll = Rng.Next(1, 101);
-            Debug($"Saving throw: {savingThrow} Roll {roll}");
-            ShowSpamFloatie(mech, $"SAVE: {savingThrow}  ROLL: {roll}!");
-            if (roll >= savingThrow)
-            {
-                Debug("Made ejection save");
-                ShowSpamFloatie(mech, "EJECT SAVE!");
-                ShowSpamFloatie(mech, $"MECH HEALTH {MechHealth(mech):#.#}%");
-
-                return false;
-            }
-
-            Debug("Failed ejection save: Punchin\' Out!!");
-            return true;
-        }
-
-        /// <summary>
-        ///     returns the sum of all enemy armour and structure
-        /// </summary>
-        /// <param name="mech"></param>
-        /// <returns></returns>
-        private static float GetAllEnemiesHealth(Mech mech)
-        {
-            var enemies = mech.Combat.GetAllEnemiesOf(mech);
-            var enemiesHealth = 0f;
-
-            enemiesHealth += enemies.Select(e => e.SummaryArmorCurrent + e.SummaryStructureCurrent).Sum();
-            return enemiesHealth;
         }
 
         /// <summary>
@@ -666,6 +571,9 @@ namespace PanicSystem
             public float MechHealthAlone = 50;
             public float MechHealthForCrit = 0.9f;
             public float CritOver = 70;
+            public float UnsettledPanicModifier = 1f;
+            public float StressedPanicModifier = 0.66f;
+            public float PanickedPanicModifier = 0.33f;
 
             // Quirks
             public bool QuirksEnabled = true;

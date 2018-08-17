@@ -84,6 +84,10 @@ namespace PanicSystem
 
         // these methods all produce straight percentages
         internal static float PercentPilot(Pilot pilot) => 1 - (float) pilot.Injuries / pilot.Health;
+        //{
+        //    Debug($"Health {pilot.Health} TotalHealth {pilot.TotalHealth} BonusHealth {pilot.BonusHealth} Injuries {pilot.Injuries}");
+        //    return 1 - (float) pilot.Injuries / pilot.Health;
+        //}
 
         internal static float PercentRightTorso(Mech mech)
         {

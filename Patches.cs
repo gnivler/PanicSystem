@@ -32,11 +32,12 @@ namespace PanicSystem
                 }
 
                 var attackCompleteMessage = message as AttackCompleteMessage;
-                Debug(new string(c: '-', count: 60));
-                Debug($"{__instance.directorSequences[0].attacker.LogDisplayName}\n-> attacks ->\n" +
-                      $"{__instance.directorSequences[0].target.LogDisplayName}");
+                var director = __instance.directorSequences;
 
-                var targetMech = (Mech) __instance.directorSequences[0].target;
+                Debug(new string(c: '|', count: 46));
+                Debug($"{director[0].attacker.DisplayName} -> attacks -> {director[0].target.DisplayName}");
+
+                var targetMech = (Mech) director[0].target;
                 if (!ShouldPanic(targetMech, attackCompleteMessage?.attackSequence))
                 {
                     return;
@@ -70,7 +71,6 @@ namespace PanicSystem
                 }
 
                 // eject saving throw
-
                 if (SavedVsEject(targetMech, attackCompleteMessage?.attackSequence))
                 {
                     return;
@@ -83,17 +83,12 @@ namespace PanicSystem
                     targetMech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
                         (new ShowActorInfoSequence(targetMech, ejectMessage, FloatieMessage.MessageNature.Debuff, true)));
 
-                    // this is necessary to avoid vanilla hangs.  the list has nulls so the try/catch deals with silently.  thanks jo
-                    //    var combat = Traverse.Create(__instance).Property("Combat").GetValue<CombatGameState>();
-                    //    var effectsTargeting = combat.EffectManager.GetAllEffectsTargeting(mech);
-
                     foreach (var effect in __instance.Combat.EffectManager.GetAllEffectsTargeting(targetMech))
                     {
                         try
                         {
                             targetMech.CancelEffect(effect);
                         }
-                        // ReSharper disable once EmptyGeneralCatchClause
                         catch // deliberately silent
                         {
                         }
@@ -132,38 +127,38 @@ namespace PanicSystem
                     // reduce panic level
                     var originalStatus = TrackedPilots[index].PilotStatus;
                     var stats = __instance.StatCollection;
-                    if (!TrackedPilots[index].ChangedRecently && (int) TrackedPilots[index].PilotStatus > 0)
+                    if (!TrackedPilots[index].PanicWorsenedRecently && (int) TrackedPilots[index].PilotStatus > 0)
                     {
                         TrackedPilots[index].PilotStatus--;
-                        TrackedPilots[index].ChangedRecently = false;
                     }
-                    else if (TrackedPilots[index].PilotStatus != originalStatus) // status has changed, reset modifiers
+
+                    if (TrackedPilots[index].PilotStatus != originalStatus) // status has changed, reset modifiers
                     {
                         stats.ModifyStat("Panic Turn Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f);
                         stats.ModifyStat("Panic Turn Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f);
 
+                        var message = __instance.Combat.MessageCenter;
                         if (TrackedPilots[index].PilotStatus == PanicStatus.Unsettled)
                         {
                             Debug("IMPROVED TO UNSETTLED!");
-                            __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, "IMPROVED TO UNSETTLED", FloatieMessage.MessageNature.Buff, false)));
+                            message.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, "IMPROVED TO UNSETTLED!", FloatieMessage.MessageNature.Buff, false)));
                             stats.ModifyStat("Panic Turn: Unsettled Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, ModSettings.UnsettledAttackModifier);
                         }
                         else if (TrackedPilots[index].PilotStatus == PanicStatus.Stressed)
                         {
                             Debug("IMPROVED TO STRESSED!");
+                            message.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, "IMPROVED TO STRESSED!", FloatieMessage.MessageNature.Buff, false)));
                             stats.ModifyStat("Panic Turn: Stressed Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, ModSettings.StressedAimModifier);
                             stats.ModifyStat("Panic Turn: Stressed Defence", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, ModSettings.StressedToHitModifier);
                         }
                         else
                         {
                             Debug("IMPROVED TO CONFIDENT!");
-                            __instance.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, "IMPROVED TO CONFIDENT", FloatieMessage.MessageNature.Buff, false)));
+                            message.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, "IMPROVED TO CONFIDENT!", FloatieMessage.MessageNature.Buff, false)));
                         }
-
-                        // TODO do we need to add ChangedRecently = true;?
-                        SayStatusFloatie(mech, true);
                     }
 
+                    TrackedPilots[index].PanicWorsenedRecently = false;
                     SaveTrackedPilots();
                 }
             }
@@ -237,7 +232,7 @@ namespace PanicSystem
                         return;
                     }
 
-                    if (TrackedPilots[index].ChangedRecently && ModSettings.OneChangePerTurn)
+                    if (TrackedPilots[index].PanicWorsenedRecently && ModSettings.OneChangePerTurn)
                     {
                         return;
                     }

@@ -15,7 +15,7 @@ namespace PanicSystem
 
     public class PanicTracker
     {
-        public bool ChangedRecently;
+        public bool PanicWorsenedRecently;
         public PanicStatus PilotStatus;
         public string TrackedMech;
 
@@ -28,7 +28,7 @@ namespace PanicSystem
         {
             TrackedMech = mech.GUID;
             PilotStatus = PanicStatus.Confident;
-            ChangedRecently = false;
+            PanicWorsenedRecently = false;
         }
     }
 

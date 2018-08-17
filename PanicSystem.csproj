@@ -30,6 +30,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="0Harmony, Version=1.1.0.0, Culture=neutral, PublicKeyToken=null">
@@ -64,10 +65,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\mod.json" />
-    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="assets\phrases.txt" />
+    <Content Include="README.md" />
+    <Content Include="Unlicense" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

@@ -21,31 +21,17 @@ namespace PanicSystem
             return enemiesHealth;
         }
 
-        internal static void EvalRightLeg(Mech mech, ref float modifiers)
+        internal static void EvalLeftTorso(Mech mech, ref float modifiers)
         {
-            if (mech.RightLegDamageLevel == LocationDamageLevel.Destroyed)
+            if (mech.LeftTorsoDamageLevel == LocationDamageLevel.Destroyed)
             {
-                modifiers += ModSettings.LeggedMaxModifier;
-                Debug($"RL destroyed, adds {ModSettings.LeggedMaxModifier}, now {modifiers:0.###}");
+                modifiers += ModSettings.SideTorsoMaxModifier;
+                Debug($"{"LT destroyed",-20} | {ModSettings.SideTorsoMaxModifier,10:#.###} | {modifiers,10:#.###}");
             }
-            else
+            else if (PercentLeftTorso(mech) < 1)
             {
-                modifiers += ModSettings.LeggedMaxModifier * PercentRightLeg(mech);
-                Debug($"RL damage adds {ModSettings.LeggedMaxModifier * PercentRightLeg(mech):0.###}, now {modifiers:0.###}");
-            }
-        }
-
-        internal static void EvalLeftLeg(Mech mech, ref float modifiers)
-        {
-            if (mech.LeftLegDamageLevel == LocationDamageLevel.Destroyed)
-            {
-                modifiers += ModSettings.LeggedMaxModifier;
-                Debug($"LL destroyed, adds {ModSettings.LeggedMaxModifier}, now {modifiers:0.###}");
-            }
-            else
-            {
-                modifiers += ModSettings.LeggedMaxModifier * PercentLeftLeg(mech);
-                Debug($"LL damage adds {ModSettings.LeggedMaxModifier * PercentLeftLeg(mech):0.###}, now {modifiers:0.###}");
+                modifiers += ModSettings.SideTorsoMaxModifier * PercentLeftTorso(mech);
+                Debug($"{"LT",-20} | {ModSettings.SideTorsoMaxModifier * PercentLeftTorso(mech),10:#.###} | {modifiers,10:#.###}");
             }
         }
 
@@ -54,26 +40,40 @@ namespace PanicSystem
             if (mech.RightTorsoDamageLevel == LocationDamageLevel.Destroyed)
             {
                 modifiers += ModSettings.SideTorsoMaxModifier;
-                Debug($"RT destroyed, adds {ModSettings.SideTorsoMaxModifier}, now {modifiers:0.###}");
+                Debug($"{"RT destroyed",-20} | {ModSettings.SideTorsoMaxModifier,10:#.###} | {modifiers,10:#.###}");
             }
             else
             {
                 modifiers += ModSettings.SideTorsoMaxModifier * PercentRightTorso(mech);
-                Debug($"RT damage adds {ModSettings.SideTorsoMaxModifier * PercentRightTorso(mech):0.###}, now {modifiers:0.###}");
+                Debug($"{"RT",-20} | {ModSettings.SideTorsoMaxModifier * PercentRightTorso(mech),10:#.###} | {modifiers,10:#.###}");
             }
         }
 
-        internal static void EvalLeftTorso(Mech mech, ref float modifiers)
+        internal static void EvalLeftLeg(Mech mech, ref float modifiers)
         {
-            if (mech.LeftTorsoDamageLevel == LocationDamageLevel.Destroyed)
+            if (mech.LeftLegDamageLevel == LocationDamageLevel.Destroyed)
             {
-                modifiers += ModSettings.SideTorsoMaxModifier;
-                Debug($"LT destroyed, adds {ModSettings.SideTorsoMaxModifier:0.###}, now {modifiers:0.###}");
+                modifiers += ModSettings.LeggedMaxModifier;
+                Debug($"{"LL destroyed",-20} | {ModSettings.LeggedMaxModifier,10:#.###} | {modifiers,10:#.###}");
             }
-            else if (PercentLeftTorso(mech) < 1)
+            else
             {
-                modifiers += ModSettings.SideTorsoMaxModifier * PercentLeftTorso(mech);
-                Debug($"LT damage adds {ModSettings.SideTorsoMaxModifier * PercentLeftTorso(mech):0.###}, now {modifiers:0.###}");
+                modifiers += ModSettings.LeggedMaxModifier * PercentLeftLeg(mech);
+                Debug($"{"LL",-20} | {ModSettings.LeggedMaxModifier * PercentLeftLeg(mech),10:#.###} | {modifiers,10:#.###}");
+            }
+        }
+
+        internal static void EvalRightLeg(Mech mech, ref float modifiers)
+        {
+            if (mech.RightLegDamageLevel == LocationDamageLevel.Destroyed)
+            {
+                modifiers += ModSettings.LeggedMaxModifier;
+                Debug($"{"RL destroyed",-20} | {ModSettings.LeggedMaxModifier,10:#.###} | {modifiers,10:#.###}");
+            }
+            else
+            {
+                modifiers += ModSettings.LeggedMaxModifier * PercentRightLeg(mech);
+                Debug($"{"RL",-20} | {ModSettings.LeggedMaxModifier,10:#.###} | {modifiers,10:#.###}");
             }
         }
 
@@ -84,6 +84,10 @@ namespace PanicSystem
 
         // these methods all produce straight percentages
         internal static float PercentPilot(Pilot pilot) => 1 - (float) pilot.Injuries / pilot.Health;
+        //{
+        //    Debug($"Health {pilot.Health} TotalHealth {pilot.TotalHealth} BonusHealth {pilot.BonusHealth} Injuries {pilot.Injuries}");
+        //    return 1 - (float) pilot.Injuries / pilot.Health;
+        //}
 
         internal static float PercentRightTorso(Mech mech)
         {

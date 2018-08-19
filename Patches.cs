@@ -26,6 +26,8 @@ namespace PanicSystem
             public static void Prefix(AttackStackSequence __instance, MessageCenterMessage message)
             {
                 var stopwatch = new Stopwatch();
+                stopwatch.Start();
+
                 if (SkipProcessingAttack(__instance, message))
                 {
                     return;
@@ -54,8 +56,6 @@ namespace PanicSystem
                         return;
                     }
                 }
-
-                stopwatch.Start();
 
                 // panic saving throw
                 if (SavedVsPanic(targetMech, attackCompleteMessage?.attackSequence))
@@ -97,6 +97,8 @@ namespace PanicSystem
                     targetMech.EjectPilot(targetMech.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
                     Debug("Ejected");
                     Debug($"Runtime to exit {stopwatch.ElapsedMilliSeconds}ms");
+                    FlushLog();
+                    
                 }
             }
 

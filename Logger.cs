@@ -1,10 +1,12 @@
 ﻿using System;
 using System.IO;
+using System.Text;
 
 namespace PanicSystem
 {
     public static class Logger
     {
+        private static StringBuilder SB = new StringBuilder();
         private static string LogFilePath => $"{PanicSystem.ModDirectory}/log.txt";
         public static void Error(Exception ex)
         {
@@ -18,11 +20,18 @@ namespace PanicSystem
         public static void Debug(string line)
         {
             if (!PanicSystem.ModSettings.Debug) return;
+            SB.Append(line);
+        }
+
+        public static void FlushLog()
+        {
             using (var writer = new StreamWriter(LogFilePath, true))
             {
-                writer.WriteLine(line);
+                writer.WriteLine(SB.ToString());
             }
+            SB = new StringBuilder();
         }
+
 
         public static void Clear()
         {

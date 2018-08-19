@@ -549,7 +549,7 @@ namespace PanicSystem
 
             Debug($"Damage to armor: {attackSequence.attackArmorDamage}, structure: {attackSequence.attackStructureDamage}");
 
-            if (attackSequence.attackStructureDamage > 0)
+            if (attackSequence.attackStructureDamage > ModSettings.MinimumStructureDamageRequired)
             {
                 Debug($"{attackSequence.attackStructureDamage} structural damage requires a panic save");
                 return true;
@@ -557,7 +557,7 @@ namespace PanicSystem
 
             // TODO wtf?
             /* + attackSequence.attackArmorDamage believe this isn't necessary because method is called in prefix*/
-            if (attackSequence.attackArmorDamage / mech.CurrentArmor * 100 < ModSettings.MinimumarmorDamagePercentageRequired)
+            if (attackSequence.attackArmorDamage / mech.CurrentArmor * 100 < ModSettings.MinimumArmorDamagePercentageRequired)
             {
                 Debug($"Not enough damage ({attackSequence.attackArmorDamage})");
                 return false;
@@ -576,7 +576,8 @@ namespace PanicSystem
             // panic
             public bool PlayersCanPanic = true;
             public bool EnemiesCanPanic = true;
-            public float MinimumarmorDamagePercentageRequired = 10;
+            public float MinimumArmorDamagePercentageRequired = 10;
+            public float MinimumStructureDamageRequired = 6;
             public bool OneChangePerTurn = false;
             public bool LosingLimbAlwaysPanics = false;
             public float UnsteadyModifier = 10;

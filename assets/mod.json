@@ -3,7 +3,7 @@
 
   "Enabled": true,
 
-  "Version": "2.981",
+  "Version": "2.982",
   "Description": "Causes pilots to panic and eject based on multiple criteria.",
   "Author": "Hard forked and modified by donZappo and gnivler, with original design by mpstark and RealityMachina",
   "Website": "https://github.com/gnivler/PanicSystem",
@@ -24,7 +24,7 @@
 	"LosingLimbAlwaysPanics": false,
     "OneChangePerTurn": false,
     "MinimumArmorDamagePercentageRequired": 10,
-    "MinimumStructureDamageRequired": 6, /* new in 2.981 */
+    "MinimumStructureDamageRequired": 5, /* new in 2.981 */
 
 	/* Effect Modifiers */
     "UnsteadyModifier": 5,

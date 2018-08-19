@@ -558,7 +558,7 @@ namespace PanicSystem
 
             if (attackSequence.attackStructureDamage >= ModSettings.MinimumStructureDamageRequired)
             {
-                Debug($"{attackSequence.attackStructureDamage} structural damage requires a panic save");
+                Debug($"{attackSequence.attackStructureDamage} structure damage requires panic throw");
                 return true;
             }
 
@@ -582,7 +582,7 @@ namespace PanicSystem
             public bool PlayersCanPanic = true;
             public bool EnemiesCanPanic = true;
             public float MinimumArmorDamagePercentageRequired = 10;
-            public float MinimumStructureDamageRequired = 6;
+            public float MinimumStructureDamageRequired = 5;
             public bool OneChangePerTurn = false;
             public bool LosingLimbAlwaysPanics = false;
             public float UnsteadyModifier = 10;

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Text;
+using Stream = RenderHeads.Media.AVProVideo.Stream;
 
 namespace PanicSystem
 {
@@ -8,12 +9,14 @@ namespace PanicSystem
     {
         private static StringBuilder SB = new StringBuilder();
         private static string LogFilePath => $"{PanicSystem.ModDirectory}/log.txt";
+        private static StreamWriter sw = new StreamWriter(LogFilePath, true);
+
         public static void Error(Exception ex)
         {
-            using (var writer = new StreamWriter(LogFilePath, true))
+            using (sw)
             {
-                writer.WriteLine($"Message: {ex.Message}");
-                writer.WriteLine($"StackTrace: {ex.StackTrace}");
+                sw.WriteLine($"Message: {ex.Message}");
+                sw.WriteLine($"StackTrace: {ex.StackTrace}");
             }
         }
 
@@ -25,11 +28,13 @@ namespace PanicSystem
 
         public static void FlushLog()
         {
-            using (var writer = new StreamWriter(LogFilePath, true))
+            if (SB.Length == 0) return;
+            using (sw)
             {
-                writer.WriteLine(SB.ToString());
+                sw.WriteLine(SB.ToString());
             }
-            SB = new StringBuilder();
+
+            SB.Length = 0;
         }
 
         public static void Clear()

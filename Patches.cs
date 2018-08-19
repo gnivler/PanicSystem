@@ -38,7 +38,7 @@ namespace PanicSystem
                 var attackCompleteMessage = message as AttackCompleteMessage;
                 var director = __instance.directorSequences;
 
-                Debug(new string(c: '_', count: 46));
+                Debug(new string(c: '#', count: 46));
                 Debug($"{director[0].attacker.DisplayName} attacks {director[0].target.DisplayName}");
 
                 var targetMech = (Mech) director[0].target;
@@ -64,7 +64,7 @@ namespace PanicSystem
                 // panic saving throw
                 if (SavedVsPanic(targetMech, attackCompleteMessage?.attackSequence))
                 {
-                    Debug($"Runtime past panic throw {stopwatch.ElapsedMilliSeconds}");
+                    Debug($"Runtime past panic throw {stopwatch.ElapsedMilliSeconds}ms");
                     FlushLog();
                     return;
                 }
@@ -79,7 +79,7 @@ namespace PanicSystem
                 // eject saving throw
                 if (SavedVsEject(targetMech, attackCompleteMessage?.attackSequence))
                 {
-                    Debug($"Runtime past eject throw {stopwatch.ElapsedMilliSeconds}");
+                    Debug($"Runtime past eject throw {stopwatch.ElapsedMilliSeconds}ms");
                     FlushLog();
                     return;
                 }

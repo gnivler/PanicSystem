@@ -3,7 +3,7 @@
 
   "Enabled": true,
 
-  "Version": "2.7",
+  "Version": "2.981",
   "Description": "Causes pilots to panic and eject based on multiple criteria.",
   "Author": "Hard forked and modified by donZappo and gnivler, with original design by mpstark and RealityMachina",
   "Website": "https://github.com/gnivler/PanicSystem",
@@ -12,7 +12,7 @@
 
   "Settings": {
     "Debug": false,
-    "EnableEjectPhrases": true, // set to true for floaties when at knockdowns
+    "EnableEjectPhrases": true, // set to true for floaties at eject
     "FloatieSpam": false,
     
     /* Panic Settings */
@@ -23,7 +23,8 @@
     "ConsiderEjectingWhenAlone": false,
 	"LosingLimbAlwaysPanics": false,
     "OneChangePerTurn": false,
-	"MinimumArmourDamagePercentageRequired": 5,
+    "MinimumArmorDamagePercentageRequired": 10,
+    "MinimumStructureDamageRequired": 6, /* new in 2.981 */
 
 	/* Effect Modifiers */
     "UnsteadyModifier": 5,
@@ -38,7 +39,7 @@
     "MoraleMaxModifier": 10,
     "UnsettledPanicModifier": 1,     /* new in 2.9 */
     "StressedPanicModifier" : 0.66,  /* new in 2.9 */
-    "PanickedPanicModifier" : 0.33,  /* new in 2.9 */
+    "PanickedPanicModifier" : 0.50,  /* new in 2.9 */
 
 	/* Ejection Bonuses and Limits */
     "GutsEjectionResistPerPoint": 3,

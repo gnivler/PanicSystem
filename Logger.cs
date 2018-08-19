@@ -20,7 +20,7 @@ namespace PanicSystem
         public static void Debug(string line)
         {
             if (!PanicSystem.ModSettings.Debug) return;
-            SB.Append(line);
+            SB.Append(line + "\n");
         }
 
         public static void FlushLog()

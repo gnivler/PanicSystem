@@ -333,7 +333,7 @@ namespace PanicSystem
                 Debug("Drunkard - not ejecting");
                 mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
                     (new ShowActorInfoSequence(mech, "..HIC!  I ain't.. ejettin'", FloatieMessage.MessageNature.PilotInjury, true)));
-
+                FlushLog();
                 return false;
             }
 
@@ -361,6 +361,7 @@ namespace PanicSystem
             {
                 SaySpamFloatie(mech, "EJECT RESIST!", FloatieMessage.MessageNature.Dodge);
                 Debug("Resisted ejection");
+                FlushLog();
                 return true;
             }
 
@@ -374,6 +375,7 @@ namespace PanicSystem
                 Debug("Made ejection save");
                 SaySpamFloatie(mech, "EJECT SAVE!", FloatieMessage.MessageNature.Dodge);
                 SaySpamFloatie(mech, $"MECH HEALTH {MechHealth(mech):#.#}%", FloatieMessage.MessageNature.Neutral);
+                FlushLog();
                 return true;
             }
 
@@ -396,7 +398,11 @@ namespace PanicSystem
             Debug($"{"Panic multiplier",-20} | {GetPanicModifier(TrackedPilots[GetTrackedPilotIndex(mech)].PilotStatus),10} | {savingThrow,10:#.###}");
 
             savingThrow = (float) Math.Max(0f, Math.Round(savingThrow));
-            if (!(savingThrow >= 1)) return false;
+            if (!(savingThrow >= 1))
+            {
+                FlushLog();
+                return false;
+            }
 
             var roll = UnityEngine.Random.Range(1, 100);
 
@@ -467,7 +473,7 @@ namespace PanicSystem
                     SayStatusFloatie(mech, false);
                 }
             }
-
+            FlushLog();
             return false;
         }
 

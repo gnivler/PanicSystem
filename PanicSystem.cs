@@ -554,7 +554,7 @@ namespace PanicSystem
                 return false;
             }
 
-            Debug($"Damage to armor: {attackSequence.attackArmorDamage}, structure: {attackSequence.attackStructureDamage}");
+            Debug($"Damage >>> Armor: {attackSequence.attackArmorDamage} Structure: {attackSequence.attackStructureDamage}");
 
             if (attackSequence.attackStructureDamage >= ModSettings.MinimumStructureDamageRequired)
             {
@@ -562,13 +562,13 @@ namespace PanicSystem
                 return true;
             }
 
-            if (attackSequence.attackArmorDamage / mech.CurrentArmor * 100 < ModSettings.MinimumArmorDamagePercentageRequired)
+            if (attackSequence.attackArmorDamage / mech.CurrentArmor * 100 <= ModSettings.MinimumArmorDamagePercentageRequired)
             {
                 Debug($"Not enough damage");
                 return false;
             }
 
-            Debug($"{attackSequence.attackArmorDamage} armor damage attack requires a panic save");
+            Debug($"Damage requires a panic throw");
             return true;
         }
 

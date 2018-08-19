@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using BattleTech;
 using BattleTech.Save;
@@ -63,6 +64,7 @@ namespace PanicSystem
                 // panic saving throw
                 if (SavedVsPanic(targetMech, attackCompleteMessage?.attackSequence))
                 {
+                    Debug($"Runtime past panic throw {stopwatch.ElapsedMilliSeconds}");
                     FlushLog();
                     return;
                 }
@@ -77,6 +79,7 @@ namespace PanicSystem
                 // eject saving throw
                 if (SavedVsEject(targetMech, attackCompleteMessage?.attackSequence))
                 {
+                    Debug($"Runtime past eject throw {stopwatch.ElapsedMilliSeconds}");
                     FlushLog();
                     return;
                 }

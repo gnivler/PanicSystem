@@ -400,6 +400,7 @@ namespace PanicSystem
             savingThrow = (float) Math.Max(0f, Math.Round(savingThrow));
             if (!(savingThrow >= 1))
             {
+                Debug("Negative saving throw");
                 FlushLog();
                 return false;
             }
@@ -555,17 +556,15 @@ namespace PanicSystem
 
             Debug($"Damage to armor: {attackSequence.attackArmorDamage}, structure: {attackSequence.attackStructureDamage}");
 
-            if (attackSequence.attackStructureDamage > ModSettings.MinimumStructureDamageRequired)
+            if (attackSequence.attackStructureDamage >= ModSettings.MinimumStructureDamageRequired)
             {
                 Debug($"{attackSequence.attackStructureDamage} structural damage requires a panic save");
                 return true;
             }
 
-            // TODO wtf?
-            /* + attackSequence.attackArmorDamage believe this isn't necessary because method is called in prefix*/
             if (attackSequence.attackArmorDamage / mech.CurrentArmor * 100 < ModSettings.MinimumArmorDamagePercentageRequired)
             {
-                Debug($"Not enough damage ({attackSequence.attackArmorDamage})");
+                Debug($"Not enough damage");
                 return false;
             }
 

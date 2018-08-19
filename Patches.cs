@@ -37,8 +37,8 @@ namespace PanicSystem
                 var attackCompleteMessage = message as AttackCompleteMessage;
                 var director = __instance.directorSequences;
 
-                Debug(new string(c: '|', count: 46));
-                Debug($"{director[0].attacker.DisplayName} -> attacks -> {director[0].target.DisplayName}");
+                Debug(new string(c: '_', count: 46));
+                Debug($"{director[0].attacker.DisplayName} attacks {director[0].target.DisplayName}");
 
                 var targetMech = (Mech) director[0].target;
                 if (!ShouldPanic(targetMech, attackCompleteMessage?.attackSequence))
@@ -181,32 +181,23 @@ namespace PanicSystem
             }
         }
 
-        //[HarmonyPatch(typeof(LanceSpawnerGameLogic), nameof(LanceSpawnerGameLogic.OnTriggerSpawn))]
-        //public static class LanceSpawnerGameLogicPatch
-        //{
-        //    public static void Postfix(LanceSpawnerGameLogic __instance)
-        //    {
-        //        foreach (var mech in __instance.Combat.AllMechs)
-        //        {
-        //            Debug($"Mech {mech.DisplayName} - {CheckTrackedPilots(mech)}");
-        //            CheckTrackedPilots(mech);
-        //        }
-        //    }
-        //}
-
-        //  TODO this may not be necessary but I saw a game where 2 mechs were not tracked for unknown reasons
-        // [HarmonyPatch(typeof(CombatGameState), "_Init")]
-        // public static class CombatGameStatePatch
-        // {
-        //     public static void Postfix(CombatGameState __instance)
-        //     {
-        //         var combat = __instance;
-        //         foreach (var mech in combat.AllMechs)
-        //         {
-        //             CheckTrackedPilots(mech);
-        //         }
-        //     }
-        // }
+        [HarmonyPatch(typeof(LanceSpawnerGameLogic), nameof(LanceSpawnerGameLogic.OnTriggerSpawn))]
+        public static class LanceSpawnerGameLogicPatch
+        {
+            public static void Postfix(LanceSpawnerGameLogic __instance)
+            {
+                foreach (var mech in __instance.Combat.AllMechs)
+                {
+                    var index = GetTrackedPilotIndex(mech);
+                    if (index == -1)
+                    {
+                        TrackedPilots.Add(new PanicTracker(mech)); // add a new tracker to tracked pilot
+                        SaveTrackedPilots();
+                        return;
+                    }
+                }
+            }
+        }
 
         [HarmonyPatch(typeof(AAR_SalvageScreen), "OnCompleted")]
         public static class BattletechSalvageScreenPatch

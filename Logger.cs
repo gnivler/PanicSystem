@@ -32,7 +32,6 @@ namespace PanicSystem
             SB = new StringBuilder();
         }
 
-
         public static void Clear()
         {
             using (var writer = new StreamWriter(LogFilePath, false))

@@ -1,47 +1,50 @@
 ﻿using System;
 using System.IO;
 using System.Text;
-using Stream = RenderHeads.Media.AVProVideo.Stream;
 
 namespace PanicSystem
 {
     public static class Logger
     {
-        private static StringBuilder SB = new StringBuilder();
-        private static string LogFilePath => $"{PanicSystem.ModDirectory}/log.txt";
-        private static StreamWriter sw = new StreamWriter(LogFilePath, true);
+        private static StringBuilder sb = new StringBuilder();
+        private static string LogFilePath => $"{PanicSystem.modDirectory}/log.txt";
+        private const string Version = "v3.0";
 
         public static void Error(Exception ex)
         {
-            using (sw)
+            using (var writer = new StreamWriter(LogFilePath, true))
             {
-                sw.WriteLine($"Message: {ex.Message}");
-                sw.WriteLine($"StackTrace: {ex.StackTrace}");
+                writer.WriteLine($"Message: {ex.Message}");
+                writer.WriteLine($"StackTrace: {ex.StackTrace}");
             }
         }
 
         public static void Debug(string line)
         {
-            if (!PanicSystem.ModSettings.Debug) return;
-            SB.Append(line + "\n");
+            if (!PanicSystem.modSettings.Debug) return;
+            sb.Append(line + "\n");
         }
 
-        public static void FlushLog()
+        public static void FlushLogBuffer()
         {
-            if (SB.Length == 0) return;
-            using (sw)
+            if (sb.Length == 0)
             {
-                sw.WriteLine(SB.ToString());
+                return;
             }
 
-            SB.Length = 0;
+            using (var writer = new StreamWriter(LogFilePath, true))
+            {
+                writer.WriteLine(sb.ToString());
+            }
+
+            sb.Length = 0;
         }
 
         public static void Clear()
         {
             using (var writer = new StreamWriter(LogFilePath, false))
             {
-                writer.WriteLine($"{DateTime.Now.ToLongTimeString()} Init");
+                writer.WriteLine($"{DateTime.Now.ToLongTimeString()} PanicSystem {Version}");
             }
         }
     }

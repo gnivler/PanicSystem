@@ -1,11 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Runtime.Remoting.Messaging;
 using BattleTech;
-using BattleTech.UI;
 using Harmony;
 using Newtonsoft.Json;
 using static PanicSystem.Controller;
@@ -13,30 +10,28 @@ using static PanicSystem.Logger;
 using static PanicSystem.MechChecks;
 
 // HUGE thanks to RealityMachina and mpstark for their work, outstanding.
-
-// 2.8 reworked design by don Zappo, balancing and testing by ganimal, and coding by gnivler
 namespace PanicSystem
 {
     public static class PanicSystem
     {
-        internal static Settings ModSettings = new Settings();
-        internal static string ActiveJsonPath; //store current tracker here
-        internal static string StorageJsonPath; //store our meta trackers here
-        internal static string ModDirectory;
-        internal static List<string> EjectPhraseList = new List<string>();
-        internal static string EjectPhraseListPath;
+        internal static Settings modSettings = new Settings();
+        internal static string activeJsonPath; //store current tracker here
+        internal static string storageJsonPath; //store our meta trackers here
+        internal static string modDirectory;
+        internal static List<string> ejectPhraseList = new List<string>();
+        private static string ejectPhraseListPath;
 
         public static void Init(string modDir, string modSettings)
         {
             var harmony = HarmonyInstance.Create("com.BattleTech.PanicSystem");
             harmony.PatchAll(Assembly.GetExecutingAssembly());
-            ModDirectory = modDir;
-            ActiveJsonPath = Path.Combine(modDir, "PanicSystem.json");
-            StorageJsonPath = Path.Combine(modDir, "PanicSystemStorage.json");
+            modDirectory = modDir;
+            activeJsonPath = Path.Combine(modDir, "PanicSystem.json");
+            storageJsonPath = Path.Combine(modDir, "PanicSystemStorage.json");
             try
             {
-                ModSettings = JsonConvert.DeserializeObject<Settings>(modSettings);
-                if (ModSettings.Debug)
+                PanicSystem.modSettings = JsonConvert.DeserializeObject<Settings>(modSettings);
+                if (PanicSystem.modSettings.Debug)
                 {
                     Clear();
                 }
@@ -44,23 +39,23 @@ namespace PanicSystem
             catch (Exception e)
             {
                 Error(e);
-                ModSettings = new Settings();
+                PanicSystem.modSettings = new Settings();
             }
 
-            if (!ModSettings.EnableEjectPhrases)
+            if (!PanicSystem.modSettings.EnableEjectPhrases)
             {
                 return;
             }
 
             try
             {
-                EjectPhraseListPath = Path.Combine(modDir, "phrases.txt");
-                var reader = new StreamReader(EjectPhraseListPath);
+                ejectPhraseListPath = Path.Combine(modDir, "phrases.txt");
+                var reader = new StreamReader(ejectPhraseListPath);
                 using (reader)
                 {
                     while (!reader.EndOfStream)
                     {
-                        EjectPhraseList.Add(reader.ReadLine());
+                        ejectPhraseList.Add(reader.ReadLine());
                     }
                 }
             }
@@ -75,9 +70,9 @@ namespace PanicSystem
         /// </summary>
         /// <param name="mech"></param>
         /// <returns></returns>
-        public static bool AlwaysRollsForPanic(Mech mech)
+        private static bool AlwaysRollsForPanic(Mech mech)
         {
-            if (!ModSettings.ConsiderEjectingWhenAlone)
+            if (!modSettings.ConsiderEjectingWhenAlone)
             {
                 return false;
             }
@@ -95,7 +90,7 @@ namespace PanicSystem
 
             // one health left and a mech under MechHealthAlone percent
             if (pilot.Health - pilot.Injuries == 1 &&
-                MechHealth(mech) <= ModSettings.MechHealthAlone)
+                MechHealth(mech) <= modSettings.MechHealthAlone)
             {
                 Debug("Last straw: Pilot and mech are nearly dead");
                 return true;
@@ -104,7 +99,7 @@ namespace PanicSystem
             // no allies and badly outmatched
             var enemyHealth = GetAllEnemiesHealth(mech);
             if (mech.Combat.GetAllAlliesOf(mech).TrueForAll(m => m.IsDead || m.GUID == mech.GUID) &&
-                enemyHealth >= (mech.SummaryArmorCurrent + mech.SummaryStructureCurrent) * 3) // deliberately simple for better or worse (3-to-1 health)
+                enemyHealth >= (mech.SummaryArmorCurrent + mech.SummaryStructureCurrent) * 3)
             {
                 Debug("Last straw: Sole Survivor, hopeless situation");
                 return true;
@@ -120,40 +115,43 @@ namespace PanicSystem
         public static void ApplyPanicDebuff(Mech mech)
         {
             var index = GetTrackedPilotIndex(mech);
-            if (TrackedPilots[index].TrackedMech != mech.GUID)
+            if (trackedPilots[index].trackedMech != mech.GUID)
             {
-                Debug("Pilot and mech mismatch");
+                Debug("Pilot and mech mismatch; no status to change");
                 return;
             }
 
-            if (TrackedPilots[index].PilotStatus == PanicStatus.Confident)
+            if (trackedPilots[index].pilotStatus != PanicStatus.Confident)
             {
-                Debug("Condition change: Unsetlled");
-                TrackedPilots[index].PilotStatus = PanicStatus.Unsettled;
-                mech.StatCollection.ModifyStat("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f);
-                mech.StatCollection.ModifyStat("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f);
-                mech.StatCollection.ModifyStat("Panic Attack: Unsettled Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, ModSettings.UnsettledAttackModifier);
+                if (trackedPilots[index].pilotStatus == PanicStatus.Unsettled)
+                {
+                    Debug("Condition worsened: Stressed");
+                    trackedPilots[index].pilotStatus = PanicStatus.Stressed;
+                    mech.StatCollection.ModifyStat("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f);
+                    mech.StatCollection.ModifyStat("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f);
+                    mech.StatCollection.ModifyStat("Panic Attack: Stressed Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, modSettings.StressedAimModifier);
+                    mech.StatCollection.ModifyStat("Panic Attack: Stressed Defence", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, modSettings.StressedToHitModifier);
+                }
+                else if (trackedPilots[index].pilotStatus == PanicStatus.Stressed)
+                {
+                    Debug("Condition worsened: Panicked");
+                    trackedPilots[index].pilotStatus = PanicStatus.Panicked;
+                    mech.StatCollection.ModifyStat("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f);
+                    mech.StatCollection.ModifyStat("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f);
+                    mech.StatCollection.ModifyStat("Panic Attack: Panicking Aim!", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, modSettings.PanickedAimModifier);
+                    mech.StatCollection.ModifyStat("Panic Attack: Panicking Defence!", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, modSettings.PanickedToHitModifier);
+                }
             }
-            else if (TrackedPilots[index].PilotStatus == PanicStatus.Unsettled)
+            else
             {
-                Debug("Condition change: Stressed");
-                TrackedPilots[index].PilotStatus = PanicStatus.Stressed;
+                Debug("Condition worsened: Unsetlled");
+                trackedPilots[index].pilotStatus = PanicStatus.Unsettled;
                 mech.StatCollection.ModifyStat("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f);
                 mech.StatCollection.ModifyStat("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f);
-                mech.StatCollection.ModifyStat("Panic Attack: Stressed Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, ModSettings.StressedAimModifier);
-                mech.StatCollection.ModifyStat("Panic Attack: Stressed Defence", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, ModSettings.StressedToHitModifier);
-            }
-            else if (TrackedPilots[index].PilotStatus == PanicStatus.Stressed)
-            {
-                Debug("Condition change: Panicked");
-                TrackedPilots[index].PilotStatus = PanicStatus.Panicked;
-                mech.StatCollection.ModifyStat("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f);
-                mech.StatCollection.ModifyStat("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f);
-                mech.StatCollection.ModifyStat("Panic Attack: Panicking Aim!", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, ModSettings.PanickedAimModifier);
-                mech.StatCollection.ModifyStat("Panic Attack: Panicking Defence!", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, ModSettings.PanickedToHitModifier);
+                mech.StatCollection.ModifyStat("Panic Attack: Unsettled Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, modSettings.UnsettledAttackModifier);
             }
 
-            TrackedPilots[index].PanicWorsenedRecently = true;
+            trackedPilots[index].panicWorsenedRecently = true;
         }
 
         /// <summary>
@@ -171,8 +169,8 @@ namespace PanicSystem
             }
 
             if (attackSequence == null ||
-                mech.team.IsLocalPlayer && !ModSettings.PlayersCanPanic ||
-                !mech.team.IsLocalPlayer && !ModSettings.EnemiesCanPanic)
+                mech.team.IsLocalPlayer && !modSettings.PlayersCanPanic ||
+                !mech.team.IsLocalPlayer && !modSettings.EnemiesCanPanic)
             {
                 return false;
             }
@@ -186,33 +184,33 @@ namespace PanicSystem
         /// <param name="mech"></param>
         /// <param name="index"></param>
         /// <returns></returns>
-        public static bool CheckTrackedPilots(Mech mech)
+        private static void CheckTrackedPilots(Mech mech)
         {
             var index = GetTrackedPilotIndex(mech);
             if (index < 0)
             {
                 // add a new tracker to tracked pilot, then we run it all over again
-                TrackedPilots.Add(new PanicTracker(mech));
+                trackedPilots.Add(new PanicTracker(mech));
                 index = GetTrackedPilotIndex(mech);
                 if (index < 0)
                 {
-                    return false;
+                    return;
                 }
             }
 
-            if (TrackedPilots[index].TrackedMech != mech.GUID)
+            if (trackedPilots[index].trackedMech != mech.GUID)
             {
-                return false;
+                return;
             }
 
-            if (TrackedPilots[index].TrackedMech == mech.GUID &&
-                TrackedPilots[index].PanicWorsenedRecently &&
-                ModSettings.OneChangePerTurn)
+            if (trackedPilots[index].trackedMech == mech.GUID &&
+                trackedPilots[index].panicWorsenedRecently &&
+                modSettings.OneChangePerTurn)
             {
-                return false;
+                return;
             }
 
-            return true;
+            return;
         }
 
         // 2.9 feature - scale the difficulty of panic levels being reached
@@ -222,15 +220,15 @@ namespace PanicSystem
             {
                 case PanicStatus.Unsettled:
                 {
-                    return ModSettings.UnsettledPanicModifier;
+                    return modSettings.UnsettledPanicModifier;
                 }
                 case PanicStatus.Stressed:
                 {
-                    return ModSettings.StressedPanicModifier;
+                    return modSettings.StressedPanicModifier;
                 }
                 case PanicStatus.Panicked:
                 {
-                    return ModSettings.PanickedPanicModifier;
+                    return modSettings.PanickedPanicModifier;
                 }
                 default:
                     return 1f;
@@ -247,59 +245,80 @@ namespace PanicSystem
         {
             var pilot = mech.GetPilot();
             var weapons = mech.Weapons;
-            var gutsAndTacticsSum = mech.SkillGuts * ModSettings.GutsEjectionResistPerPoint +
-                                    mech.SkillTactics * ModSettings.TacticsEjectionResistPerPoint;
+            var gutsAndTacticsSum = mech.SkillGuts * modSettings.GutsEjectionResistPerPoint +
+                                    mech.SkillTactics * modSettings.TacticsEjectionResistPerPoint;
             float totalMultiplier = 0;
 
+            Debug(new string('-', 46));
             Debug($"{"Factors",-20} | {"Change",10} | {"Total",10}");
-            Debug(new string(c: '-', count: 46));
+            Debug(new string('-', 46));
 
+            Debug($"{$"Mech health {MechHealth(mech):#.##}%",-20} | {"",10} |");
+                                                
             if (PercentPilot(pilot) < 1)
             {
-                totalMultiplier += ModSettings.PilotHealthMaxModifier * (1 - PercentPilot(pilot));
-                Debug($"{"Pilot injuries",-20} | {ModSettings.PilotHealthMaxModifier * (1 - PercentPilot(pilot)),10:#.###} | {totalMultiplier,10:#.###}");
+                totalMultiplier += modSettings.PilotHealthMaxModifier * PercentPilot(pilot);
+                Debug($"{"Pilot injuries",-20} | {modSettings.PilotHealthMaxModifier * PercentPilot(pilot),10:#.###} | {totalMultiplier,10:#.###}");
             }
 
             if (mech.IsUnsteady)
             {
-                totalMultiplier += ModSettings.UnsteadyModifier;
-                Debug($"{"Unsteady",-20} | {ModSettings.UnsteadyModifier,10} | {totalMultiplier,10:#.###}");
+                totalMultiplier += modSettings.UnsteadyModifier;
+                Debug($"{"Unsteady",-20} | {modSettings.UnsteadyModifier,10} | {totalMultiplier,10:#.###}");
             }
 
             if (mech.IsFlaggedForKnockdown)
             {
-                totalMultiplier += ModSettings.UnsteadyModifier;
-                Debug($"{"Knockdown",-20} | {ModSettings.UnsteadyModifier,10} | {totalMultiplier,10:#.###}");
+                totalMultiplier += modSettings.UnsteadyModifier;
+                Debug($"{"Knockdown",-20} | {modSettings.UnsteadyModifier,10} | {totalMultiplier,10:#.###}");
             }
 
             if (PercentHead(mech) < 1)
             {
-                totalMultiplier += ModSettings.HeadMaxModifier * PercentHead(mech);
-                Debug($"{"Head",-20} | {ModSettings.HeadMaxModifier * PercentHead(mech),10:#.###} | {totalMultiplier,10:#.###}");
+                totalMultiplier += modSettings.HeadMaxModifier * PercentHead(mech);
+                Debug($"{"Head",-20} | {modSettings.HeadMaxModifier * PercentHead(mech),10:#.###} | {totalMultiplier,10:#.###}");
             }
 
             if (PercentCenterTorso(mech) < 1)
             {
-                totalMultiplier += ModSettings.CenterTorsoMaxModifier * PercentCenterTorso(mech);
-                Debug($"{"CT",-20} | {ModSettings.CenterTorsoMaxModifier * PercentCenterTorso(mech),10:#.###} | {totalMultiplier,10:#.###}");
+                totalMultiplier += modSettings.CenterTorsoMaxModifier * (1 - PercentCenterTorso(mech));
+                Debug($"{"CT",-20} | {modSettings.CenterTorsoMaxModifier * (1 - PercentCenterTorso(mech)),10:#.###} | {totalMultiplier,10:#.###}");
             }
 
-            // these methods deal with missing limbs (0 modifiers get replaced with max modifiers)
-            EvalLeftTorso(mech, ref totalMultiplier);
-            EvalRightTorso(mech, ref totalMultiplier);
-            EvalLeftLeg(mech, ref totalMultiplier);
-            EvalRightLeg(mech, ref totalMultiplier);
+            if (PercentLeftTorso(mech) < 1)
+            {
+                totalMultiplier += modSettings.SideTorsoMaxModifier * (1 - PercentLeftTorso(mech));
+                Debug($"{"LT",-20} | {modSettings.SideTorsoMaxModifier * (1 - PercentLeftTorso(mech)),10:#.###} | {totalMultiplier,10:#.###}");
+            }
+
+            if (PercentRightTorso(mech) < 1)
+            {
+                totalMultiplier += modSettings.SideTorsoMaxModifier * (1 - PercentRightTorso(mech));
+                Debug($"{"RT",-20} | {modSettings.SideTorsoMaxModifier * (1 - PercentRightTorso(mech)),10:#.###} | {totalMultiplier,10:#.###}");
+            }
+
+            if (PercentLeftLeg(mech) < 1)
+            {
+                totalMultiplier += modSettings.LeggedMaxModifier * (1 - PercentLeftLeg(mech));
+                Debug($"{"LL",-20} | {modSettings.LeggedMaxModifier * (1 - PercentLeftLeg(mech)),10:#.###} | {totalMultiplier,10:#.###}");
+            }
+
+            if (PercentRightLeg(mech) < 1)
+            {
+                totalMultiplier += modSettings.LeggedMaxModifier * (1 - PercentRightLeg(mech));
+                Debug($"{"RL",-20} | {modSettings.LeggedMaxModifier * (1 - PercentRightLeg(mech)),10:#.###} | {totalMultiplier,10:#.###}");
+            }
 
             // weaponless
             if (weapons.TrueForAll(w => w.DamageLevel != ComponentDamageLevel.Functional || !w.HasAmmo)) // only fully unusable
             {
                 if (UnityEngine.Random.Range(1, 5) == 0) // 20% chance of appearing
                 {
-                    SaySpamFloatie(mech, "NO WEAPONS!", FloatieMessage.MessageNature.Death);
+                    SaySpamFloatie(mech, "NO WEAPONS!");
                 }
 
-                totalMultiplier += ModSettings.WeaponlessModifier;
-                Debug($"{"Weaponless",-20} | {ModSettings.WeaponlessModifier,10} | {totalMultiplier,10:#.###}");
+                totalMultiplier += modSettings.WeaponlessModifier;
+                Debug($"{"Weaponless",-20} | {modSettings.WeaponlessModifier,10} | {totalMultiplier,10:#.###}");
             }
 
             // alone
@@ -307,75 +326,73 @@ namespace PanicSystem
             {
                 if (UnityEngine.Random.Range(1, 5) == 0) // 20% chance of appearing
                 {
-                    SaySpamFloatie(mech, "NO ALLIES!", FloatieMessage.MessageNature.Death);
+                    SaySpamFloatie(mech, "NO ALLIES!");
                 }
 
-                totalMultiplier += ModSettings.AloneModifier;
-                Debug($"{"Alone",-20} | {ModSettings.AloneModifier,10} | {totalMultiplier,10:#.###}");
+                totalMultiplier += modSettings.AloneModifier;
+                Debug($"{"Alone",-20} | {modSettings.AloneModifier,10} | {totalMultiplier,10:#.###}");
             }
 
             totalMultiplier -= gutsAndTacticsSum;
             Debug($"{"Guts and Tactics",-20} | {$"-{gutsAndTacticsSum}",10} | {totalMultiplier,10:#.###}");
 
-            var moraleModifier = ModSettings.MoraleMaxModifier * (mech.Combat.LocalPlayerTeam.Morale - ModSettings.MedianMorale) / ModSettings.MedianMorale;
+            var moraleModifier = modSettings.MoraleMaxModifier * (mech.Combat.LocalPlayerTeam.Morale - modSettings.MedianMorale) / modSettings.MedianMorale;
             totalMultiplier -= moraleModifier;
             Debug($"{$"Morale {mech.Combat.LocalPlayerTeam.Morale}",-20} | {moraleModifier * -1,10:#.###} | {totalMultiplier,10:#.###}");
 
             return totalMultiplier;
         }
 
-        public static bool SavedVsEject(Mech mech, AttackDirector.AttackSequence attackSequence)
+        public static bool SavedVsEject(Mech mech, float savingThrow, AttackDirector.AttackSequence attackSequence)
         {
             // TODO test
-            if (ModSettings.QuirksEnabled && mech.pilot.pilotDef.PilotTags.Contains("pilot_drunk") &&
+            if (modSettings.QuirksEnabled && mech.pilot.pilotDef.PilotTags.Contains("pilot_drunk") &&
                 mech.pilot.pilotDef.TimeoutRemaining > 0)
             {
                 Debug("Drunkard - not ejecting");
                 mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
                     (new ShowActorInfoSequence(mech, "..HIC!  I ain't.. ejettin'", FloatieMessage.MessageNature.PilotInjury, true)));
-                FlushLog();
+                FlushLogBuffer();
                 return false;
             }
 
-            var savingThrow = GetSavingThrow(mech, attackSequence);
-
             // TODO test
-            if (ModSettings.QuirksEnabled && mech.pilot.pilotDef.PilotTags.Contains("pilot_dependable"))
+            if (modSettings.QuirksEnabled && mech.pilot.pilotDef.PilotTags.Contains("pilot_dependable"))
             {
-                savingThrow -= ModSettings.DependableModifier;
-                Debug($"{"Dependable",-20} | {ModSettings.DependableModifier,10} | {savingThrow,10:#.###}");
+                savingThrow -= modSettings.DependableModifier;
+                Debug($"{"Dependable",-20} | {modSettings.DependableModifier,10} | {savingThrow,10:#.###}");
             }
 
             // calculate result
-            savingThrow = Math.Max(0f, (savingThrow - ModSettings.BaseEjectionResist) * ModSettings.EjectChanceMultiplier);
+            savingThrow = Math.Max(0f, savingThrow - modSettings.BaseEjectionResist);
+            Debug($"{"Base ejection resist",-20} | {modSettings.BaseEjectionResist,10} | {savingThrow,10:#.###}");
+
             savingThrow = (float) Math.Round(savingThrow);
+            Debug($"{"Eject multiplier",-20} | {modSettings.EjectChanceMultiplier,10} | {savingThrow,10:#.###}");
             var roll = UnityEngine.Random.Range(1, 100);
 
-            Debug(new string(c: '-', count: 46));
+            Debug(new string('-', 46));
             Debug($"{"Saving throw",-20} | {savingThrow,-5:###}{roll,5} | {"Roll",10}");
-            Debug(new string(c: '-', count: 46));
-            Debug($"{"Mech health",-20}{MechHealth(mech),25:#.##}%");
+            Debug(new string('-', 46));
 
             // will pass through if last straw is met to force an ejection roll
             if (savingThrow <= 0)
             {
-                SaySpamFloatie(mech, "EJECT RESIST!", FloatieMessage.MessageNature.Dodge);
-                Debug("Resisted ejection");
-                FlushLog();
+                Debug("Negative saving throw; skipping");
+                SaySpamFloatie(mech, "EJECT RESIST!");
+                FlushLogBuffer();
                 return true;
             }
 
             // cap the saving throw by the setting
-            savingThrow = (int) Math.Min(savingThrow, ModSettings.MaxEjectChance);
+            savingThrow = (int) Math.Min(savingThrow, modSettings.MaxEjectChance);
 
-            Debug($"Saving throw: {savingThrow} Roll {roll}");
-            SaySpamFloatie(mech, $"SAVE: {savingThrow}  ROLL: {roll}!", FloatieMessage.MessageNature.ArmorDamage);
+            SaySpamFloatie(mech, $"SAVE: {savingThrow}  ROLL: {roll}!");
             if (roll >= savingThrow)
             {
-                Debug("Made ejection save");
-                SaySpamFloatie(mech, "EJECT SAVE!", FloatieMessage.MessageNature.Dodge);
-                SaySpamFloatie(mech, $"MECH HEALTH {MechHealth(mech):#.#}%", FloatieMessage.MessageNature.Neutral);
-                FlushLog();
+                Debug("Successful ejection save");
+                SaySpamFloatie(mech, $"EJECT SAVE! HEALTH: {MechHealth(mech):#.#}%");
+                FlushLogBuffer();
                 return true;
             }
 
@@ -383,36 +400,33 @@ namespace PanicSystem
             return false;
         }
 
-        public static bool SavedVsPanic(Mech mech, AttackDirector.AttackSequence attackSequence)
+        public static bool SavedVsPanic(Mech mech, float savingThrow, AttackDirector.AttackSequence attackSequence)
         {
-            var savingThrow = GetSavingThrow(mech, attackSequence);
+            //var savingThrow = GetSavingThrow(mech, ref stopwatch, attackSequence);
 
             // TODO test
-            if (ModSettings.QuirksEnabled && mech.pilot.pilotDef.PilotTags.Contains("pilot_brave"))
+            if (modSettings.QuirksEnabled && mech.pilot.pilotDef.PilotTags.Contains("pilot_brave"))
             {
-                savingThrow -= ModSettings.BraveModifier;
-                Debug($"{"Bravery",-20} | {ModSettings.BraveModifier,10} | {savingThrow,10:#.###}");
+                savingThrow -= modSettings.BraveModifier;
+                Debug($"{"Bravery",-20} | {modSettings.BraveModifier,10} | {savingThrow,10:#.###}");
             }
 
-            savingThrow *= GetPanicModifier(TrackedPilots[GetTrackedPilotIndex(mech)].PilotStatus);
-            Debug($"{"Panic multiplier",-20} | {GetPanicModifier(TrackedPilots[GetTrackedPilotIndex(mech)].PilotStatus),10} | {savingThrow,10:#.###}");
+            savingThrow *= GetPanicModifier(trackedPilots[GetTrackedPilotIndex(mech)].pilotStatus);
+            Debug($"{"Panic multiplier",-20} | {GetPanicModifier(trackedPilots[GetTrackedPilotIndex(mech)].pilotStatus),10} | {savingThrow,10:#.###}");
 
             savingThrow = (float) Math.Max(0f, Math.Round(savingThrow));
             if (!(savingThrow >= 1))
             {
-                Debug("Negative saving throw");
-                FlushLog();
+                Debug("Negative saving throw; skipping");
+                FlushLogBuffer();
                 return false;
             }
 
             var roll = UnityEngine.Random.Range(1, 100);
 
-            Debug(new string(c: '-', count: 46));
-            //Debug(string.Format("{0,-20} | {1,-5}{2,5} | {3,10}", "Saving throw", $"{savingThrow:###}", $"{roll,5}" ,"Roll"));
+            Debug(new string('-', 46));
             Debug($"{"Saving throw",-20} | {savingThrow,-5:###}{roll,5} | {"Roll",10}");
-            Debug(new string(c: '-', count: 46));
-            //Debug(string.Format("{0,-20}{1,25}", "Mech health", $"{MechHealth(mech):#.##}"));
-            Debug($"{"Mech health",-20}{MechHealth(mech),25:#.##}%");
+            Debug(new string('-', 46));
 
             var index = GetTrackedPilotIndex(mech);
             if (index == -1)
@@ -420,21 +434,21 @@ namespace PanicSystem
                 CheckTrackedPilots(mech);
             }
 
-            SaySpamFloatie(mech, $"{$"SAVE:{savingThrow}",-6} {$"ROLL {roll}!",3}", FloatieMessage.MessageNature.ArmorDamage);
+            SaySpamFloatie(mech, $"{$"SAVE:{savingThrow}",-6} {$"ROLL {roll}!",3}");
 
             if (roll == 100)
             {
                 Debug($"Critical success");
-                var status = TrackedPilots[index].PilotStatus;
+                var status = trackedPilots[index].pilotStatus;
 
                 Debug($"{status} {(int) status}");
                 if ((int) status > 0) // don't lower below floor
                 {
                     status--;
-                    TrackedPilots[index].PilotStatus = status;
+                    trackedPilots[index].pilotStatus = status;
                 }
 
-                if ((int) TrackedPilots[index].PilotStatus > 0) // prevent floatie if already at Confident
+                if ((int) trackedPilots[index].pilotStatus > 0) // prevent floatie if already at Confident
                 {
                     mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
                         new ShowActorInfoSequence(mech, "CRIT SUCCESS!", FloatieMessage.MessageNature.Inspiration, false)));
@@ -447,65 +461,64 @@ namespace PanicSystem
             // continue if roll wasn't 100
             if (roll >= savingThrow)
             {
-                SaySpamFloatie(mech, "PANIC SAVE!", FloatieMessage.MessageNature.Dodge);
-                Debug("Made panic save");
+                SaySpamFloatie(mech, "PANIC SAVE!");
+                Debug("Successful panic save");
                 return true;
             }
 
             Debug("Failed panic save");
-            SaySpamFloatie(mech, "SAVE FAIL!", FloatieMessage.MessageNature.Debuff);
+            SaySpamFloatie(mech, "SAVE FAIL!");
             ApplyPanicDebuff(mech);
             SayStatusFloatie(mech, false);
 
             // check for crit
-            if (MechHealth(mech) <= ModSettings.MechHealthForCrit &&
-                (roll == 1 || roll < (int) savingThrow - ModSettings.CritOver))
+            if (MechHealth(mech) <= modSettings.MechHealthForCrit &&
+                (roll == 1 || roll < (int) savingThrow - modSettings.CritOver))
             {
                 Debug("Critical failure on panic save");
-                var status = TrackedPilots[index].PilotStatus; // record status to see if it changes after
-                TrackedPilots[index].PilotStatus = PanicStatus.Panicked;
+                var status = trackedPilots[index].pilotStatus; // record status to see if it changes after
+                trackedPilots[index].pilotStatus = PanicStatus.Panicked;
                 mech.Combat.MessageCenter.PublishMessage(
                     new AddSequenceToStackMessage(
-                        new ShowActorInfoSequence(mech, "PANIC LEVEL CRITICAL!", FloatieMessage.MessageNature.CriticalHit, false)));
+                        new ShowActorInfoSequence(mech, "PANIC LEVEL CRITICAL!", FloatieMessage.MessageNature.CriticalHit, true)));
 
                 // show both floaties on a panic crit unless panicked already
-                if ((int) status != 3 && status != TrackedPilots[index].PilotStatus)
+                if ((int) status != 3 && status != trackedPilots[index].pilotStatus)
                 {
                     SayStatusFloatie(mech, false);
                 }
             }
-            FlushLog();
+
+            FlushLogBuffer();
             return false;
         }
 
-        public static void SayStatusFloatie(Mech mech, bool buff)
-        {
-            var nature = buff ? FloatieMessage.MessageNature.Buff : FloatieMessage.MessageNature.Debuff;
-
-            var index = GetTrackedPilotIndex(mech);
-            var floatieString = $"{TrackedPilots[index].PilotStatus.ToString()}";
-            if (buff)
-            {
-                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
-                    new ShowActorInfoSequence(mech, floatieString, FloatieMessage.MessageNature.Buff, false)));
-            }
-            else
-            {
-                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
-                    new ShowActorInfoSequence(mech, floatieString, FloatieMessage.MessageNature.Debuff, false)));
-            }
-        }
-
         // method is called despite the setting, so it can be controlled in one place
-        public static void SaySpamFloatie(Mech mech, string message, FloatieMessage.MessageNature nature)
+        private static void SaySpamFloatie(Mech mech, string message)
         {
-            if (!ModSettings.FloatieSpam)
+            if (!modSettings.FloatieSpam)
             {
                 return;
             }
 
             mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
-                new ShowActorInfoSequence(mech, message, FloatieMessage.MessageNature.NotSet, false)));
+                new ShowActorInfoSequence(mech, message, FloatieMessage.MessageNature.Neutral, false)));
+        }
+
+        private static void SayStatusFloatie(Mech mech, bool buff)
+        {
+            var index = GetTrackedPilotIndex(mech);
+            var floatieString = $"{trackedPilots[index].pilotStatus.ToString()}";
+            if (buff)
+            {
+                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
+                    new ShowActorInfoSequence(mech, floatieString, FloatieMessage.MessageNature.Inspiration, true)));
+            }
+            else
+            {
+                mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
+                    new ShowActorInfoSequence(mech, floatieString, FloatieMessage.MessageNature.CriticalHit, true)));
+            }
         }
 
         /// <summary>
@@ -556,19 +569,19 @@ namespace PanicSystem
 
             Debug($"Damage >>> Armor: {attackSequence.attackArmorDamage} Structure: {attackSequence.attackStructureDamage}");
 
-            if (attackSequence.attackStructureDamage >= ModSettings.MinimumStructureDamageRequired)
+            if (attackSequence.attackStructureDamage >= modSettings.MinimumStructureDamageRequired)
             {
-                Debug($"{attackSequence.attackStructureDamage} structure damage requires panic throw");
+                Debug($"Structure damage requires panic throw");
                 return true;
             }
 
-            if (attackSequence.attackArmorDamage / mech.CurrentArmor * 100 <= ModSettings.MinimumArmorDamagePercentageRequired)
+            if (attackSequence.attackArmorDamage / mech.CurrentArmor * 100 <= modSettings.MinimumArmorDamagePercentageRequired)
             {
                 Debug($"Not enough damage");
                 return false;
             }
 
-            Debug($"Damage requires a panic throw");
+            Debug($"Armor damage requires a panic throw");
             return true;
         }
 
@@ -614,8 +627,7 @@ namespace PanicSystem
 
             // ejection
             public float MaxEjectChance = 50;
-            public float EjectChanceMultiplier = 1;
-            public bool KnockedDownCannotEject = false;
+            public float EjectChanceMultiplier = 0.75f;
             public bool ConsiderEjectingWhenAlone = false;
             public float BaseEjectionResist = 50;
             public float GutsEjectionResistPerPoint = 2;

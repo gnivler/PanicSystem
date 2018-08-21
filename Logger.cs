@@ -6,8 +6,10 @@ namespace PanicSystem
 {
     public static class Logger
     {
-        private static StringBuilder SB = new StringBuilder();
-        private static string LogFilePath => $"{PanicSystem.ModDirectory}/log.txt";
+        private static StringBuilder sb = new StringBuilder();
+        private static string LogFilePath => $"{PanicSystem.modDirectory}/log.txt";
+        private const string Version = "v3.0";
+
         public static void Error(Exception ex)
         {
             using (var writer = new StreamWriter(LogFilePath, true))
@@ -19,25 +21,30 @@ namespace PanicSystem
 
         public static void Debug(string line)
         {
-            if (!PanicSystem.ModSettings.Debug) return;
-            SB.Append(line + "\n");
+            if (!PanicSystem.modSettings.Debug) return;
+            sb.Append(line + "\n");
         }
 
-        public static void FlushLog()
+        public static void FlushLogBuffer()
         {
+            if (sb.Length == 0)
+            {
+                return;
+            }
+
             using (var writer = new StreamWriter(LogFilePath, true))
             {
-                writer.WriteLine(SB.ToString());
+                writer.WriteLine(sb.ToString());
             }
-            SB = new StringBuilder();
-        }
 
+            sb.Length = 0;
+        }
 
         public static void Clear()
         {
             using (var writer = new StreamWriter(LogFilePath, false))
             {
-                writer.WriteLine($"{DateTime.Now.ToLongTimeString()} Init");
+                writer.WriteLine($"{DateTime.Now.ToLongTimeString()} PanicSystem {Version}");
             }
         }
     }

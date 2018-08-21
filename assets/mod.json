@@ -3,28 +3,34 @@
 
   "Enabled": true,
 
-  "Version": "2.981",
-  "Description": "Causes pilots to panic and eject based on multiple criteria.",
-  "Author": "Hard forked and modified by donZappo and gnivler, with original design by mpstark and RealityMachina",
+  "Version": "3.0",
+  "Description": "Simulates mechwarrior panic and automatic ejections",
   "Website": "https://github.com/gnivler/PanicSystem",
 
   "DLL": "PanicSystem.dll",
 
   "Settings": {
     "Debug": false,
-    "EnableEjectPhrases": true, // set to true for floaties at eject
+
+    /* readds phrases.txt file and displays one randomly at eject */
+    "EnableEjectPhrases": true,
+
+    /* greatly increases the visual feedback, like saving throw results */
     "FloatieSpam": false,
     
     /* Panic Settings */
     "PlayersCanPanic": true,
     "EnemiesCanPanic": true,
-	"KnockedDownCannotEject": false,
     "ConsiderEjectingWithNoWeaps": false,
     "ConsiderEjectingWhenAlone": false,
 	"LosingLimbAlwaysPanics": false,
     "OneChangePerTurn": false,
+
+    /* percent of remaining armor that must be destroyed to cause a panic save */
     "MinimumArmorDamagePercentageRequired": 10,
-    "MinimumStructureDamageRequired": 6, /* new in 2.981 */
+
+    /* integer number of cumulative structure damage required to cause a panic save */
+    "MinimumStructureDamageRequired": 5,
 
 	/* Effect Modifiers */
     "UnsteadyModifier": 5,
@@ -34,35 +40,49 @@
     "SideTorsoMaxModifier": 25,
     "LeggedMaxModifier": 15,
     "WeaponlessModifier": 15,
-    "AloneModifier": 10,
-    "MedianMorale": 25,
+    "AloneModifier": 5,
     "MoraleMaxModifier": 10,
-    "UnsettledPanicModifier": 1,     /* new in 2.9 */
-    "StressedPanicModifier" : 0.66,  /* new in 2.9 */
-    "PanickedPanicModifier" : 0.50,  /* new in 2.9 */
+
+    /* AI morale goes to 50 */
+    "MedianMorale": 25,
+    
+    /* factors that affect only panic saving throws based on existing panic state */
+    "UnsettledPanicModifier": 1,
+    "StressedPanicModifier" : 0.66,
+    "PanickedPanicModifier" : 0.50,
 
 	/* Ejection Bonuses and Limits */
     "GutsEjectionResistPerPoint": 3,
     "TacticsEjectionResistPerPoint": 0,	
-	"BaseEjectionResist": 75,
-	"MaxEjectChance": 100,
+    
+    /* subtracted from all eject saving throws */
+    "BaseEjectionResist": 75,
+
+    /* ceiling for eject saving throw */
+    "MaxEjectChance": 100,
+    
+    /* applied after entire calculation */
     "EjectChanceMultiplier": 1,
     
-    /* Pilot Quirk Effects */
+    /* Pilot Quirk Effects https://www.nexusmods.com/battletech/mods/282/ */
     "QuirksEnabled": true,
     "BraveModifier": 5,
     "DependableModifier": 5,
 
-	/* Penalties To Panic States */
+	/* to-hit and to-be-hit modifiers, by panic level */
     "UnsettledAttackModifier": 1,
     "StressedAimModifier": 1,
     "StressedToHitModifier": -1,
     "PanickedAimModifier": 2,
     "PanickedToHitModifier": -2,
 
-	/* Critical Panic */
-	"MechHealthAlone": 25,     /* minimum health for 'Alone' last straw */
-    "MechHealthForCrit": 30,   /* minimum health for panic crits to occur */
-    "CritOver": 25,            /* number by which a save must fail to cause a crit */
+    /* governs when mechs start to consider the battle hopeless */
+    "MechHealthAlone": 25,
+    
+    /* panic crits won't occur below this percentage */
+    "MechHealthForCrit": 30,
+
+    /* if you miss your saving throw by this number it's a critical failure */
+    "CritOver": 25,
 	}
 }

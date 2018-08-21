@@ -254,7 +254,7 @@ namespace PanicSystem
             Debug(new string('-', 46));
 
             Debug($"{$"Mech health {MechHealth(mech):#.##}%",-20} | {"",10} |");
-                                                
+
             if (PercentPilot(pilot) < 1)
             {
                 totalMultiplier += modSettings.PilotHealthMaxModifier * PercentPilot(pilot);
@@ -402,8 +402,6 @@ namespace PanicSystem
 
         public static bool SavedVsPanic(Mech mech, float savingThrow, AttackDirector.AttackSequence attackSequence)
         {
-            //var savingThrow = GetSavingThrow(mech, ref stopwatch, attackSequence);
-
             // TODO test
             if (modSettings.QuirksEnabled && mech.pilot.pilotDef.PilotTags.Contains("pilot_brave"))
             {

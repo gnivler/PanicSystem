@@ -32,4 +32,4 @@ Panicked| +2|-2
 
 ## Special Cases
 
-Pilots with one health left and a mostly destroyed mech will automatically starting rolling for ejection, skipping panic saving throws.  Pilots who are alone and face insurmountable odds will also skipp planic throws and start rolling for ejection.
+Pilots with one health left and a mostly destroyed mech will automatically starting rolling for ejection, skipping panic saving throws.  Pilots who are alone and face insurmountable odds will also skip panic throws and start rolling for ejection.

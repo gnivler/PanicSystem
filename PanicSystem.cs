@@ -565,7 +565,13 @@ namespace PanicSystem
                 return false;
             }
 
-            Debug($"Damage >>> Armor: {attackSequence.attackArmorDamage} Structure: {attackSequence.attackStructureDamage}");
+            var previousArmor = Patches.mechArmorBeforeAttack;
+            var previousStructure = Patches.mechStructureBeforeAttack;
+
+            Debug($"Damage >>> Armor: {attackSequence.attackArmorDamage} Structure: {attackSequence.attackStructureDamage} ");
+
+            Debug($"SummaryArmorCurrent {previousArmor} + SummaryStructureCurrent {previousStructure} = {mech.SummaryArmorCurrent + mech.SummaryStructureCurrent}" +
+                  $"({(attackSequence.attackArmorDamage + attackSequence.attackStructureDamage) / (previousArmor + previousStructure) * 100:#.##}%)");
 
             if (attackSequence.attackStructureDamage >= modSettings.MinimumStructureDamageRequired)
             {
@@ -573,10 +579,10 @@ namespace PanicSystem
                 return true;
             }
 
-            if (attackSequence.attackArmorDamage / mech.StartingArmor * 100 <= modSettings.MinimumDamagePercentageRequired) 
+            //if (attackSequence.attackArmorDamage / mech.StartingArmor * 100 <= modSettings.MinimumDamagePercentageRequired) 
 
             if ((attackSequence.attackArmorDamage + attackSequence.attackStructureDamage) /
-                (mech.StartingArmor + mech.StartingStructure) *
+                (previousArmor + previousStructure) *
                 100 <= modSettings.MinimumDamagePercentageRequired)
             {
                 Debug($"Not enough damage");

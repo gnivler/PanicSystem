@@ -14,6 +14,9 @@ namespace PanicSystem
 {
     public static class Patches
     {
+        public static float mechArmorBeforeAttack;
+        public static float mechStructureBeforeAttack;
+
         [HarmonyPatch(typeof(AAR_SalvageScreen), "OnCompleted")]
         public static class AAR_SalvageScreenPatch
         {
@@ -83,6 +86,18 @@ namespace PanicSystem
 
                 trackedPilots[index].panicWorsenedRecently = false;
                 SaveTrackedPilots();
+                Debug($"mech.HealthAsRatio {mech.HealthAsRatio}, MechChecks.MechHealth(mech) {MechChecks.MechHealth(mech)}");
+            }
+        }
+
+        [HarmonyPatch(typeof(AttackStackSequence), nameof(AttackStackSequence.OnAttackBegin))]
+        public static class OnAttackBeginPatch
+        {
+            public static void Prefix(AttackStackSequence __instance)
+            {
+                var target = __instance.directorSequences[0].target;
+                mechArmorBeforeAttack = target.SummaryArmorCurrent;
+                mechStructureBeforeAttack = target.SummaryStructureCurrent;
             }
         }
 
@@ -168,7 +183,7 @@ namespace PanicSystem
             }
         }
 
-        [HarmonyPatch(typeof(GameInstanceSave))]
+        [HarmonyPatch(typeof(GameInstanceSave), MethodType.Constructor)]
         [HarmonyPatch(new[] {typeof(GameInstance), typeof(SaveReason)})]
         public static class GameInstanceSaveConstructorPatch
         {

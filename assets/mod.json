@@ -41,10 +41,10 @@
     "LeggedMaxModifier": 15,
     "WeaponlessModifier": 15,
     "AloneModifier": 5,
-    "MoraleMaxModifier": 10,
+    "ResolveMaxModifier": 10,
 
-    /* AI morale goes to 50 */
-    "MedianMorale": 25,
+    /* AI Resolve goes to 50 */
+    "MedianResolve": 25,
     
     /* factors that affect only panic saving throws based on existing panic state */
     "UnsettledPanicModifier": 1,

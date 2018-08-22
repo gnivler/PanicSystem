@@ -336,9 +336,9 @@ namespace PanicSystem
             totalMultiplier -= gutsAndTacticsSum;
             Debug($"{"Guts and Tactics",-20} | {$"-{gutsAndTacticsSum}",10} | {totalMultiplier,10:#.###}");
 
-            var moraleModifier = modSettings.MoraleMaxModifier * (mech.Combat.LocalPlayerTeam.Morale - modSettings.MedianMorale) / modSettings.MedianMorale;
-            totalMultiplier -= moraleModifier;
-            Debug($"{$"Morale {mech.Combat.LocalPlayerTeam.Morale}",-20} | {moraleModifier * -1,10:#.###} | {totalMultiplier,10:#.###}");
+            var resolveModifier = modSettings.ResolveMaxModifier * (mech.Combat.LocalPlayerTeam.Morale - modSettings.MedianResolve) / modSettings.MedianResolve;
+            totalMultiplier -= resolveModifier;
+            Debug($"{$"Resolve {mech.Combat.LocalPlayerTeam.Morale}",-20} | {resolveModifier * -1,10:#.###} | {totalMultiplier,10:#.###}");
 
             return totalMultiplier;
         }
@@ -569,17 +569,21 @@ namespace PanicSystem
 
             if (attackSequence.attackStructureDamage >= modSettings.MinimumStructureDamageRequired)
             {
-                Debug($"Structure damage requires panic throw");
+                Debug($"Structure damage requires panic save");
                 return true;
             }
 
-            if (attackSequence.attackArmorDamage / mech.CurrentArmor * 100 <= modSettings.MinimumArmorDamagePercentageRequired)
+            if (attackSequence.attackArmorDamage / mech.StartingArmor * 100 <= modSettings.MinimumDamagePercentageRequired) 
+
+            if ((attackSequence.attackArmorDamage + attackSequence.attackStructureDamage) /
+                (mech.StartingArmor + mech.StartingStructure) *
+                100 <= modSettings.MinimumDamagePercentageRequired)
             {
                 Debug($"Not enough damage");
                 return false;
             }
 
-            Debug($"Armor damage requires a panic throw");
+            Debug($"Total damage requires a panic save");
             return true;
         }
 
@@ -592,7 +596,7 @@ namespace PanicSystem
             // panic
             public bool PlayersCanPanic = true;
             public bool EnemiesCanPanic = true;
-            public float MinimumArmorDamagePercentageRequired = 10;
+            public float MinimumDamagePercentageRequired = 10;
             public float MinimumStructureDamageRequired = 5;
             public bool OneChangePerTurn = false;
             public bool LosingLimbAlwaysPanics = false;
@@ -609,8 +613,8 @@ namespace PanicSystem
             public float StressedToHitModifier = -1;
             public float PanickedAimModifier = 2;
             public float PanickedToHitModifier = -2;
-            public float MedianMorale = 50;
-            public float MoraleMaxModifier = 10;
+            public float MedianResolve = 50;
+            public float ResolveMaxModifier = 10;
             public float MechHealthAlone = 50;
             public float MechHealthForCrit = 0.9f;
             public float CritOver = 70;

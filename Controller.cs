@@ -25,9 +25,9 @@ namespace PanicSystem
             var index = FindTrackerByTime(previousSaveTime);
             if (index > -1)
             {
-                if (metaTrackers[index].TrackedPilots != null) // part where everything seems to fall apart?  (legacy comment)
+                if (metaTrackers[index]?.TrackedPilots != null) // part where everything seems to fall apart?  (legacy comment)
                 {
-                    trackedPilots = metaTrackers[index].TrackedPilots;
+                    trackedPilots = metaTrackers[index]?.TrackedPilots;
                 }
 
                 currentIndex = index;
@@ -106,7 +106,7 @@ namespace PanicSystem
                 }
                 catch (Exception e)
                 {
-                    Logger.Error(e);
+                    Logger.LogError(e);
                 }
             }
         }
@@ -120,7 +120,7 @@ namespace PanicSystem
             }
             catch (Exception e)
             {
-                Logger.Error(e);
+                Logger.LogError(e);
                 trackers = null;
             }
 
@@ -145,7 +145,7 @@ namespace PanicSystem
             }
             catch (Exception e)
             {
-                Logger.Error(e);
+                Logger.LogError(e);
             }
         }
 
@@ -160,7 +160,7 @@ namespace PanicSystem
                 }
                 catch (Exception e)
                 {
-                    Logger.Error(e);
+                    Logger.LogError(e);
                     panicTrackers = null;
                 }
 

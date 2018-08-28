@@ -1,13 +1,15 @@
-﻿using BattleTech;
+﻿using System;
+using System.Collections.Generic;
+using BattleTech;
 using BattleTech.Save;
 using BattleTech.Save.SaveGameStructure;
 using BattleTech.UI;
 using Harmony;
+using HBS;
 using static PanicSystem.Controller;
 using static PanicSystem.PanicSystem;
 using static PanicSystem.Logger;
 using Random = UnityEngine.Random;
-using Stopwatch = HBS.Stopwatch;
 
 // HUGE thanks to RealityMachina and mpstark for their work, outstanding.
 namespace PanicSystem
@@ -66,27 +68,27 @@ namespace PanicSystem
                     var message = __instance.Combat.MessageCenter;
                     if (trackedPilots[index].pilotStatus == PanicStatus.Unsettled)
                     {
-                        Debug("Condition improved: Unsettled");
+                        FileLog.Log("Condition improved: Unsettled");
                         message.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, "IMPROVED TO UNSETTLED!", FloatieMessage.MessageNature.Buff, false)));
                         stats.ModifyStat("Panic Turn: Unsettled Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, modSettings.UnsettledAttackModifier);
                     }
                     else if (trackedPilots[index].pilotStatus == PanicStatus.Stressed)
                     {
-                        Debug("Condition improved: Stressed");
+                        FileLog.Log("Condition improved: Stressed");
                         message.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, "IMPROVED TO STRESSED!", FloatieMessage.MessageNature.Buff, false)));
                         stats.ModifyStat("Panic Turn: Stressed Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, modSettings.StressedAimModifier);
                         stats.ModifyStat("Panic Turn: Stressed Defence", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, modSettings.StressedToHitModifier);
                     }
                     else
                     {
-                        Debug("Condition improved: Confident");
+                        FileLog.Log("Condition improved: Confident");
                         message.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, "IMPROVED TO CONFIDENT!", FloatieMessage.MessageNature.Buff, false)));
                     }
                 }
 
+                // reset flag after reduction effect
                 trackedPilots[index].panicWorsenedRecently = false;
                 SaveTrackedPilots();
-                Debug($"mech.HealthAsRatio {mech.HealthAsRatio}, MechChecks.MechHealth(mech) {MechChecks.MechHealth(mech)}");
             }
         }
 
@@ -111,22 +113,29 @@ namespace PanicSystem
 
                 if (SkipProcessingAttack(__instance, message))
                 {
-                    FlushLogBuffer();
                     return;
                 }
 
                 var attackCompleteMessage = message as AttackCompleteMessage;
-                var director = __instance.directorSequences;
 
-                Debug(new string('#', 46));
-                Debug($"{director[0].attacker.DisplayName} attacks {director[0].target.DisplayName}");
-
-                var targetMech = (Mech) director[0].target;
-                if (!ShouldPanic(targetMech, attackCompleteMessage?.attackSequence))
+                if (attackCompleteMessage == null)
                 {
-                    FlushLogBuffer();
+                    FileLog.Log("ERROR attackCompleteMessage was null");
                     return;
                 }
+
+                var director = __instance.directorSequences;
+                if (director == null)
+                {
+                    FileLog.Log("ERROR director was null");
+                    return;
+                }
+
+                FileLog.Log(new string('#', 46));
+                FileLog.Log($"{director[0].attacker.DisplayName} attacks {director[0].target.DisplayName}");
+
+                var targetMech = (Mech) director[0]?.target;
+                if (!ShouldPanic(targetMech, attackCompleteMessage.attackSequence)) return;
 
                 // automatically eject a klutzy pilot on an additional roll yielding 13
                 if (targetMech.IsFlaggedForKnockdown && targetMech.pilot.pilotDef.PilotTags.Contains("pilot_klutz"))
@@ -135,8 +144,7 @@ namespace PanicSystem
                     {
                         targetMech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
                             (new ShowActorInfoSequence(targetMech, "WOOPS!", FloatieMessage.MessageNature.Debuff, false)));
-                        Debug("Very klutzy!");
-                        FlushLogBuffer();
+                        FileLog.Log("Very klutzy!");
                         return;
                     }
                 }
@@ -144,42 +152,56 @@ namespace PanicSystem
                 // store saving throw
                 // check it against panic
                 // check it again ejection
-                var savingThrow = GetSavingThrow(targetMech, attackCompleteMessage?.attackSequence);
+                var savingThrow = GetSavingThrow(targetMech, attackCompleteMessage.attackSequence);
 
                 // panic saving throw
-                if (SavedVsPanic(targetMech, savingThrow, attackCompleteMessage?.attackSequence))
-                {
-                    FlushLogBuffer();
-                    return;
-                }
+                if (SavedVsPanic(targetMech, savingThrow)) return;
 
                 // stop if pilot isn't Panicked
                 var index = GetTrackedPilotIndex(targetMech);
-                if (trackedPilots[index].pilotStatus != PanicStatus.Panicked)
+                if (index == -1)
                 {
-                    FlushLogBuffer();
-                    return;
+                    FileLog.Log("ERROR: ADDED PILOT");
+                    // add a new tracker to tracked pilot
+                    trackedPilots.Add(new PanicTracker(targetMech)); 
+                    SaveTrackedPilots();
+                    index = GetTrackedPilotIndex(targetMech);
                 }
 
+                if (trackedPilots[index].pilotStatus != PanicStatus.Panicked) return;
+        
                 // eject saving throw
                 if (SavedVsEject(targetMech, savingThrow, attackCompleteMessage?.attackSequence))
                 {
-                    FlushLogBuffer();
                     return;
                 }
 
-                Debug("Ejecting");
+                FileLog.Log("Ejecting");
                 if (modSettings.EnableEjectPhrases)
                 {
                     var ejectMessage = ejectPhraseList[Random.Range(1, ejectPhraseList.Count)];
                     targetMech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
                         (new ShowActorInfoSequence(targetMech, ejectMessage, FloatieMessage.MessageNature.Debuff, true)));
                 }
+                
+                // remove effects, to prevent exceptions that occur for unknown reasons
 
+                List<Effect> effectsTargeting = __instance.Combat.EffectManager.GetAllEffectsTargeting(targetMech);
+                foreach (Effect effect in effectsTargeting)
+                {
+                    // some effects throw
+                    try
+                    {
+                        targetMech.CancelEffect(effect);
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.LogError(e);
+                    }
+                }
                 targetMech.EjectPilot(targetMech.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
-                Debug("Ejected");
-                Debug($"Runtime to exit {stopwatch.ElapsedMilliSeconds}ms");
-                FlushLogBuffer();
+                FileLog.Log("Ejected");
+                FileLog.Log($"Runtime to exit {stopwatch.ElapsedMilliSeconds}ms");
             }
         }
 
@@ -211,14 +233,14 @@ namespace PanicSystem
             }
         }
 
-        [HarmonyPatch(typeof(GameInstance), "LaunchContract", new[] {typeof(Contract), typeof(string)})]
+        [HarmonyPatch(typeof(GameInstance), "LaunchContract", typeof(Contract), typeof(string))]
         public static class LaunchContractPatch
         {
             private static void Postfix()
             {
                 // reset on new contracts
                 Reset();
-                Debug("New contract; done reset");
+                FileLog.Log("New contract; done reset");
             }
         }
 

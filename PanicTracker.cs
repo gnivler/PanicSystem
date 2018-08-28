@@ -17,7 +17,7 @@ namespace PanicSystem
     {
         public bool panicWorsenedRecently;
         public PanicStatus pilotStatus;
-        public string trackedMech;// TODO ?
+        public string trackedMech;
 
         public PanicTracker()
         {

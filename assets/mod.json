@@ -44,7 +44,7 @@
     "ResolveMaxModifier": 10,
 
     /* AI Resolve goes to 50 */
-    "MedianResolve": 25,
+    "MedianResolve": 50,
     
     /* factors that affect only panic saving throws based on existing panic state */
     "UnsettledPanicModifier": 1,

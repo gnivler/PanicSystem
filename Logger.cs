@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Reflection;
 using System.Text;
 
 namespace PanicSystem
@@ -8,9 +9,11 @@ namespace PanicSystem
     {
         private static StringBuilder sb = new StringBuilder();
         private static string LogFilePath => $"{PanicSystem.modDirectory}/log.txt";
-        private const string Version = "v3.0";
 
-        public static void Error(Exception ex)
+        private static readonly string Version = ((AssemblyFileVersionAttribute) Attribute.GetCustomAttribute(
+                Assembly.GetExecutingAssembly(), typeof(AssemblyFileVersionAttribute), false)).Version;
+
+        public static void LogError(Exception ex)
         {
             using (var writer = new StreamWriter(LogFilePath, true))
             {
@@ -19,7 +22,15 @@ namespace PanicSystem
             }
         }
 
-        public static void Debug(string line)
+        public static void LogLine(string line)
+        {
+            using (var writer = new StreamWriter(LogFilePath, true))
+            {
+                writer.WriteLine(line);
+            }
+        }
+
+        public static void Debugj(string line)
         {
             if (!PanicSystem.modSettings.Debug) return;
             sb.Append(line + "\n");
@@ -44,7 +55,7 @@ namespace PanicSystem
         {
             using (var writer = new StreamWriter(LogFilePath, false))
             {
-                writer.WriteLine($"{DateTime.Now.ToLongTimeString()} PanicSystem {Version}");
+                writer.WriteLine($"{DateTime.Now.ToLongTimeString()} PanicSystem v{Version}");
             }
         }
     }

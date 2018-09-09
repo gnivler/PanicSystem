@@ -3,7 +3,7 @@
 
   "Enabled": true,
 
-  "Version": "3.0",
+  "Version": "3.1",
   "Description": "Simulates mechwarrior panic and automatic ejections",
   "Website": "https://github.com/gnivler/PanicSystem",
 
@@ -14,6 +14,7 @@
 
     /* readds phrases.txt file and displays one randomly at eject */
     "EnableEjectPhrases": true,
+    "EjectPhraseChance": 100,
 
     /* greatly increases the visual feedback, like saving throw results */
     "FloatieSpam": false,

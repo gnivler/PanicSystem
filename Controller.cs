@@ -175,27 +175,31 @@ namespace PanicSystem
             }
         }
 
-        public static int GetTrackedPilotIndex(Mech mech)
+        public static int GetPilotIndex(Mech mech)
         {
-            if (mech == null)
+            while (true)
             {
-                return -1;
-            }
-
-            if (trackedPilots == null)
-            {
-                DeserializeActiveJson();
-            }
-
-            for (var i = 0; i < trackedPilots.Count; i++)
-            {
-                if (trackedPilots[i].trackedMech == mech.GUID)
+                if (mech == null)
                 {
-                    return i;
+                    return -1;
                 }
-            }
 
-            return -1;
+                if (trackedPilots == null)
+                {
+                    DeserializeActiveJson();
+                }
+
+                for (var i = 0; i < trackedPilots.Count; i++)
+                {
+                    if (trackedPilots[i].trackedMech == mech.GUID)
+                    {
+                        return i;
+                    }
+                }
+
+                trackedPilots.Add(new PanicTracker(mech));
+                SaveTrackedPilots();
+            }
         }
     }
 }

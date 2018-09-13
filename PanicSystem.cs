@@ -115,7 +115,7 @@ namespace PanicSystem
         /// <param name="mech"></param>
         public static void ApplyPanicDebuff(Mech mech)
         {
-            var index = GetTrackedPilotIndex(mech);
+            var index = GetPilotIndex(mech);
             if (trackedPilots[index].trackedMech != mech.GUID)
             {
                 LogDebug("Pilot and mech mismatch; no status to change");
@@ -177,41 +177,6 @@ namespace PanicSystem
             }
 
             return true;
-        }
-
-        /// <summary>
-        ///     true implies the pilot and mech are properly tracked
-        /// </summary>
-        /// <param name="mech"></param>
-        /// <param name="index"></param>
-        /// <returns></returns>
-        private static void CheckTrackedPilots(Mech mech)
-        {
-            var index = GetTrackedPilotIndex(mech);
-            if (index < 0)
-            {
-                // add a new tracker to tracked pilot, then we run it all over again
-                trackedPilots.Add(new PanicTracker(mech));
-                index = GetTrackedPilotIndex(mech);
-                if (index < 0)
-                {
-                    return;
-                }
-            }
-
-            if (trackedPilots[index].trackedMech != mech.GUID)
-            {
-                return;
-            }
-
-            if (trackedPilots[index].trackedMech == mech.GUID &&
-                trackedPilots[index].panicWorsenedRecently &&
-                modSettings.OneChangePerTurn)
-            {
-                return;
-            }
-
-            return;
         }
 
         // 2.9 feature - scale the difficulty of panic levels being reached
@@ -407,16 +372,9 @@ namespace PanicSystem
                     LogDebug($"{"Bravery",-20} | {modSettings.BraveModifier,10} | {savingThrow,10:#.###}");
                 }
 
-                var index = GetTrackedPilotIndex(mech);
-                if (index == -1)
-                {
-                    trackedPilots.Add(new PanicTracker(mech));
-                    SaveTrackedPilots();
-                    return false;
-                }
-
-                savingThrow *= GetPanicModifier(trackedPilots[GetTrackedPilotIndex(mech)].pilotStatus);
-                LogDebug($"{"Panic multiplier",-20} | {GetPanicModifier(trackedPilots[GetTrackedPilotIndex(mech)].pilotStatus),10} | {savingThrow,10:#.###}");
+                var index = GetPilotIndex(mech);
+                savingThrow *= GetPanicModifier(trackedPilots[GetPilotIndex(mech)].pilotStatus);
+                LogDebug($"{"Panic multiplier",-20} | {GetPanicModifier(trackedPilots[GetPilotIndex(mech)].pilotStatus),10} | {savingThrow,10:#.###}");
 
                 savingThrow = (float) Math.Max(0f, Math.Round(savingThrow));
                 if (!(savingThrow >= 1))
@@ -506,7 +464,7 @@ namespace PanicSystem
 
         private static void SayStatusFloatie(Mech mech, bool buff)
         {
-            var index = GetTrackedPilotIndex(mech);
+            var index = GetPilotIndex(mech);
             var floatieString = $"{trackedPilots[index].pilotStatus.ToString()}";
             if (buff)
             {

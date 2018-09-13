@@ -45,15 +45,7 @@ namespace PanicSystem
                     return;
                 }
 
-                var index = GetTrackedPilotIndex(mech);
-                if (index == -1)
-                {
-                    // add a new tracker to tracked pilot
-                    trackedPilots.Add(new PanicTracker(mech)); 
-                    SaveTrackedPilots();
-                    return;
-                }
-
+                var index = GetPilotIndex(mech);
                 // reduce panic level
                 var originalStatus = trackedPilots[index].pilotStatus;
                 var stats = __instance.StatCollection;
@@ -160,14 +152,7 @@ namespace PanicSystem
                 if (SavedVsPanic(targetMech, savingThrow)) return;
 
                 // stop if pilot isn't Panicked
-                var index = GetTrackedPilotIndex(targetMech);
-                if (index == -1)
-                {
-                    // add a new tracker to tracked pilot
-                    trackedPilots.Add(new PanicTracker(targetMech));
-                    SaveTrackedPilots();
-                    index = GetTrackedPilotIndex(targetMech);
-                }
+                var index = GetPilotIndex(targetMech);
 
                 if (trackedPilots[index].pilotStatus != PanicStatus.Panicked) return;
 
@@ -223,13 +208,8 @@ namespace PanicSystem
             {
                 foreach (var mech in __instance.Combat.AllMechs)
                 {
-                    var index = GetTrackedPilotIndex(mech);
-                    if (index == -1)
-                    {
-                        trackedPilots.Add(new PanicTracker(mech)); // add a new tracker to tracked pilot
-                        SaveTrackedPilots();
-                        return;
-                    }
+                    // throw away the return because the method is just adding the missing mechs
+                    GetPilotIndex(mech);
                 }
             }
         }
@@ -260,28 +240,13 @@ namespace PanicSystem
             private static void Postfix(Mech __instance)
             {
                 var mech = __instance;
-                if (mech == null || mech.IsDead || mech.IsFlaggedForDeath && mech.HasHandledDeath)
+                if (!modSettings.LosingLimbAlwaysPanics ||
+                    mech == null || mech.IsDead || mech.IsFlaggedForDeath && mech.HasHandledDeath)
                 {
                     return;
                 }
 
-                var index = GetTrackedPilotIndex(mech);
-                if (index < 0)
-                {
-                    //add a new tracker to tracked pilot, then we run it all over again
-                    trackedPilots.Add(new PanicTracker(mech));
-                    index = GetTrackedPilotIndex(mech);
-                    if (index < 0)
-                    {
-                        return;
-                    }
-                }
-                
-                if (!modSettings.LosingLimbAlwaysPanics)
-                {
-                    return;
-                }
-
+                var index = GetPilotIndex(mech);
                 if (trackedPilots[index].trackedMech != mech.GUID)
                 {
                     return;

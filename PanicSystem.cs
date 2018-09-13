@@ -516,7 +516,7 @@ namespace PanicSystem
             else
             {
                 mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
-                    new ShowActorInfoSequence(mech, floatieString, FloatieMessage.MessageNature.CriticalHit, true)));
+                    new ShowActorInfoSequence(mech, floatieString, FloatieMessage.MessageNature.Debuff, true)));
             }
         }
 

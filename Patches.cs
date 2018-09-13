@@ -6,6 +6,7 @@ using BattleTech.Save.SaveGameStructure;
 using BattleTech.UI;
 using Harmony;
 using HBS;
+using UnityEngine;
 using static PanicSystem.Controller;
 using static PanicSystem.PanicSystem;
 using static PanicSystem.Logger;
@@ -47,8 +48,9 @@ namespace PanicSystem
                 var index = GetTrackedPilotIndex(mech);
                 if (index == -1)
                 {
-                    trackedPilots.Add(new PanicTracker(mech)); // add a new tracker to tracked pilot
-                    SaveTrackedPilots(); 
+                    // add a new tracker to tracked pilot
+                    trackedPilots.Add(new PanicTracker(mech)); 
+                    SaveTrackedPilots();
                     return;
                 }
 
@@ -162,13 +164,13 @@ namespace PanicSystem
                 if (index == -1)
                 {
                     // add a new tracker to tracked pilot
-                    trackedPilots.Add(new PanicTracker(targetMech)); 
+                    trackedPilots.Add(new PanicTracker(targetMech));
                     SaveTrackedPilots();
                     index = GetTrackedPilotIndex(targetMech);
                 }
 
                 if (trackedPilots[index].pilotStatus != PanicStatus.Panicked) return;
-        
+
                 // eject saving throw
                 if (SavedVsEject(targetMech, savingThrow, attackCompleteMessage?.attackSequence))
                 {
@@ -182,7 +184,7 @@ namespace PanicSystem
                     targetMech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
                         (new ShowActorInfoSequence(targetMech, ejectMessage, FloatieMessage.MessageNature.Debuff, true)));
                 }
-                
+
                 // remove effects, to prevent exceptions that occur for unknown reasons
                 List<Effect> effectsTargeting = __instance.Combat.EffectManager.GetAllEffectsTargeting(targetMech);
                 foreach (Effect effect in effectsTargeting)
@@ -197,6 +199,7 @@ namespace PanicSystem
                         Logger.LogError(e);
                     }
                 }
+
                 targetMech.EjectPilot(targetMech.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
                 LogDebug("Ejected");
                 LogDebug($"Runtime to exit {stopwatch.ElapsedMilliSeconds}ms");
@@ -263,6 +266,17 @@ namespace PanicSystem
                 }
 
                 var index = GetTrackedPilotIndex(mech);
+                if (index < 0)
+                {
+                    //add a new tracker to tracked pilot, then we run it all over again
+                    trackedPilots.Add(new PanicTracker(mech));
+                    index = GetTrackedPilotIndex(mech);
+                    if (index < 0)
+                    {
+                        return;
+                    }
+                }
+                
                 if (!modSettings.LosingLimbAlwaysPanics)
                 {
                     return;
@@ -278,17 +292,6 @@ namespace PanicSystem
                     return;
                 }
 
-                if (index < 0)
-                {
-                    //add a new tracker to tracked pilot, then we run it all over again
-                    trackedPilots.Add(new PanicTracker(mech));
-                    index = GetTrackedPilotIndex(mech);
-                    if (index < 0)
-                    {
-                        return;
-                    }
-                }
-
                 ApplyPanicDebuff(mech);
             }
         }
@@ -297,7 +300,7 @@ namespace PanicSystem
         public static class SimGameStateOnFirstPlayInitPatch
         {
             // we're doing a new campaign, so we need to sync the json with the new addition
-            private static void Postfix() 
+            private static void Postfix()
             {
                 // TODO if campaigns are added this way, why does deleting the storage jsons not break it?
                 SyncNewCampaign();

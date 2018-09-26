@@ -3,7 +3,7 @@
 
   "Enabled": true,
 
-  "Version": "3.1",
+  "Version": "3.13",
   "Description": "Simulates mechwarrior panic and automatic ejections",
   "Website": "https://github.com/gnivler/PanicSystem",
 
@@ -23,7 +23,7 @@
     "PlayersCanPanic": true,
     "EnemiesCanPanic": true,
     "ConsiderEjectingWithNoWeaps": false,
-    "ConsiderEjectingWhenAlone": false,
+    //deprecated "ConsiderEjectingWhenAlone": false,
 	"LosingLimbAlwaysPanics": false,
     "OneChangePerTurn": false,
 
@@ -77,8 +77,8 @@
     "PanickedAimModifier": 2,
     "PanickedToHitModifier": -2,
 
-    /* governs when mechs start to consider the battle hopeless */
-    "MechHealthAlone": 25,
+    /* deprecated governs when mechs start to consider the battle hopeless */
+    // "MechHealthAlone": 25,  */
     
     /* panic crits won't occur below this percentage */
     "MechHealthForCrit": 30,

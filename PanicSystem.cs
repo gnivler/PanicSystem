@@ -525,7 +525,6 @@ namespace PanicSystem
             public float PanickedAimModifier = 2;
             public float PanickedToHitModifier = -2;
             public float MedianResolve = 50;
-
             public float ResolveMaxModifier = 10;
 
             //deprecated public float MechHealthAlone = 50;
@@ -542,7 +541,6 @@ namespace PanicSystem
 
             // ejection
             public float MaxEjectChance = 50;
-
             public float EjectChanceMultiplier = 0.75f;
 
             // deprecated public bool ConsiderEjectingWhenAlone = false;

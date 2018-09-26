@@ -5,20 +5,6 @@ namespace PanicSystem
 {
     public class MechChecks
     {
-        /// <summary>
-        ///     returns the sum of all enemy armour and structure
-        /// </summary>
-        /// <param name="mech"></param>
-        /// <returns></returns>
-        public static float GetAllEnemiesHealth(Mech mech)
-        {
-            var enemies = mech.Combat.GetAllEnemiesOf(mech);
-            var enemiesHealth = 0f;
-
-            enemiesHealth += enemies.Select(e => e.SummaryArmorCurrent + e.SummaryStructureCurrent).Sum();
-            return enemiesHealth;
-        }
-
         // used in strings
         public static float MechHealth(Mech mech) =>
             (mech.SummaryArmorCurrent + mech.SummaryStructureCurrent) /

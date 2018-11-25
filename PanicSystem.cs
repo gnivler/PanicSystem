@@ -47,6 +47,8 @@ namespace PanicSystem
                 return;
             }
 
+            if (!PanicSystem.modSettings.EnableEjectPhrases) return;
+
             try
             {
                 ejectPhraseListPath = Path.Combine(modDir, "phrases.txt");
@@ -61,7 +63,10 @@ namespace PanicSystem
             }
             catch (Exception e)
             {
+                LogDebug("Error - problem loading phrases.txt but the setting is enabled");
                 LogError(e);
+                // in case the file is missing but the setting is enabled
+                PanicSystem.modSettings.EnableEjectPhrases = false;
             }
         }
 
@@ -172,9 +177,7 @@ namespace PanicSystem
                                     mech.SkillTactics * modSettings.TacticsEjectionResistPerPoint;
             float totalMultiplier = 0;
 
-            LogDebug(new string('-', 46));
-            LogDebug($"{"Factors",-20} | {"Change",10} | {"Total",10}");
-            LogDebug(new string('-', 46));
+            DrawHeader();
 
             LogDebug($"{$"Mech health {MechHealth(mech):#.##}%",-20} | {"",10} |");
 
@@ -268,8 +271,18 @@ namespace PanicSystem
             return totalMultiplier;
         }
 
+        private static void DrawHeader()
+        {
+            LogDebug(new string('-', 46));
+            LogDebug($"{"Factors",-20} | {"Change",10} | {"Total",10}");
+            LogDebug(new string('-', 46));
+        }
+
         public static bool SavedVsEject(Mech mech, float savingThrow, AttackDirector.AttackSequence attackSequence)
         {
+            LogDebug($"Panic save failure requires eject save");
+            DrawHeader();
+
             if (modSettings.QuirksEnabled && mech.pilot.pilotDef.PilotTags.Contains("pilot_drunk") &&
                 mech.pilot.pilotDef.TimeoutRemaining > 0)
             {

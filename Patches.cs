@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using BattleTech;
 using BattleTech.Save;
 using BattleTech.Save.SaveGameStructure;
 using BattleTech.UI;
 using Harmony;
 using HBS;
-using UnityEngine;
 using static PanicSystem.Controller;
 using static PanicSystem.PanicSystem;
 using static PanicSystem.Logger;
@@ -137,7 +135,8 @@ namespace PanicSystem
                 // eject saving throw
                 if (SavedVsEject(targetMech, savingThrow, attackCompleteMessage?.attackSequence)) return;
 
-                if (modSettings.EnableEjectPhrases && Random.Range(1, 100) <= modSettings.EjectPhraseChance)
+                if (modSettings.EnableEjectPhrases &&
+                    Random.Range(1, 100) <= modSettings.EjectPhraseChance)
                 {
                     var ejectMessage = ejectPhraseList[Random.Range(1, ejectPhraseList.Count)];
                     targetMech.Combat.MessageCenter.PublishMessage(

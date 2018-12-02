@@ -29,9 +29,9 @@ namespace PanicSystem
         {
             public static void Prefix(AbstractActor __instance)
             {
-                if (!(__instance is Mech mech) || mech.IsDead || mech.IsFlaggedForDeath && mech.HasHandledDeath) return;
-
-                var pilot = mech.GetPilot();
+                if (!(__instance is Mech) || __instance.IsDead || __instance.IsFlaggedForDeath && __instance.HasHandledDeath) return;
+                Mech mech = (Mech)__instance;
+                var pilot = __instance.GetPilot();
                 if (pilot == null) return;
 
                 var index = GetPilotIndex(mech);
@@ -75,7 +75,7 @@ namespace PanicSystem
             }
         }
 
-        [HarmonyPatch(typeof(AttackStackSequence), nameof(AttackStackSequence.OnAttackBegin))]
+        [HarmonyPatch(typeof(AttackStackSequence), "OnAttackBegin")]
         public static class OnAttackBeginPatch
         {
             public static void Prefix(AttackStackSequence __instance)
@@ -96,8 +96,8 @@ namespace PanicSystem
 
                 if (SkipProcessingAttack(__instance, message)) return;
 
-                if (!(message is AttackCompleteMessage attackCompleteMessage)) return;
-
+                if (!(message is AttackCompleteMessage)) return;
+                AttackCompleteMessage attackCompleteMessage = (AttackCompleteMessage) message;
                 var director = __instance.directorSequences;
                 if (director == null) return;
 
@@ -145,7 +145,8 @@ namespace PanicSystem
                 }
 
                 // remove effects, to prevent exceptions that occur for unknown reasons
-                List<Effect> effectsTargeting = __instance.Combat.EffectManager.GetAllEffectsTargeting(targetMech);
+                CombatGameState Combat = (CombatGameState)AccessTools.Property(typeof(SequenceBase), "Combat").GetValue(__instance, null);
+                List<Effect> effectsTargeting = Combat.EffectManager.GetAllEffectsTargeting(targetMech);
                 foreach (var effect in effectsTargeting)
                 {
                     // some effects removal throw, so silently drop them
@@ -170,7 +171,7 @@ namespace PanicSystem
             private static void Postfix(GameInstanceSave __instance) => SerializeStorageJson(__instance.InstanceGUID, __instance.SaveTime);
         }
 
-        [HarmonyPatch(typeof(LanceSpawnerGameLogic), nameof(LanceSpawnerGameLogic.OnTriggerSpawn))]
+        [HarmonyPatch(typeof(LanceSpawnerGameLogic), "OnTriggerSpawn")]
         public static class LanceSpawnerGameLogicPatch
         {
             // throw away the return of GetPilotIndex because the method is just adding the missing mechs

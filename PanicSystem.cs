@@ -77,24 +77,24 @@ namespace PanicSystem
         public static void ApplyPanicDebuff(Mech mech)
         {
             var index = GetPilotIndex(mech);
-            if (trackedPilots[index].trackedMech != mech.GUID)
+            if (trackedPilots[index].mech != mech.GUID)
             {
                 LogDebug("Pilot and mech mismatch; no status to change");
                 return;
             }
 
-            switch (trackedPilots[index].pilotStatus)
+            switch (trackedPilots[index].panicStatus)
             {
                 case PanicStatus.Confident:
                     LogDebug($"{mech.DisplayName} condition worsened: Unsettled");
-                    trackedPilots[index].pilotStatus = PanicStatus.Unsettled;
+                    trackedPilots[index].panicStatus = PanicStatus.Unsettled;
                     mech.StatCollection.ModifyStat("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f);
                     mech.StatCollection.ModifyStat("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f);
                     mech.StatCollection.ModifyStat("Panic Attack: Unsettled Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, modSettings.UnsettledAttackModifier);
                     break;
                 case PanicStatus.Unsettled:
                     LogDebug($"{mech.DisplayName} condition worsened: Stressed");
-                    trackedPilots[index].pilotStatus = PanicStatus.Stressed;
+                    trackedPilots[index].panicStatus = PanicStatus.Stressed;
                     mech.StatCollection.ModifyStat("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f);
                     mech.StatCollection.ModifyStat("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f);
                     mech.StatCollection.ModifyStat("Panic Attack: Stressed Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, modSettings.StressedAimModifier);
@@ -102,7 +102,7 @@ namespace PanicSystem
                     break;
                 case PanicStatus.Stressed:
                     LogDebug($"{mech.DisplayName} condition worsened: Panicked");
-                    trackedPilots[index].pilotStatus = PanicStatus.Panicked;
+                    trackedPilots[index].panicStatus = PanicStatus.Panicked;
                     mech.StatCollection.ModifyStat("Panic Attack Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f);
                     mech.StatCollection.ModifyStat("Panic Attack Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f);
                     mech.StatCollection.ModifyStat("Panic Attack: Panicking Aim!", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, modSettings.PanickedAimModifier);
@@ -342,8 +342,8 @@ namespace PanicSystem
             }
 
             var index = GetPilotIndex(mech);
-            savingThrow *= GetPanicModifier(trackedPilots[GetPilotIndex(mech)].pilotStatus);
-            LogDebug($"{"Panic multiplier",-20} | {GetPanicModifier(trackedPilots[GetPilotIndex(mech)].pilotStatus),10} | {savingThrow,10:#.###}");
+            savingThrow *= GetPanicModifier(trackedPilots[GetPilotIndex(mech)].panicStatus);
+            LogDebug($"{"Panic multiplier",-20} | {GetPanicModifier(trackedPilots[GetPilotIndex(mech)].panicStatus),10} | {savingThrow,10:#.###}");
 
             savingThrow = (float) Math.Max(0f, Math.Round(savingThrow));
             if (!(savingThrow >= 1))
@@ -364,18 +364,18 @@ namespace PanicSystem
             if (roll == 100)
             {
                 LogDebug($"Critical success");
-                var status = trackedPilots[index].pilotStatus;
+                var status = trackedPilots[index].panicStatus;
 
                 LogDebug($"{status} {(int) status}");
                 // don't lower below floor
                 if ((int) status > 0)
                 {
                     status--;
-                    trackedPilots[index].pilotStatus = status;
+                    trackedPilots[index].panicStatus = status;
                 }
 
                 // prevent floatie if already at Confident
-                if ((int) trackedPilots[index].pilotStatus > 0)
+                if ((int) trackedPilots[index].panicStatus > 0)
                 {
                     mech.Combat.MessageCenter.PublishMessage(
                         new AddSequenceToStackMessage(
@@ -405,14 +405,14 @@ namespace PanicSystem
             {
                 LogDebug("Critical failure on panic save");
                 // record status to see if it changes after
-                var status = trackedPilots[index].pilotStatus;
-                trackedPilots[index].pilotStatus = PanicStatus.Panicked;
+                var status = trackedPilots[index].panicStatus;
+                trackedPilots[index].panicStatus = PanicStatus.Panicked;
                 mech.Combat.MessageCenter.PublishMessage(
                     new AddSequenceToStackMessage(
                         new ShowActorInfoSequence(mech, "PANIC LEVEL CRITICAL!", FloatieMessage.MessageNature.CriticalHit, true)));
 
                 // show both floaties on a panic crit unless panicked already
-                if (status != trackedPilots[index].pilotStatus)
+                if (status != trackedPilots[index].panicStatus)
                 {
                     SayStatusFloatie(mech, false);
                 }
@@ -434,7 +434,7 @@ namespace PanicSystem
         private static void SayStatusFloatie(Mech mech, bool buff)
         {
             var index = GetPilotIndex(mech);
-            var floatieString = $"{trackedPilots[index].pilotStatus.ToString()}";
+            var floatieString = $"{trackedPilots[index].panicStatus.ToString()}";
             if (buff)
             {
                 mech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(

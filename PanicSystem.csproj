@@ -38,7 +38,7 @@
       <HintPath>C:\References\0Harmony.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>C:\References\publicized_assemblies\Assembly-CSharp_publicized.dll</HintPath>
+      <HintPath>C:\References\Assembly-CSharp.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -60,7 +60,7 @@
     <Compile Include="Logger.cs" />
     <Compile Include="MechChecks.cs" />
     <Compile Include="PanicSystem.cs" />
-    <Compile Include="PanicTracker.cs" />
+    <Compile Include="PilotTracker.cs" />
     <Compile Include="Patches.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

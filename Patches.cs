@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using BattleTech;
 using BattleTech.Save;
 using BattleTech.Save.SaveGameStructure;
@@ -36,20 +37,20 @@ namespace PanicSystem
 
                 var index = GetPilotIndex(mech);
                 // reduce panic level
-                var originalStatus = trackedPilots[index].pilotStatus;
+                var originalStatus = trackedPilots[index].panicStatus;
                 var stats = __instance.StatCollection;
-                if (!trackedPilots[index].panicWorsenedRecently && (int) trackedPilots[index].pilotStatus > 0)
+                if (!trackedPilots[index].panicWorsenedRecently && (int) trackedPilots[index].panicStatus > 0)
                 {
-                    trackedPilots[index].pilotStatus--;
+                    trackedPilots[index].panicStatus--;
                 }
 
-                if (trackedPilots[index].pilotStatus != originalStatus) // status has changed, reset modifiers
+                if (trackedPilots[index].panicStatus != originalStatus) // status has changed, reset modifiers
                 {
                     stats.ModifyStat("Panic Turn Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f);
                     stats.ModifyStat("Panic Turn Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f);
 
                     var message = __instance.Combat.MessageCenter;
-                    switch (trackedPilots[index].pilotStatus)
+                    switch (trackedPilots[index].panicStatus)
                     {
                         case PanicStatus.Unsettled:
                             LogDebug($"{mech.DisplayName} condition improved: Unsettled");
@@ -75,7 +76,7 @@ namespace PanicSystem
             }
         }
 
-        [HarmonyPatch(typeof(AttackStackSequence), nameof(AttackStackSequence.OnAttackBegin))]
+        [HarmonyPatch(typeof(AttackStackSequence), "OnAttackBegin")]
         public static class OnAttackBeginPatch
         {
             public static void Prefix(AttackStackSequence __instance)
@@ -105,6 +106,7 @@ namespace PanicSystem
                 LogDebug($"{director[0].attacker.DisplayName} attacks {director[0].target.DisplayName}");
 
                 var targetMech = (Mech) director[0]?.target;
+                var index = GetPilotIndex(targetMech);
                 if (!ShouldPanic(targetMech, attackCompleteMessage.attackSequence)) return;
 
                 // automatically eject a klutzy pilot on an additional roll yielding 13
@@ -128,34 +130,49 @@ namespace PanicSystem
                 if (SavedVsPanic(targetMech, savingThrow)) return;
 
                 // stop if pilot isn't Panicked
-                var index = GetPilotIndex(targetMech);
-
-                if (trackedPilots[index].pilotStatus != PanicStatus.Panicked) return;
+                if (trackedPilots[index].panicStatus != PanicStatus.Panicked) return;
 
                 // eject saving throw
                 if (SavedVsEject(targetMech, savingThrow, attackCompleteMessage?.attackSequence)) return;
 
-                if (modSettings.EnableEjectPhrases &&
-                    Random.Range(1, 100) <= modSettings.EjectPhraseChance)
+                // ejecting
+                // random phrase
+                try
                 {
-                    var ejectMessage = ejectPhraseList[Random.Range(1, ejectPhraseList.Count)];
-                    targetMech.Combat.MessageCenter.PublishMessage(
-                        new AddSequenceToStackMessage(
-                            new ShowActorInfoSequence(targetMech, ejectMessage, FloatieMessage.MessageNature.Debuff, true)));
+                    if (modSettings.EnableEjectPhrases &&
+                        Random.Range(1, 100) <= modSettings.EjectPhraseChance)
+                    {
+                        var ejectMessage = ejectPhraseList[Random.Range(1, ejectPhraseList.Count)];
+                        targetMech.Combat.MessageCenter.PublishMessage(
+                            new AddSequenceToStackMessage(
+                                new ShowActorInfoSequence(targetMech, ejectMessage, FloatieMessage.MessageNature.Debuff, true)));
+                    }
+                }
+                catch (Exception e)
+                {
+                    LogError(e);
                 }
 
                 // remove effects, to prevent exceptions that occur for unknown reasons
-                List<Effect> effectsTargeting = __instance.Combat.EffectManager.GetAllEffectsTargeting(targetMech);
-                foreach (var effect in effectsTargeting)
+                try
                 {
-                    // some effects removal throw, so silently drop them
-                    try
+                    var combat = UnityGameInstance.BattleTechGame.Combat;
+                    List<Effect> effectsTargeting = combat.EffectManager.GetAllEffectsTargeting(targetMech);
+                    foreach (var effect in effectsTargeting)
                     {
-                        targetMech.CancelEffect(effect);
+                        // some effects removal throw, so silently drop them
+                        try
+                        {
+                            targetMech.CancelEffect(effect);
+                        }
+                        catch
+                        {
+                        }
                     }
-                    catch
-                    {
-                    }
+                }
+                catch (Exception e)
+                {
+                    LogError(e);
                 }
 
                 targetMech.EjectPilot(targetMech.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
@@ -170,7 +187,7 @@ namespace PanicSystem
             private static void Postfix(GameInstanceSave __instance) => SerializeStorageJson(__instance.InstanceGUID, __instance.SaveTime);
         }
 
-        [HarmonyPatch(typeof(LanceSpawnerGameLogic), nameof(LanceSpawnerGameLogic.OnTriggerSpawn))]
+        [HarmonyPatch(typeof(LanceSpawnerGameLogic), "OnTriggerSpawn")]
         public static class LanceSpawnerGameLogicPatch
         {
             // throw away the return of GetPilotIndex because the method is just adding the missing mechs
@@ -203,7 +220,7 @@ namespace PanicSystem
                 }
 
                 var index = GetPilotIndex(mech);
-                if (trackedPilots[index].trackedMech != mech.GUID) return;
+                if (trackedPilots[index].mech != mech.GUID) return;
 
                 if (trackedPilots[index].panicWorsenedRecently && modSettings.OneChangePerTurn) return;
 

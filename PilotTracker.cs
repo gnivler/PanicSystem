@@ -13,28 +13,28 @@ namespace PanicSystem
         Panicked
     }
 
-    public class PanicTracker
+    public class PilotTracker
     {
         public bool panicWorsenedRecently;
-        public PanicStatus pilotStatus;
-        public string trackedMech;
+        public PanicStatus panicStatus;
+        public string mech;
 
-        public PanicTracker()
+        public PilotTracker()
         {
-            //do nothing here, if this is called, then JSON is deserializing us
+            // do nothing here, if this is called, then JSON is deserializing us
         }
 
-        public PanicTracker(Mech mech)
+        public PilotTracker(Mech mech)
         {
-            trackedMech = mech.GUID;
-            pilotStatus = PanicStatus.Confident;
+            this.mech = mech.GUID;
+            panicStatus = PanicStatus.Confident;
             panicWorsenedRecently = false;
         }
     }
 
     public class MetaTracker
     {
-        public List<PanicTracker> TrackedPilots { get; set; }
+        public List<PilotTracker> TrackedPilots { get; set; }
         public DateTime SaveGameTimeStamp { get; set; }
         public string SimGameGUID { get; set; }
 
@@ -48,7 +48,7 @@ namespace PanicSystem
             SaveGameTimeStamp = savedate;
         }
 
-        public void SetTrackedPilots(List<PanicTracker> trackers)
+        public void SetTrackedPilots(List<PilotTracker> trackers)
         {
             TrackedPilots = trackers;
         }

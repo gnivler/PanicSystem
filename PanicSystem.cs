@@ -466,9 +466,9 @@ namespace PanicSystem
             if (attackCompleteMessage == null || attackCompleteMessage.stackItemUID != __instance.SequenceGUID) return true;
 
             // can't do stuff with vehicles and buildings
-            if (!(__instance.directorSequences[0].target is Mech)) return true;
+            if (!(__instance.directorSequences[0].chosenTarget is Mech)) return true;
 
-            return __instance.directorSequences[0].target?.GUID == null;
+            return __instance.directorSequences[0].chosenTarget?.GUID == null;
         }
 
         /// <summary>
@@ -481,7 +481,10 @@ namespace PanicSystem
         {
             if (attackSequence == null) return false;
 
-            if (!attackSequence.attackDidDamage)
+            var id = attackSequence.chosenTarget.GUID;
+            
+            if (!attackSequence.GetAttackDidDamage(id))
+            //if (!attackSequence.attackDidDamage)
             {
                 LogDebug("No damage");
                 return false;
@@ -490,15 +493,16 @@ namespace PanicSystem
             var previousArmor = Patches.mechArmorBeforeAttack;
             var previousStructure = Patches.mechStructureBeforeAttack;
 
-            LogDebug($"Damage >>> A: {attackSequence.attackArmorDamage} S: {attackSequence.attackStructureDamage} ({(attackSequence.attackArmorDamage + attackSequence.attackStructureDamage) / (previousArmor + previousStructure) * 100:#.##}%)");
+            LogDebug($"Damage >>> A: {attackSequence.GetArmorDamageDealt(id)} S: {attackSequence.GetStructureDamageDealt(id)} ({(attackSequence.GetArmorDamageDealt(id) + attackSequence.GetStructureDamageDealt(id)) / (previousArmor + previousStructure) * 100:#.##}%)");
+            //LogDebug($"Damage >>> A: {attackSequence.attackArmorDamage} S: {attackSequence.attackStructureDamage} ({(attackSequence.attackArmorDamage + attackSequence.attackStructureDamage) / (previousArmor + previousStructure) * 100:#.##}%)");
 
-            if (attackSequence.attackStructureDamage >= modSettings.MinimumStructureDamageRequired)
+            if (attackSequence.GetStructureDamageDealt(id) >= modSettings.MinimumStructureDamageRequired)
             {
                 LogDebug($"Structure damage requires panic save");
                 return true;
             }
 
-            if ((attackSequence.attackArmorDamage + attackSequence.attackStructureDamage) /
+            if ((attackSequence.GetArmorDamageDealt(id) + attackSequence.GetStructureDamageDealt(id)) /
                 (previousArmor + previousStructure) *
                 100 <= modSettings.MinimumDamagePercentageRequired)
             {

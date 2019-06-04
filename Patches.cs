@@ -81,7 +81,7 @@ namespace PanicSystem
         {
             public static void Prefix(AttackStackSequence __instance)
             {
-                var target = __instance.directorSequences[0].target;
+                var target = __instance.directorSequences[0].chosenTarget;
                 mechArmorBeforeAttack = target.SummaryArmorCurrent;
                 mechStructureBeforeAttack = target.SummaryStructureCurrent;
             }
@@ -103,9 +103,9 @@ namespace PanicSystem
                 if (director == null) return;
 
                 LogDebug(new string('#', 46));
-                LogDebug($"{director[0].attacker.DisplayName} attacks {director[0].target.DisplayName}");
+                LogDebug($"{director[0].attacker.DisplayName} attacks {director[0].chosenTarget.DisplayName}");
 
-                var targetMech = (Mech) director[0]?.target;
+                var targetMech = (Mech) director[0]?.chosenTarget;
                 var index = GetPilotIndex(targetMech);
                 if (!ShouldPanic(targetMech, attackCompleteMessage.attackSequence)) return;
 

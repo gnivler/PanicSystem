@@ -20,10 +20,11 @@ namespace PanicSystem
         internal static string modDirectory;
         internal static List<string> ejectPhraseList = new List<string>();
         private static string ejectPhraseListPath;
+        internal static HarmonyInstance harmony;
 
         public static void Init(string modDir, string modSettings)
         {
-            var harmony = HarmonyInstance.Create("com.BattleTech.PanicSystem");
+            harmony = HarmonyInstance.Create("com.BattleTech.PanicSystem");
             harmony.PatchAll(Assembly.GetExecutingAssembly());
             modDirectory = modDir;
             activeJsonPath = Path.Combine(modDir, "PanicSystem.json");
@@ -147,17 +148,11 @@ namespace PanicSystem
             switch (pilotStatus)
             {
                 case PanicStatus.Unsettled:
-                {
                     return modSettings.UnsettledPanicModifier;
-                }
                 case PanicStatus.Stressed:
-                {
                     return modSettings.StressedPanicModifier;
-                }
                 case PanicStatus.Panicked:
-                {
                     return modSettings.PanickedPanicModifier;
-                }
                 default:
                     return 1f;
             }
@@ -178,7 +173,6 @@ namespace PanicSystem
             float totalMultiplier = 0;
 
             DrawHeader();
-
             LogDebug($"{$"Mech health {MechHealth(mech):#.##}%",-20} | {"",10} |");
 
             if (PercentPilot(pilot) < 1)
@@ -240,7 +234,7 @@ namespace PanicSystem
             {
                 if (UnityEngine.Random.Range(1, 5) == 0) // 20% chance of appearing
                 {
-                    SaySpamFloatie(mech, "NO WEAPONS!");
+                    Patches.RedFloatie(() => SaySpamFloatie(mech, "NO WEAPONS!"));
                 }
 
                 totalMultiplier += modSettings.WeaponlessModifier;
@@ -252,7 +246,7 @@ namespace PanicSystem
             {
                 if (UnityEngine.Random.Range(1, 5) == 0) // 20% chance of appearing
                 {
-                    SaySpamFloatie(mech, "NO ALLIES!");
+                    Patches.RedFloatie(() => SaySpamFloatie(mech, "NO ALLIES!"));
                 }
 
                 totalMultiplier += modSettings.AloneModifier;
@@ -380,7 +374,7 @@ namespace PanicSystem
                     mech.Combat.MessageCenter.PublishMessage(
                         new AddSequenceToStackMessage(
                             new ShowActorInfoSequence(mech, "CRIT SUCCESS!", FloatieMessage.MessageNature.Inspiration, false)));
-                    SayStatusFloatie(mech, false);
+                    Patches.RedFloatie(() => SayStatusFloatie(mech, false));
                 }
 
                 return true;
@@ -397,7 +391,7 @@ namespace PanicSystem
             LogDebug("Failed panic save");
             SaySpamFloatie(mech, "SAVE FAIL!");
             ApplyPanicDebuff(mech);
-            SayStatusFloatie(mech, false);
+            Patches.RedFloatie(() => SayStatusFloatie(mech, false));
 
             // check for crit
             if (MechHealth(mech) <= modSettings.MechHealthForCrit &&
@@ -407,14 +401,14 @@ namespace PanicSystem
                 // record status to see if it changes after
                 var status = trackedPilots[index].panicStatus;
                 trackedPilots[index].panicStatus = PanicStatus.Panicked;
-                mech.Combat.MessageCenter.PublishMessage(
+                Patches.RedFloatie(() => mech.Combat.MessageCenter.PublishMessage(
                     new AddSequenceToStackMessage(
-                        new ShowActorInfoSequence(mech, "PANIC LEVEL CRITICAL!", FloatieMessage.MessageNature.CriticalHit, true)));
+                        new ShowActorInfoSequence(mech, "PANIC LEVEL CRITICAL!", FloatieMessage.MessageNature.CriticalHit, true))));
 
                 // show both floaties on a panic crit unless panicked already
                 if (status != trackedPilots[index].panicStatus)
                 {
-                    SayStatusFloatie(mech, false);
+                    Patches.RedFloatie(() => SayStatusFloatie(mech, false));
                 }
             }
 
@@ -482,9 +476,9 @@ namespace PanicSystem
             if (attackSequence == null) return false;
 
             var id = attackSequence.chosenTarget.GUID;
-            
+
             if (!attackSequence.GetAttackDidDamage(id))
-            //if (!attackSequence.attackDidDamage)
+                //if (!attackSequence.attackDidDamage)
             {
                 LogDebug("No damage");
                 return false;

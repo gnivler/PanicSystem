@@ -1,14 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using BattleTech;
 using BattleTech.Save;
 using BattleTech.Save.SaveGameStructure;
 using BattleTech.UI;
 using Harmony;
 using HBS;
-using TMPro;
-using UnityEngine;
 using static PanicSystem.Controller;
 using static PanicSystem.PanicSystem;
 using static PanicSystem.Logger;
@@ -21,23 +18,6 @@ namespace PanicSystem
     {
         public static float mechArmorBeforeAttack;
         public static float mechStructureBeforeAttack;
-
-        private static void FloatieRed(bool isRed)
-        {
-            var targetMethod = AccessTools.Method(typeof(CombatHUDStatusStackItem), "Init");
-            var postfix = AccessTools.Method(typeof(Patches), "PatchFloatiePostfix");
-            if (isRed && harmony.GetPatchedMethods() == null)
-                harmony.Patch(targetMethod,null, new HarmonyMethod(postfix));
-            else
-                harmony.Unpatch(targetMethod, HarmonyPatchType.Postfix);
-        }
-
-        private static void PatchFloatiePostfix(CombatHUDStatusStackItem __instance)
-        {
-            var components = __instance.gameObject.GetComponentsInChildren<TextMeshProUGUI>();
-            foreach (var component in components)
-                Traverse.Create(component).Method("SetFaceColor", Color.red).GetValue();
-        }
 
         [HarmonyPatch(typeof(AAR_SalvageScreen), "OnCompleted")]
         public static class AAR_SalvageScreenPatch
@@ -74,23 +54,18 @@ namespace PanicSystem
                     {
                         case PanicStatus.Unsettled:
                             LogDebug($"{mech.DisplayName} condition improved: Unsettled");
-                            RedFloatie(() =>
-                                message.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, "IMPROVED TO UNSETTLED!", FloatieMessage.MessageNature.Buff, false))));
-
+                            message.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, "IMPROVED TO UNSETTLED!", FloatieMessage.MessageNature.Buff, false)));
                             stats.ModifyStat("Panic Turn: Unsettled Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, modSettings.UnsettledAttackModifier);
                             break;
                         case PanicStatus.Stressed:
                             LogDebug($"{mech.DisplayName} condition improved: Stressed");
-                            RedFloatie(() =>
-                                message.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, "IMPROVED TO STRESSED!", FloatieMessage.MessageNature.Buff, false))));
+                            message.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, "IMPROVED TO STRESSED!", FloatieMessage.MessageNature.Buff, false)));
                             stats.ModifyStat("Panic Turn: Stressed Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, modSettings.StressedAimModifier);
                             stats.ModifyStat("Panic Turn: Stressed Defence", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, modSettings.StressedToHitModifier);
                             break;
                         default:
                             LogDebug($"{mech.DisplayName} condition improved: Confident");
-                            RedFloatie(() =>
-                                message.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, "IMPROVED TO CONFIDENT!", FloatieMessage.MessageNature.Buff, false))));
-
+                            message.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, "IMPROVED TO CONFIDENT!", FloatieMessage.MessageNature.Buff, false)));
                             break;
                     }
                 }
@@ -99,13 +74,6 @@ namespace PanicSystem
                 trackedPilots[index].panicWorsenedRecently = false;
                 SaveTrackedPilots();
             }
-        }
-
-        internal static void RedFloatie(Action action)
-        {
-            FloatieRed(true);
-            action.Invoke();
-            FloatieRed(false);
         }
 
         [HarmonyPatch(typeof(AttackStackSequence), "OnAttackBegin")]
@@ -146,10 +114,8 @@ namespace PanicSystem
                 {
                     if (Random.Range(1, 100) == 13)
                     {
-                        RedFloatie(() =>
-                            targetMech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
-                                (new ShowActorInfoSequence(targetMech, "WOOPS!", FloatieMessage.MessageNature.Debuff, false))));
-
+                        targetMech.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
+                            (new ShowActorInfoSequence(targetMech, "WOOPS!", FloatieMessage.MessageNature.Debuff, false)));
                         LogDebug("Very klutzy!");
                         return;
                     }
@@ -177,11 +143,9 @@ namespace PanicSystem
                         Random.Range(1, 100) <= modSettings.EjectPhraseChance)
                     {
                         var ejectMessage = ejectPhraseList[Random.Range(1, ejectPhraseList.Count)];
-                        RedFloatie(() =>
                         targetMech.Combat.MessageCenter.PublishMessage(
                             new AddSequenceToStackMessage(
-                                new ShowActorInfoSequence(targetMech, ejectMessage, FloatieMessage.MessageNature.Debuff, true))));
-                        
+                                new ShowActorInfoSequence(targetMech, ejectMessage, FloatieMessage.MessageNature.Debuff, true)));
                     }
                 }
                 catch (Exception e)

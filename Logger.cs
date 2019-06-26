@@ -5,7 +5,7 @@ using static PanicSystem.PanicSystem;
 
 namespace PanicSystem
 {
-    public static class Logger
+    public class Logger
     {
         private static string LogFilePath => Path.Combine(modDirectory, "log.txt");
 

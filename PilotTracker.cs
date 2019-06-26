@@ -38,6 +38,7 @@ namespace PanicSystem
         public DateTime SaveGameTimeStamp { get; set; }
         public string SimGameGUID { get; set; }
 
+        // ReSharper disable once InconsistentNaming
         public void SetGameGUID(string GUID)
         {
             SimGameGUID = GUID;

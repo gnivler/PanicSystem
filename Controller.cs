@@ -77,6 +77,7 @@ namespace PanicSystem
         /// </summary>
         /// <param name="GUID"></param>
         /// <param name="dateTime"></param>
+        // ReSharper disable once InconsistentNaming
         public static void SerializeStorageJson(string GUID, DateTime dateTime)
         {
             if (metaTrackers == null)
@@ -125,6 +126,7 @@ namespace PanicSystem
             {
                 trackers = JsonConvert.DeserializeObject<List<MetaTracker>>(File.ReadAllText(storageJsonPath));
             }
+            // ReSharper disable once EmptyGeneralCatchClause
             catch
             {
             }
@@ -164,6 +166,7 @@ namespace PanicSystem
                 // read all text, then deserialize into an object
                 panicTrackers = JsonConvert.DeserializeObject<List<PilotTracker>>(File.ReadAllText(activeJsonPath));
             }
+            // ReSharper disable once EmptyGeneralCatchClause
             catch
             {
             }

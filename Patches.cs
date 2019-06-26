@@ -6,10 +6,15 @@ using BattleTech.Save.SaveGameStructure;
 using BattleTech.UI;
 using Harmony;
 using HBS;
+using Localize;
 using static PanicSystem.Controller;
 using static PanicSystem.PanicSystem;
 using static PanicSystem.Logger;
 using Random = UnityEngine.Random;
+
+// ReSharper disable UnusedMember.Global
+// ReSharper disable InconsistentNaming
+// ReSharper disable UnusedMember.Local
 
 // HUGE thanks to RealityMachina and mpstark for their work, outstanding.
 namespace PanicSystem
@@ -18,6 +23,27 @@ namespace PanicSystem
     {
         public static float mechArmorBeforeAttack;
         public static float mechStructureBeforeAttack;
+
+        // have to patch both because they're used in different situations, with the same messages
+        [HarmonyPatch(typeof(CombatHUDFloatieStack), "AddFloatie", typeof(FloatieMessage))]
+        public static class CombatHUDFloatieStack_AddFloatie_Patch1
+        {
+            public static void Postfix(CombatHUDFloatieStack __instance, FloatieMessage message)
+            {
+                if (modSettings.ColorizeFloaties)
+                    ColorFloaties.Colorize(__instance);
+            }
+        }
+
+        [HarmonyPatch(typeof(CombatHUDFloatieStack), "AddFloatie", typeof(Text), typeof(FloatieMessage.MessageNature))]
+        public static class CombatHUDFloatieStack_AddFloatie_Patch2
+        {
+            public static void Postfix(CombatHUDFloatieStack __instance, Text text)
+            {
+                if (modSettings.ColorizeFloaties)
+                    ColorFloaties.Colorize(__instance);
+            }
+        }
 
         [HarmonyPatch(typeof(AAR_SalvageScreen), "OnCompleted")]
         public static class AAR_SalvageScreenPatch
@@ -38,7 +64,7 @@ namespace PanicSystem
                 var index = GetPilotIndex(mech);
                 // reduce panic level
                 var originalStatus = trackedPilots[index].panicStatus;
-                var stats = __instance.StatCollection;
+
                 if (!trackedPilots[index].panicWorsenedRecently && (int) trackedPilots[index].panicStatus > 0)
                 {
                     trackedPilots[index].panicStatus--;
@@ -46,22 +72,33 @@ namespace PanicSystem
 
                 if (trackedPilots[index].panicStatus != originalStatus) // status has changed, reset modifiers
                 {
-                    stats.ModifyStat("Panic Turn Reset: Accuracy", -1, "AccuracyModifier", StatCollection.StatOperation.Set, 0f);
-                    stats.ModifyStat("Panic Turn Reset: Mech To Hit", -1, "ToHitThisActor", StatCollection.StatOperation.Set, 0f);
+                    int Uid() => Random.Range(1, int.MaxValue);
+                    var effectManager = UnityGameInstance.BattleTechGame.Combat.EffectManager;
 
+                    // remove all PanicSystem effects first
+                    var effects = Traverse.Create(effectManager).Field("effects").GetValue<List<Effect>>();
+                    for (var i = 0; i < effects.Count; i++)
+                    {
+                        if (effects[i].id.StartsWith("PanicSystem") && Traverse.Create(effects[i]).Field("target").GetValue<object>() == mech)
+                        {
+                            effectManager.CancelEffect(effects[i]);
+                        }
+                    }
+
+                    // re-apply effects
                     var message = __instance.Combat.MessageCenter;
                     switch (trackedPilots[index].panicStatus)
                     {
                         case PanicStatus.Unsettled:
                             LogDebug($"{mech.DisplayName} condition improved: Unsettled");
                             message.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, "IMPROVED TO UNSETTLED!", FloatieMessage.MessageNature.Buff, false)));
-                            stats.ModifyStat("Panic Turn: Unsettled Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, modSettings.UnsettledAttackModifier);
+                            effectManager.CreateEffect(StatusEffect.UnsettledToHit, "PanicSystemToHit", Uid(), mech, mech, new WeaponHitInfo(), 0);
                             break;
                         case PanicStatus.Stressed:
                             LogDebug($"{mech.DisplayName} condition improved: Stressed");
                             message.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, "IMPROVED TO STRESSED!", FloatieMessage.MessageNature.Buff, false)));
-                            stats.ModifyStat("Panic Turn: Stressed Aim", -1, "AccuracyModifier", StatCollection.StatOperation.Float_Add, modSettings.StressedAimModifier);
-                            stats.ModifyStat("Panic Turn: Stressed Defence", -1, "ToHitThisActor", StatCollection.StatOperation.Float_Add, modSettings.StressedToHitModifier);
+                            effectManager.CreateEffect(StatusEffect.StressedToHit, "PanicSystemToHit", Uid(), mech, mech, new WeaponHitInfo(), 0);
+                            effectManager.CreateEffect(StatusEffect.StressedToBeHit, "PanicSystemToBeHit", Uid(), mech, mech, new WeaponHitInfo(), 0);
                             break;
                         default:
                             LogDebug($"{mech.DisplayName} condition improved: Confident");
@@ -106,6 +143,12 @@ namespace PanicSystem
                 LogDebug($"{director[0].attacker.DisplayName} attacks {director[0].chosenTarget.DisplayName}");
 
                 var targetMech = (Mech) director[0]?.chosenTarget;
+                Mech attackingMech = null;
+                if (director[0].attacker is Mech)
+                {
+                    attackingMech = (Mech) director[0].attacker;
+                }
+
                 var index = GetPilotIndex(targetMech);
                 if (!ShouldPanic(targetMech, attackCompleteMessage.attackSequence)) return;
 
@@ -124,7 +167,7 @@ namespace PanicSystem
                 // store saving throw
                 // check it against panic
                 // check it again ejection
-                var savingThrow = GetSavingThrow(targetMech, attackCompleteMessage.attackSequence);
+                var savingThrow = GetSavingThrow(targetMech, attackingMech);
 
                 // panic saving throw
                 if (SavedVsPanic(targetMech, savingThrow)) return;
@@ -133,7 +176,7 @@ namespace PanicSystem
                 if (trackedPilots[index].panicStatus != PanicStatus.Panicked) return;
 
                 // eject saving throw
-                if (SavedVsEject(targetMech, savingThrow, attackCompleteMessage?.attackSequence)) return;
+                if (SavedVsEject(targetMech, savingThrow)) return;
 
                 // ejecting
                 // random phrase
@@ -145,7 +188,7 @@ namespace PanicSystem
                         var ejectMessage = ejectPhraseList[Random.Range(1, ejectPhraseList.Count)];
                         targetMech.Combat.MessageCenter.PublishMessage(
                             new AddSequenceToStackMessage(
-                                new ShowActorInfoSequence(targetMech, ejectMessage, FloatieMessage.MessageNature.Debuff, true)));
+                                new ShowActorInfoSequence(targetMech, $"{ejectMessage}", FloatieMessage.MessageNature.Debuff, true)));
                     }
                 }
                 catch (Exception e)
@@ -165,6 +208,7 @@ namespace PanicSystem
                         {
                             targetMech.CancelEffect(effect);
                         }
+                        // ReSharper disable once EmptyGeneralCatchClause
                         catch
                         {
                         }

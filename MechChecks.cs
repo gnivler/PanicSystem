@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using BattleTech;
+﻿using BattleTech;
 
 namespace PanicSystem
 {

@@ -23,7 +23,6 @@ namespace PanicSystem
                 var loadRequest = dm.CreateLoadRequest();
                 loadRequest.AddLoadRequest<SVGAsset>(BattleTechResourceType.SVGAsset, Icon, null);
                 loadRequest.ProcessRequests();
-                Logger.LogDebug("Loaded icon");
             }
         }
 

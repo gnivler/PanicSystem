@@ -23,7 +23,7 @@ namespace PanicSystem
         internal static string storageJsonPath; //store our meta trackers here
         internal static string modDirectory;
         internal static List<string> ejectPhraseList = new List<string>();
-        private static HarmonyInstance harmony;
+        internal static HarmonyInstance harmony;
 
         public static void Init(string modDir, string settings)
         {
@@ -64,6 +64,8 @@ namespace PanicSystem
                 // in case the file is missing but the setting is enabled
                 modSettings.EnableEjectPhrases = false;
             }
+
+            Patches.ManualPatching();
         }
 
         /// <summary>
@@ -182,6 +184,13 @@ namespace PanicSystem
             if (attacker != null && modSettings.QuirksEnabled && attacker.MechDef.MechTags.Contains("mech_quirk_distracting"))
             {
                 totalMultiplier += modSettings.DistractingModifier;
+                LogDebug($"{"Distracting mech",-20} | {modSettings.DistractingModifier,10:#.###} | {totalMultiplier,10:#.###}");
+            }
+
+            if (modSettings.HeatDamageModifier > 0)
+            {
+                totalMultiplier += modSettings.HeatDamageModifier * Patches.heatDamage;
+                LogDebug($"{$"Heat damage {Patches.heatDamage}",-20} | {modSettings.HeatDamageModifier * Patches.heatDamage,10:#.###} | {totalMultiplier,10:#.###}");
             }
 
             if (PercentPilot(pilot) < 1)
@@ -200,6 +209,18 @@ namespace PanicSystem
             {
                 totalMultiplier += modSettings.UnsteadyModifier;
                 LogDebug($"{"Knockdown",-20} | {modSettings.UnsteadyModifier,10} | {totalMultiplier,10:#.###}");
+            }
+
+            if (modSettings.OverheatedModifier > 0 && defender.OverheatLevel < defender.CurrentHeat)
+            {
+                totalMultiplier += modSettings.OverheatedModifier;
+                LogDebug($"{"Heat",-20} | {modSettings.OverheatedModifier,10:#.###} | {totalMultiplier,10:#.###}");
+            }
+
+            if (modSettings.ShutdownModifier > 0 && defender.IsShutDown)
+            {
+                totalMultiplier += modSettings.ShutdownModifier;
+                LogDebug($"{"Shutdown",-20} | {modSettings.ShutdownModifier,10:#.###} | {totalMultiplier,10:#.###}");
             }
 
             if (PercentHead(defender) < 1)
@@ -241,7 +262,7 @@ namespace PanicSystem
             // weaponless
             if (weapons.TrueForAll(w => w.DamageLevel != ComponentDamageLevel.Functional || !w.HasAmmo)) // only fully unusable
             {
-                if (Random.Range(1, 5) == 0) // 20% chance of appearing
+                if (Random.Range(1, 5) == 1) // 20% chance of appearing
                 {
                     SaySpamFloatie(defender, "NO WEAPONS!");
                 }
@@ -486,7 +507,6 @@ namespace PanicSystem
             var id = attackSequence.chosenTarget.GUID;
 
             if (!attackSequence.GetAttackDidDamage(id))
-                //if (!attackSequence.attackDidDamage)
             {
                 LogDebug("No damage");
                 return false;
@@ -495,8 +515,9 @@ namespace PanicSystem
             var previousArmor = Patches.mechArmorBeforeAttack;
             var previousStructure = Patches.mechStructureBeforeAttack;
 
-            LogDebug($"Damage >>> A: {attackSequence.GetArmorDamageDealt(id)} S: {attackSequence.GetStructureDamageDealt(id)} ({(attackSequence.GetArmorDamageDealt(id) + attackSequence.GetStructureDamageDealt(id)) / (previousArmor + previousStructure) * 100:#.##}%)");
-            //LogDebug($"Damage >>> A: {attackSequence.attackArmorDamage} S: {attackSequence.attackStructureDamage} ({(attackSequence.attackArmorDamage + attackSequence.attackStructureDamage) / (previousArmor + previousStructure) * 100:#.##}%)");
+            LogDebug($"Damage >>> A: {attackSequence.GetArmorDamageDealt(id):#.###}" +
+                     $" S: {attackSequence.GetStructureDamageDealt(id):#.###}" +
+                     $" ({(attackSequence.GetArmorDamageDealt(id) + attackSequence.GetStructureDamageDealt(id)) / (previousArmor + previousStructure) * 100:#.##}%)  H: {Patches.heatDamage}");
 
             if (attackSequence.GetStructureDamageDealt(id) >= modSettings.MinimumStructureDamageRequired)
             {
@@ -504,8 +525,17 @@ namespace PanicSystem
                 return true;
             }
 
-            if ((attackSequence.GetArmorDamageDealt(id) + attackSequence.GetStructureDamageDealt(id)) /
-                (previousArmor + previousStructure) *
+            float heatTaken = 0;
+            if (attackSequence.chosenTarget is Mech defender)
+            {
+                heatTaken = defender.CurrentHeat - Patches.mechHeatBeforeAttack;
+                // LogDebug($"B {Patches.mechHeatBeforeAttack} A {defender.CurrentHeat}");
+                LogDebug($"Took {Patches.heatDamage} heat");
+            }
+
+            LogDebug($"attackSequence.GetArmorDamageDealt(id) {attackSequence.GetArmorDamageDealt(id)}\nattackSequence.GetStructureDamageDealt(id) {attackSequence.GetStructureDamageDealt(id)}\nPatches.heatDamage * modSettings.HeatDamageModifier {Patches.heatDamage * modSettings.HeatDamageModifier}");
+            if (attackSequence.GetArmorDamageDealt(id) + attackSequence.GetStructureDamageDealt(id) + Patches.heatDamage * modSettings.HeatDamageModifier /
+                (previousArmor + previousStructure) +
                 100 <= modSettings.MinimumDamagePercentageRequired)
             {
                 LogDebug("Not enough damage");
@@ -547,6 +577,9 @@ namespace PanicSystem
             public float MedianResolve = 50;
             public float ResolveMaxModifier = 10;
             public float DistractingModifier = 0;
+            public float OverheatedModifier = 0;
+            public float ShutdownModifier = 0;
+            public float HeatDamageModifier = 10;
 
             //deprecated public float MechHealthAlone = 50;
             public float MechHealthForCrit = 0.9f;

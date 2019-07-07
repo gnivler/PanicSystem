@@ -10,7 +10,7 @@
   "DLL": "PanicSystem.dll",
 
   "Settings": {
-    "Debug": true,
+    "Debug": false,
 
     /* readds phrases.txt file and displays one randomly at eject */
     "EnableEjectPhrases": true,
@@ -47,7 +47,7 @@
     "ResolveMaxModifier": 10,
     "OverheatedModifier": 0,
     "ShutdownModifier": 0,
-    "HeatDamageModifier": 0.25,
+    "HeatDamageModifier": 0,
 
     /* AI Resolve goes to 50 */
     "MedianResolve": 50,

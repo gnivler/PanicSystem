@@ -5,7 +5,7 @@ using static PanicSystem.PanicSystem;
 
 namespace PanicSystem
 {
-    public static class Logger
+    public class Logger
     {
         private static string LogFilePath => Path.Combine(modDirectory, "log.txt");
 
@@ -22,12 +22,12 @@ namespace PanicSystem
             }
         }
 
-        public static void LogDebug(string line)
+        public static void LogDebug(object line)
         {
             if (!modSettings.Debug) return;
             using (var writer = new StreamWriter(LogFilePath, true))
             {
-                writer.WriteLine(line);
+                writer.WriteLine($"{line}");
             }
         }
 

@@ -181,7 +181,7 @@ namespace PanicSystem
 
             LogDebug($"{$"Mech health {MechHealth(defender):#.##}%",-20} | {"",10} |");
 
-            if (attacker != null && modSettings.QuirksEnabled && attacker.MechDef.MechTags.Contains("mech_quirk_distracting"))
+            if (attacker != null && modSettings.QuirksEnabled && attacker.MechDef.Chassis.ChassisTags.Contains("mech_quirk_distracting"))
             {
                 totalMultiplier += modSettings.DistractingModifier;
                 LogDebug($"{"Distracting mech",-20} | {modSettings.DistractingModifier,10:#.###} | {totalMultiplier,10:#.###}");
@@ -305,17 +305,8 @@ namespace PanicSystem
         public static bool SavedVsEject(Mech mech, float savingThrow)
         {
             LogDebug("Panic save failure requires eject save");
-            DrawHeader();
 
-            if (modSettings.QuirksEnabled && mech.pilot.pilotDef.PilotTags.Contains("pilot_drunk") &&
-                mech.pilot.pilotDef.TimeoutRemaining > 0)
-            {
-                LogDebug("Drunkard - not ejecting");
-                mech.Combat.MessageCenter.PublishMessage(
-                    new AddSequenceToStackMessage(
-                        new ShowActorInfoSequence(mech, "..HIC!  I ain't.. ejettin'", FloatieMessage.MessageNature.PilotInjury, true)));
-                return false;
-            }
+            DrawHeader();
 
             if (modSettings.QuirksEnabled && mech.pilot.pilotDef.PilotTags.Contains("pilot_dependable"))
             {
@@ -335,6 +326,7 @@ namespace PanicSystem
             LogDebug($"{"Saving throw",-20} | {savingThrow,-5:###}{roll,5} | {"Roll",10}");
             LogDebug(new string('-', 46));
 
+
             if (savingThrow <= 0)
             {
                 LogDebug("Negative saving throw; skipping");
@@ -350,6 +342,25 @@ namespace PanicSystem
             {
                 LogDebug("Successful ejection save");
                 SaySpamFloatie(mech, $"EJECT SAVE! HEALTH: {MechHealth(mech):#.#}%");
+                return true;
+            }
+            
+            if (modSettings.QuirksEnabled && mech.MechDef.Chassis.ChassisTags.Contains("mech_quirk_noeject"))
+            {
+                LogDebug("This mech can't eject (quirk)");
+                mech.Combat.MessageCenter.PublishMessage(
+                    new AddSequenceToStackMessage(
+                        new ShowActorInfoSequence(mech, "Mech quirk: Can't eject", FloatieMessage.MessageNature.PilotInjury, true)));
+                return true;
+            }
+
+            if (modSettings.QuirksEnabled && mech.pilot.pilotDef.PilotTags.Contains("pilot_drunk") &&
+                mech.pilot.pilotDef.TimeoutRemaining > 0)
+            {
+                LogDebug("Drunkard - not ejecting");
+                mech.Combat.MessageCenter.PublishMessage(
+                    new AddSequenceToStackMessage(
+                        new ShowActorInfoSequence(mech, "Pilot quirk: Drunkard won't eject", FloatieMessage.MessageNature.PilotInjury, true)));
                 return true;
             }
 

@@ -21,8 +21,8 @@ namespace PanicSystem
 {
     public static class Patches
     {
-        public static float mechArmorBeforeAttack;
-        public static float mechStructureBeforeAttack;
+        public static float mechArmorBeforeAttack = 100.0f;
+        public static float mechStructureBeforeAttack = 100.0f;
         public static float mechHeatBeforeAttack = 0;
         public static float heatDamage = 0;
 

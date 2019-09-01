@@ -121,6 +121,9 @@ namespace PanicSystem
         {
             public static void Prefix(AttackStackSequence __instance)
             {
+                if (__instance.directorSequences == null || __instance.directorSequences.Count == 0)
+                    return;
+
                 var target = __instance.directorSequences[0].chosenTarget;
                 mechArmorBeforeAttack = target.SummaryArmorCurrent;
                 mechStructureBeforeAttack = target.SummaryStructureCurrent;

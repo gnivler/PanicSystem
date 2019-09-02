@@ -21,8 +21,8 @@ namespace PanicSystem
 {
     public static class Patches
     {
-        public static float mechArmorBeforeAttack;
-        public static float mechStructureBeforeAttack;
+        public static float mechArmorBeforeAttack = 100.0f;
+        public static float mechStructureBeforeAttack = 100.0f;
         public static float mechHeatBeforeAttack = 0;
         public static float heatDamage = 0;
 
@@ -121,6 +121,9 @@ namespace PanicSystem
         {
             public static void Prefix(AttackStackSequence __instance)
             {
+                if (__instance.directorSequences == null || __instance.directorSequences.Count == 0)
+                    return;
+
                 var target = __instance.directorSequences[0].chosenTarget;
                 mechArmorBeforeAttack = target.SummaryArmorCurrent;
                 mechStructureBeforeAttack = target.SummaryStructureCurrent;

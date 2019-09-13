@@ -1,10 +1,10 @@
 using System;
 using System.Linq;
-using BattleTech.Network;
 using BattleTech.UI;
 using Harmony;
 using TMPro;
 using UnityEngine;
+using static PanicSystem.Logger;
 
 // ReSharper disable InconsistentNaming
 
@@ -62,7 +62,7 @@ namespace PanicSystem
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex);
+                Log(ex);
             }
         }
     }

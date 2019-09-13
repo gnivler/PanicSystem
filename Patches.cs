@@ -147,7 +147,6 @@ namespace PanicSystem
                 // get defender's current heat
                 if (__instance.directorSequences[0].chosenTarget is Mech defender)
                 {
-                    LogReport($"Defender pre-attack heat {defender.CurrentHeat}");
                     mechHeatBeforeAttack = defender.CurrentHeat;
                 }
             }
@@ -215,7 +214,7 @@ namespace PanicSystem
                 var director = __instance.directorSequences;
                 if (director == null) return;
 
-                LogReport(new string('#', 46));
+                LogReport(new string('═', 46));
                 LogReport($"{director[0].attacker.DisplayName} attacks {director[0].chosenTarget.DisplayName}");
 
                 // get the attacker in case they have mech quirks

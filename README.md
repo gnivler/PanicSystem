@@ -7,9 +7,13 @@ Huge thanks to JetBrains for supporting this project and OSS development.
 <a href="https://jetbrains.com"><img src="jetbrains-variant-4.png" width="10%" height="10%"></a><a href="https://www.jetbrains.com/rider"><img src="logo.png" width="5%" height="5%"></a>
 Coded using JetBrains Rider IDE.
 
+
+
 ## Installation
 
-Install like any ModTek mod.
+https://github.com/BattletechModders/ModTek#installing
+
+All downloads now at Nexus Mods https://www.nexusmods.com/battletech/mods/461/
 
 ## General Details
 

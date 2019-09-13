@@ -30,20 +30,38 @@ namespace PanicSystem
         [HarmonyPatch(typeof(CombatHUDFloatieStack), "AddFloatie", typeof(FloatieMessage))]
         public static class CombatHUDFloatieStack_AddFloatie_Patch1
         {
-            public static void Postfix(CombatHUDFloatieStack __instance, FloatieMessage message)
+            public static void Postfix(CombatHUDFloatieStack __instance)
             {
                 if (modSettings.ColorizeFloaties)
-                    ColorFloaties.Colorize(__instance);
+                {
+                    try
+                    {
+                        ColorFloaties.Colorize(__instance);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log(ex);
+                    }
+                }
             }
         }
 
         [HarmonyPatch(typeof(CombatHUDFloatieStack), "AddFloatie", typeof(Text), typeof(FloatieMessage.MessageNature))]
         public static class CombatHUDFloatieStack_AddFloatie_Patch2
         {
-            public static void Postfix(CombatHUDFloatieStack __instance, Text text)
+            public static void Postfix(CombatHUDFloatieStack __instance)
             {
                 if (modSettings.ColorizeFloaties)
-                    ColorFloaties.Colorize(__instance);
+                {
+                    try
+                    {
+                        ColorFloaties.Colorize(__instance);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log(ex);
+                    }
+                }
             }
         }
 
@@ -169,18 +187,18 @@ namespace PanicSystem
         //    public static void Postfix() => LogDebug($"heatDamage: {heatDamage}");
         //}
         //
-        
+
         // properly aggregates heat damage?
         [HarmonyPatch(typeof(Mech), "AddExternalHeat")]
-        public class fsdwert
+        public class Mech_AddExternalHeat
         {
-            static void Prefix(Mech __instance, int amt)
+            static void Prefix(int amt)
             {
                 heatDamage += amt;
                 LogDebug($"Running heat total: {heatDamage}");
             }
         }
-        
+
         [HarmonyPatch(typeof(AttackStackSequence), "OnAttackComplete")]
         public static class AttackStackSequenceOnAttackCompletePatch
         {
@@ -201,11 +219,7 @@ namespace PanicSystem
 
                 // get the attacker in case they have mech quirks
                 var defender = (Mech) director[0]?.chosenTarget;
-                Mech attacker = null;
-                if (director[0].attacker is Mech)
-                {
-                    attacker = (Mech) director[0].attacker;
-                }
+                var attacker = director[0].attacker;
 
                 var index = GetPilotIndex(defender);
                 if (!ShouldPanic(defender, attackCompleteMessage.attackSequence)) return;
@@ -293,7 +307,11 @@ namespace PanicSystem
         public static class LanceSpawnerGameLogicPatch
         {
             // throw away the return of GetPilotIndex because the method is just adding the missing mechs
-            public static void Postfix(LanceSpawnerGameLogic __instance) => __instance.Combat.AllMechs.ForEach(x => GetPilotIndex(x));
+            public static void Postfix(LanceSpawnerGameLogic __instance)
+            {
+                Log("Lance spawn - building pilot index");
+                __instance.Combat.AllMechs.ForEach(x => GetPilotIndex(x));
+            }
         }
 
         [HarmonyPatch(typeof(GameInstance), "LaunchContract", typeof(Contract), typeof(string))]

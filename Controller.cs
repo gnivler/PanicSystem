@@ -4,6 +4,7 @@ using System.IO;
 using BattleTech;
 using Newtonsoft.Json;
 using static PanicSystem.PanicSystem;
+using static PanicSystem.Logger;
 
 // HUGE thanks to RealityMachina and mpstark for their work, outstanding.
 namespace PanicSystem
@@ -111,9 +112,9 @@ namespace PanicSystem
                         File.WriteAllText(storageJsonPath, JsonConvert.SerializeObject(metaTrackers));
                     }
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
-                    Logger.LogError(e);
+                    Log(ex);
                 }
             }
         }
@@ -150,9 +151,9 @@ namespace PanicSystem
                     File.WriteAllText(activeJsonPath, JsonConvert.SerializeObject(trackedPilots));
                 }
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Logger.LogError(e);
+                Log(ex);
             }
         }
 

@@ -12,6 +12,7 @@ using static PanicSystem.PanicSystem;
 using static PanicSystem.Logger;
 using Random = UnityEngine.Random;
 
+
 // ReSharper disable UnusedMember.Global
 // ReSharper disable InconsistentNaming
 // ReSharper disable UnusedMember.Local
@@ -21,29 +22,47 @@ namespace PanicSystem
 {
     public static class Patches
     {
-        public static float mechArmorBeforeAttack = 100.0f;
-        public static float mechStructureBeforeAttack = 100.0f;
-        public static float mechHeatBeforeAttack = 0;
-        public static float heatDamage = 0;
+        public static float mechArmorBeforeAttack;
+        public static float mechStructureBeforeAttack;
+        public static float mechHeatBeforeAttack;
+        public static float heatDamage;
 
         // have to patch both because they're used in different situations, with the same messages
         [HarmonyPatch(typeof(CombatHUDFloatieStack), "AddFloatie", typeof(FloatieMessage))]
         public static class CombatHUDFloatieStack_AddFloatie_Patch1
         {
-            public static void Postfix(CombatHUDFloatieStack __instance, FloatieMessage message)
+            public static void Postfix(CombatHUDFloatieStack __instance)
             {
                 if (modSettings.ColorizeFloaties)
-                    ColorFloaties.Colorize(__instance);
+                {
+                    try
+                    {
+                        ColorFloaties.Colorize(__instance);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log(ex);
+                    }
+                }
             }
         }
 
         [HarmonyPatch(typeof(CombatHUDFloatieStack), "AddFloatie", typeof(Text), typeof(FloatieMessage.MessageNature))]
         public static class CombatHUDFloatieStack_AddFloatie_Patch2
         {
-            public static void Postfix(CombatHUDFloatieStack __instance, Text text)
+            public static void Postfix(CombatHUDFloatieStack __instance)
             {
                 if (modSettings.ColorizeFloaties)
-                    ColorFloaties.Colorize(__instance);
+                {
+                    try
+                    {
+                        ColorFloaties.Colorize(__instance);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log(ex);
+                    }
+                }
             }
         }
 
@@ -92,18 +111,18 @@ namespace PanicSystem
                     switch (trackedPilots[index].panicStatus)
                     {
                         case PanicStatus.Unsettled:
-                            LogDebug($"{mech.DisplayName} condition improved: Unsettled");
+                            LogReport($"{mech.DisplayName} condition improved: Unsettled");
                             message.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, "IMPROVED TO UNSETTLED!", FloatieMessage.MessageNature.Buff, false)));
                             effectManager.CreateEffect(StatusEffect.UnsettledToHit, "PanicSystemToHit", Uid(), mech, mech, new WeaponHitInfo(), 0);
                             break;
                         case PanicStatus.Stressed:
-                            LogDebug($"{mech.DisplayName} condition improved: Stressed");
+                            LogReport($"{mech.DisplayName} condition improved: Stressed");
                             message.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, "IMPROVED TO STRESSED!", FloatieMessage.MessageNature.Buff, false)));
                             effectManager.CreateEffect(StatusEffect.StressedToHit, "PanicSystemToHit", Uid(), mech, mech, new WeaponHitInfo(), 0);
                             effectManager.CreateEffect(StatusEffect.StressedToBeHit, "PanicSystemToBeHit", Uid(), mech, mech, new WeaponHitInfo(), 0);
                             break;
                         default:
-                            LogDebug($"{mech.DisplayName} condition improved: Confident");
+                            LogReport($"{mech.DisplayName} condition improved: Confident");
                             message.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, "IMPROVED TO CONFIDENT!", FloatieMessage.MessageNature.Buff, false)));
                             break;
                     }
@@ -131,7 +150,6 @@ namespace PanicSystem
                 // get defender's current heat
                 if (__instance.directorSequences[0].chosenTarget is Mech defender)
                 {
-                    LogDebug($"Defender pre-attack heat {defender.CurrentHeat}");
                     mechHeatBeforeAttack = defender.CurrentHeat;
                 }
             }
@@ -172,18 +190,18 @@ namespace PanicSystem
         //    public static void Postfix() => LogDebug($"heatDamage: {heatDamage}");
         //}
         //
-        
+
         // properly aggregates heat damage?
         [HarmonyPatch(typeof(Mech), "AddExternalHeat")]
-        public class fsdwert
+        public class Mech_AddExternalHeat
         {
-            static void Prefix(Mech __instance, int amt)
+            static void Prefix(int amt)
             {
                 heatDamage += amt;
-                LogDebug($"Running heat total: {heatDamage}");
+                LogReport($"Running heat total: {heatDamage}");
             }
         }
-        
+
         [HarmonyPatch(typeof(AttackStackSequence), "OnAttackComplete")]
         public static class AttackStackSequenceOnAttackCompletePatch
         {
@@ -199,16 +217,12 @@ namespace PanicSystem
                 var director = __instance.directorSequences;
                 if (director == null) return;
 
-                LogDebug(new string('#', 46));
-                LogDebug($"{director[0].attacker.DisplayName} attacks {director[0].chosenTarget.DisplayName}");
+                LogReport(new string('═', 46));
+                LogReport($"{director[0].attacker.DisplayName} attacks {director[0].chosenTarget.DisplayName}");
 
                 // get the attacker in case they have mech quirks
                 var defender = (Mech) director[0]?.chosenTarget;
-                Mech attacker = null;
-                if (director[0].attacker is Mech)
-                {
-                    attacker = (Mech) director[0].attacker;
-                }
+                var attacker = director[0].attacker;
 
                 var index = GetPilotIndex(defender);
                 if (!ShouldPanic(defender, attackCompleteMessage.attackSequence)) return;
@@ -220,7 +234,7 @@ namespace PanicSystem
                     {
                         defender.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage
                             (new ShowActorInfoSequence(defender, "WOOPS!", FloatieMessage.MessageNature.Debuff, false)));
-                        LogDebug("Very klutzy!");
+                        LogReport("Very klutzy!");
                         return;
                     }
                 }
@@ -252,9 +266,9 @@ namespace PanicSystem
                                 new ShowActorInfoSequence(defender, $"{ejectMessage}", FloatieMessage.MessageNature.Debuff, true)));
                     }
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
-                    LogError(e);
+                    Log(ex);
                 }
 
                 // remove effects, to prevent exceptions that occur for unknown reasons
@@ -275,13 +289,13 @@ namespace PanicSystem
                         }
                     }
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
-                    LogError(e);
+                    Log(ex);
                 }
 
                 defender.EjectPilot(defender.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
-                LogDebug($"Ejected.  Runtime {stopwatch.ElapsedMilliSeconds}ms");
+                LogReport($"Ejected.  Runtime {stopwatch.ElapsedMilliSeconds}ms");
             }
         }
 
@@ -296,7 +310,11 @@ namespace PanicSystem
         public static class LanceSpawnerGameLogicPatch
         {
             // throw away the return of GetPilotIndex because the method is just adding the missing mechs
-            public static void Postfix(LanceSpawnerGameLogic __instance) => __instance.Combat.AllMechs.ForEach(x => GetPilotIndex(x));
+            public static void Postfix(LanceSpawnerGameLogic __instance)
+            {
+                Log("Lance spawn - building pilot index");
+                __instance.Combat.AllMechs.ForEach(x => GetPilotIndex(x));
+            }
         }
 
         [HarmonyPatch(typeof(GameInstance), "LaunchContract", typeof(Contract), typeof(string))]

@@ -32,7 +32,7 @@ namespace PanicSystem
 
         internal static void Log(object input)
         {
-            FileLog.Log($"[PanicSystem] {input}");
+            //FileLog.Log($"[PanicSystem] {input}");
         }
     }
 }

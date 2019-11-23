@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using BattleTech;
 using BattleTech.Achievements;
 using BattleTech.Save;
@@ -10,8 +9,6 @@ using BattleTech.Save.SaveGameStructure;
 using BattleTech.UI;
 using Harmony;
 using HBS;
-using UnityEngine;
-using UnityEngine.UI;
 using static PanicSystem.Controller;
 using static PanicSystem.PanicSystem;
 using static PanicSystem.Logger;
@@ -318,18 +315,6 @@ namespace PanicSystem
                     var attackerPilot = combat.AllMechs.Where(mech => mech.pilot.Team.IsLocalPlayer)
                         .Where(x => x.PilotableActorDef == attacker.PilotableActorDef).Select(y => y.pilot).FirstOrDefault();
 
-                    //var statCollection = attackerPilot?.StatCollection;
-                    //if (statCollection == null)
-                    //{
-                    //    return;
-                    //}
-                    //
-                    //// add UI icons.. and pilot history?
-                    //var value = statCollection.GetStatistic("MechsEjected") == null
-                    //    ? 1
-                    //    : statCollection.GetStatistic("MechsEjected").Value<int>() + 1;
-                    //statCollection.Set("MechsEjected", value);
-                    
                     attackerPilot.pilotDef.AddMechKillCount(1);
 
                     // add achievement kill (more complicated)

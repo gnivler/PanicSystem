@@ -30,66 +30,11 @@ namespace PanicSystem
         public static float mechArmorBeforeAttack;
         public static float mechStructureBeforeAttack;
         public static float mechHeatBeforeAttack;
-
         public static float heatDamage;
-        //public static MethodInfo original;
-        //public static MethodInfo transpiler;
 
         public static void Init()
         {
             harmony.PatchAll();
-        }
-
-        [HarmonyPatch(typeof(AAR_UnitStatusWidget), "FillInData")]
-        public static class AAR_UnitStatusWidget_FillInData_Patch
-        {
-            private static MethodInfo Replacement = AccessTools.Method(typeof(Patches), "AddKilledMech");
-            //public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
-            //{
-            //    var codes = instructions.ToList();
-            //    // call our own copy of the method instead
-            //    var index = codes.FindIndex(x => x.operand != null &&
-            //                                     (MethodInfo) x.operand == AccessTools.Method(typeof(AAR_UnitStatusWidget), "AddKilledMech"));
-            //    Log(index);
-            //    // if the pilot has ejection kills
-            //    if ()
-            //    codes[index].operand = Replacement;
-            //    return codes.AsEnumerable();
-            //
-            //}
-            
-            public static void Postfix(UnitResult ___UnitData, RectTransform ___KillGridParent)
-            {
-                try
-                {
-                    var pilot = ___UnitData.pilot;
-                    Log(pilot);
-                    var ejectionKills = pilot.StatCollection.GetStatistic("MechsEjected").Value<int>();
-                    Log(ejectionKills);
-                    for (var x = 0; x < ejectionKills; x++)
-                    {
-                        AddEjectedMech(___KillGridParent);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log(ex);
-                }
-            }
-        }
-
-        private static void AddEjectedMech(RectTransform KillGridParent)
-        {
-            string id = "uixPrfIcon_AA_mechKillStamp";
-            var dm = UnityGameInstance.BattleTechGame.DataManager;
-            GameObject gameObject = dm.PooledInstantiate(id, BattleTechResourceType.UIModulePrefabs, null, null, KillGridParent);
-            var image = gameObject.GetComponent<Image>();
-            image.color = Color.red;
-            
-            if (gameObject.GetComponent<Image>())
-            {
-                gameObject.transform.localScale = Vector3.one;
-            }
         }
 
         // have to patch both because they're used in different situations, with the same messages
@@ -373,17 +318,17 @@ namespace PanicSystem
                     var attackerPilot = combat.AllMechs.Where(mech => mech.pilot.Team.IsLocalPlayer)
                         .Where(x => x.PilotableActorDef == attacker.PilotableActorDef).Select(y => y.pilot).FirstOrDefault();
 
-                    var statCollection = attackerPilot?.StatCollection;
-                    if (statCollection == null)
-                    {
-                        return;
-                    }
-
-                    // add UI icons.. and pilot history?
-                    var value = statCollection.GetStatistic("MechsEjected") == null
-                        ? 1
-                        : statCollection.GetStatistic("MechsEjected").Value<int>() + 1;
-                    statCollection.Set("MechsEjected", value);
+                    //var statCollection = attackerPilot?.StatCollection;
+                    //if (statCollection == null)
+                    //{
+                    //    return;
+                    //}
+                    //
+                    //// add UI icons.. and pilot history?
+                    //var value = statCollection.GetStatistic("MechsEjected") == null
+                    //    ? 1
+                    //    : statCollection.GetStatistic("MechsEjected").Value<int>() + 1;
+                    //statCollection.Set("MechsEjected", value);
                     
                     attackerPilot.pilotDef.AddMechKillCount(1);
 

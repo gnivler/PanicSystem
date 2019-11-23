@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+
 using BattleTech;
 using BattleTech.Achievements;
 using BattleTech.Save;
@@ -11,6 +12,7 @@ using BattleTech.Save.SaveGameStructure;
 using BattleTech.UI;
 using Harmony;
 using HBS;
+
 using SVGImporter;
 using UnityEngine;
 using UnityEngine.UI;
@@ -32,13 +34,13 @@ namespace PanicSystem
         public static float mechArmorBeforeAttack;
         public static float mechStructureBeforeAttack;
         public static float mechHeatBeforeAttack;
-
         public static float heatDamage;
 
         public static void Init()
         {
             harmony.PatchAll();
         }
+
 
         [HarmonyPatch(typeof(AAR_UnitStatusWidget), "FillInData")]
         public static class AAR_UnitStatusWidget_FillInData_Patch
@@ -437,6 +439,7 @@ namespace PanicSystem
                 {
                     var attackerPilot = combat.AllMechs.Where(mech => mech.pilot.Team.IsLocalPlayer)
                         .Where(x => x.PilotableActorDef == attacker.PilotableActorDef).Select(y => y.pilot).FirstOrDefault();
+
 
                     var statCollection = attackerPilot?.StatCollection;
                     if (statCollection == null)

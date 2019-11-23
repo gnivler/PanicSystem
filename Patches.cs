@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 using BattleTech;
 using BattleTech.Achievements;
 using BattleTech.Save;
@@ -10,6 +11,7 @@ using BattleTech.Save.SaveGameStructure;
 using BattleTech.UI;
 using Harmony;
 using HBS;
+using SVGImporter;
 using UnityEngine;
 using UnityEngine.UI;
 using static PanicSystem.Controller;
@@ -43,31 +45,59 @@ namespace PanicSystem
         [HarmonyPatch(typeof(AAR_UnitStatusWidget), "FillInData")]
         public static class AAR_UnitStatusWidget_FillInData_Patch
         {
-            private static MethodInfo Replacement = AccessTools.Method(typeof(Patches), "AddKilledMech");
-            //public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
-            //{
-            //    var codes = instructions.ToList();
-            //    // call our own copy of the method instead
-            //    var index = codes.FindIndex(x => x.operand != null &&
-            //                                     (MethodInfo) x.operand == AccessTools.Method(typeof(AAR_UnitStatusWidget), "AddKilledMech"));
-            //    Log(index);
-            //    // if the pilot has ejection kills
-            //    if ()
-            //    codes[index].operand = Replacement;
-            //    return codes.AsEnumerable();
-            //
-            //}
-            
+            private static int? ejections;
+
+            public static void Prefix(UnitResult ___UnitData)
+            {
+                try
+                {
+                    // get the total and decrement it globally
+                    ejections = ___UnitData.pilot.StatCollection.GetStatistic("MechsEjected")?.Value<int>();
+                    Log($"{___UnitData.pilot.Callsign} MechsEjected {ejections}");
+                }
+                catch (Exception ex)
+                {
+                    Log(ex);
+                }
+            }
+
+            // subtract ejection kills to limit the number of regular kill stamps drawn
+            // then draw red ones in Postfix
+            public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            {
+                var codes = instructions.ToList();
+                try
+                {
+                    // subtract our value right as the getter comes back
+                    // makes the game draw fewer normal stamps
+                    var index = codes.FindIndex(x => x.operand is MethodInfo info &&
+                                                     info == AccessTools.Method(typeof(Pilot), "get_MechsKilled"));
+
+                    var newStack = new List<CodeInstruction>
+                    {
+                        new CodeInstruction(OpCodes.Ldarg_0),
+                        new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(AAR_UnitStatusWidget), "UnitData")),
+                        new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(AAR_UnitStatusWidget_FillInData_Patch), "GetEjectionCount")),
+                        new CodeInstruction(OpCodes.Sub)
+                    };
+                    codes.InsertRange(index + 1, newStack);
+                }
+                catch (Exception ex)
+                {
+                    Log(ex);
+                }
+
+                return codes.AsEnumerable();
+            }
+
             public static void Postfix(UnitResult ___UnitData, RectTransform ___KillGridParent)
             {
                 try
                 {
-                    var pilot = ___UnitData.pilot;
-                    Log(pilot);
-                    var ejectionKills = pilot.StatCollection.GetStatistic("MechsEjected").Value<int>();
-                    Log(ejectionKills);
-                    for (var x = 0; x < ejectionKills; x++)
+                    // weird loop
+                    for (var x = 0; x < ejections--; x++)
                     {
+                        Log("Adding stamp");
                         AddEjectedMech(___KillGridParent);
                     }
                 }
@@ -76,8 +106,16 @@ namespace PanicSystem
                     Log(ex);
                 }
             }
+
+            public static int GetEjectionCount(UnitResult unitResult)
+            {
+                return unitResult.pilot.StatCollection.GetStatistic("MechsEjected") == null
+                    ? 0
+                    : unitResult.pilot.StatCollection.GetStatistic("MechsEjected").Value<int>();
+            }
         }
 
+        //  adapted from AddKilledMech()
         private static void AddEjectedMech(RectTransform KillGridParent)
         {
             string id = "uixPrfIcon_AA_mechKillStamp";
@@ -310,13 +348,22 @@ namespace PanicSystem
                 var savingThrow = GetSavingThrow(defender, attacker);
                 heatDamage = 0;
                 // panic saving throw
-                if (SavedVsPanic(defender, savingThrow)) return;
+                if (SavedVsPanic(defender, savingThrow))
+                {
+                    return;
+                }
 
                 // stop if pilot isn't Panicked
-                if (trackedPilots[index].panicStatus != PanicStatus.Panicked) return;
+                if (trackedPilots[index].panicStatus != PanicStatus.Panicked)
+                {
+                    return;
+                }
 
                 // eject saving throw
-                if (SavedVsEject(defender, savingThrow)) return;
+                if (SavedVsEject(defender, savingThrow))
+                {
+                    return;
+                }
 
                 // ejecting
                 // random phrase
@@ -337,26 +384,20 @@ namespace PanicSystem
                 }
 
                 // remove effects, to prevent exceptions that occur for unknown reasons
-                try
+
+                var combat = UnityGameInstance.BattleTechGame.Combat;
+                List<Effect> effectsTargeting = combat.EffectManager.GetAllEffectsTargeting(defender);
+                foreach (var effect in effectsTargeting)
                 {
-                    var combat = UnityGameInstance.BattleTechGame.Combat;
-                    List<Effect> effectsTargeting = combat.EffectManager.GetAllEffectsTargeting(defender);
-                    foreach (var effect in effectsTargeting)
+                    // some effects removal throw, so silently drop them
+                    try
                     {
-                        // some effects removal throw, so silently drop them
-                        try
-                        {
-                            defender.CancelEffect(effect);
-                        }
-                        // ReSharper disable once EmptyGeneralCatchClause
-                        catch
-                        {
-                        }
+                        defender.CancelEffect(effect);
                     }
-                }
-                catch (Exception ex)
-                {
-                    Log(ex);
+                    // ReSharper disable once EmptyGeneralCatchClause
+                    catch
+                    {
+                    }
                 }
 
                 defender.EjectPilot(defender.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
@@ -369,7 +410,6 @@ namespace PanicSystem
 
                 try
                 {
-                    var combat = UnityGameInstance.BattleTechGame.Combat;
                     var attackerPilot = combat.AllMechs.Where(mech => mech.pilot.Team.IsLocalPlayer)
                         .Where(x => x.PilotableActorDef == attacker.PilotableActorDef).Select(y => y.pilot).FirstOrDefault();
 
@@ -379,13 +419,19 @@ namespace PanicSystem
                         return;
                     }
 
-                    // add UI icons.. and pilot history?
-                    var value = statCollection.GetStatistic("MechsEjected") == null
-                        ? 1
-                        : statCollection.GetStatistic("MechsEjected").Value<int>() + 1;
-                    statCollection.Set("MechsEjected", value);
-                    
-                    attackerPilot.pilotDef.AddMechKillCount(1);
+                    // add UI icons.. and pilot history?   ... MechsKilled already incremented??
+                    statCollection.Set("MechsKilled", attackerPilot.MechsKilled + 1);
+                    var value = statCollection.GetStatistic("MechsEjected")?.Value<int?>();
+                    if (statCollection.GetStatistic("MechsEjected") == null)
+                    {
+                        statCollection.AddStatistic("MechsEjected", 1);
+                    }
+                    else
+                    {
+                        statCollection.Set("MechsEjected", value + 1);
+                    }
+
+                    //attackerPilot.pilotDef.AddMechKillCount(1);
 
                     // add achievement kill (more complicated)
                     var combatProcessors = Traverse.Create(UnityGameInstance.BattleTechGame.Achievements).Field("combatProcessors").GetValue<AchievementProcessor[]>();

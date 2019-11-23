@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Reflection;
+using Harmony;
 using static PanicSystem.PanicSystem;
 
 namespace PanicSystem
@@ -31,7 +32,7 @@ namespace PanicSystem
 
         internal static void Log(object input)
         {
-            //FileLog.Log($"[PanicSystem] {input}");
+            FileLog.Log($"[PanicSystem] {input}");
         }
     }
 }

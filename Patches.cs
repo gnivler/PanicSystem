@@ -1,17 +1,22 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using BattleTech;
+using BattleTech.Achievements;
 using BattleTech.Save;
 using BattleTech.Save.SaveGameStructure;
 using BattleTech.UI;
 using Harmony;
 using HBS;
-using Localize;
+using UnityEngine;
+using UnityEngine.UI;
 using static PanicSystem.Controller;
 using static PanicSystem.PanicSystem;
 using static PanicSystem.Logger;
 using Random = UnityEngine.Random;
-
+using Text = Localize.Text;
 
 // ReSharper disable UnusedMember.Global
 // ReSharper disable InconsistentNaming
@@ -25,7 +30,67 @@ namespace PanicSystem
         public static float mechArmorBeforeAttack;
         public static float mechStructureBeforeAttack;
         public static float mechHeatBeforeAttack;
+
         public static float heatDamage;
+        //public static MethodInfo original;
+        //public static MethodInfo transpiler;
+
+        public static void Init()
+        {
+            harmony.PatchAll();
+        }
+
+        [HarmonyPatch(typeof(AAR_UnitStatusWidget), "FillInData")]
+        public static class AAR_UnitStatusWidget_FillInData_Patch
+        {
+            private static MethodInfo Replacement = AccessTools.Method(typeof(Patches), "AddKilledMech");
+            //public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            //{
+            //    var codes = instructions.ToList();
+            //    // call our own copy of the method instead
+            //    var index = codes.FindIndex(x => x.operand != null &&
+            //                                     (MethodInfo) x.operand == AccessTools.Method(typeof(AAR_UnitStatusWidget), "AddKilledMech"));
+            //    Log(index);
+            //    // if the pilot has ejection kills
+            //    if ()
+            //    codes[index].operand = Replacement;
+            //    return codes.AsEnumerable();
+            //
+            //}
+            
+            public static void Postfix(UnitResult ___UnitData, RectTransform ___KillGridParent)
+            {
+                try
+                {
+                    var pilot = ___UnitData.pilot;
+                    Log(pilot);
+                    var ejectionKills = pilot.StatCollection.GetStatistic("MechsEjected").Value<int>();
+                    Log(ejectionKills);
+                    for (var x = 0; x < ejectionKills; x++)
+                    {
+                        AddEjectedMech(___KillGridParent);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log(ex);
+                }
+            }
+        }
+
+        private static void AddEjectedMech(RectTransform KillGridParent)
+        {
+            string id = "uixPrfIcon_AA_mechKillStamp";
+            var dm = UnityGameInstance.BattleTechGame.DataManager;
+            GameObject gameObject = dm.PooledInstantiate(id, BattleTechResourceType.UIModulePrefabs, null, null, KillGridParent);
+            var image = gameObject.GetComponent<Image>();
+            image.color = Color.red;
+            
+            if (gameObject.GetComponent<Image>())
+            {
+                gameObject.transform.localScale = Vector3.one;
+            }
+        }
 
         // have to patch both because they're used in different situations, with the same messages
         [HarmonyPatch(typeof(CombatHUDFloatieStack), "AddFloatie", typeof(FloatieMessage))]
@@ -296,6 +361,53 @@ namespace PanicSystem
 
                 defender.EjectPilot(defender.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
                 LogReport($"Ejected.  Runtime {stopwatch.ElapsedMilliSeconds}ms");
+
+                if (!modSettings.CountAsKills)
+                {
+                    return;
+                }
+
+                try
+                {
+                    var combat = UnityGameInstance.BattleTechGame.Combat;
+                    var attackerPilot = combat.AllMechs.Where(mech => mech.pilot.Team.IsLocalPlayer)
+                        .Where(x => x.PilotableActorDef == attacker.PilotableActorDef).Select(y => y.pilot).FirstOrDefault();
+
+                    var statCollection = attackerPilot?.StatCollection;
+                    if (statCollection == null)
+                    {
+                        return;
+                    }
+
+                    // add UI icons.. and pilot history?
+                    var value = statCollection.GetStatistic("MechsEjected") == null
+                        ? 1
+                        : statCollection.GetStatistic("MechsEjected").Value<int>() + 1;
+                    statCollection.Set("MechsEjected", value);
+                    
+                    attackerPilot.pilotDef.AddMechKillCount(1);
+
+                    // add achievement kill (more complicated)
+                    var combatProcessors = Traverse.Create(UnityGameInstance.BattleTechGame.Achievements).Field("combatProcessors").GetValue<AchievementProcessor[]>();
+                    var combatProcessor = combatProcessors.FirstOrDefault(x => x.GetType() == AccessTools.TypeByName("BattleTech.Achievements.CombatProcessor"));
+
+                    // field is of type Dictionary<string, CombatProcessor.MechCombatStats>
+                    var playerMechStats = Traverse.Create(combatProcessor).Field("playerMechStats").GetValue<IDictionary>();
+                    if (playerMechStats != null)
+                    {
+                        foreach (DictionaryEntry kvp in playerMechStats)
+                        {
+                            if ((string) kvp.Key == attackerPilot.GUID)
+                            {
+                                Traverse.Create(kvp.Value).Method("IncrementKillCount").GetValue();
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log(ex);
+                }
             }
         }
 

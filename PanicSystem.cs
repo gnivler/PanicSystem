@@ -23,12 +23,11 @@ namespace PanicSystem
         internal static string storageJsonPath; //store our meta trackers here
         internal static string modDirectory;
         internal static List<string> ejectPhraseList = new List<string>();
-        private static HarmonyInstance harmony;
+        internal static HarmonyInstance harmony;
 
         public static void Init(string modDir, string settings)
         {
             harmony = HarmonyInstance.Create("com.BattleTech.PanicSystem");
-            harmony.PatchAll(Assembly.GetExecutingAssembly());
             modDirectory = modDir;
             activeJsonPath = Path.Combine(modDir, "PanicSystem.json");
             storageJsonPath = Path.Combine(modDir, "PanicSystemStorage.json");
@@ -61,7 +60,7 @@ namespace PanicSystem
                 modSettings.EnableEjectPhrases = false;
             }
 
-            Patches.ManualPatching();
+            Patches.Init();
         }
         /// <summary>
         /// applies combat modifiers to tracked mechs based on panic status

@@ -7,6 +7,7 @@ namespace PanicSystem
         public bool FloatieSpam = false;
         public float EjectPhraseChance = 100;
         public bool ColorizeFloaties = true;
+        public bool CountAsKills = true;
 
         // panic
         public bool PlayersCanPanic = true;
@@ -33,7 +34,7 @@ namespace PanicSystem
         public float DistractingModifier = 0;
         public float OverheatedModifier = 0;
         public float ShutdownModifier = 0;
-        public float HeatDamageModifier = 10;
+        public float HeatDamageModifier = 0;
 
         //deprecated public float MechHealthAlone = 50;
         public float MechHealthForCrit = 0.9f;

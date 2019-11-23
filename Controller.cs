@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using BattleTech;
+using Harmony;
 using Newtonsoft.Json;
 using static PanicSystem.PanicSystem;
 using static PanicSystem.Logger;
@@ -17,6 +19,15 @@ namespace PanicSystem
 
         public static void Reset()
         {
+            var combat = UnityGameInstance.BattleTechGame.Combat;
+            var group = combat.AllMechs.Except(combat.AllEnemies);
+            foreach (var mech in group)
+            {
+                var pilot = mech.GetPilot();
+                var statCollection = Traverse.Create(pilot).Field("statCollection").GetValue<StatCollection>();
+                statCollection.Set("MechsEjected", 0);
+            }
+
             trackedPilots = new List<PilotTracker>();
         }
 

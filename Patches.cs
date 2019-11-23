@@ -34,8 +34,6 @@ namespace PanicSystem
         public static float mechHeatBeforeAttack;
 
         public static float heatDamage;
-        //public static MethodInfo original;
-        //public static MethodInfo transpiler;
 
         public static void Init()
         {
@@ -77,7 +75,7 @@ namespace PanicSystem
                     {
                         new CodeInstruction(OpCodes.Ldarg_0),
                         new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(AAR_UnitStatusWidget), "UnitData")),
-                        new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(AAR_UnitStatusWidget_FillInData_Patch), "GetEjectionCount")),
+                        new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Patches), "GetEjectionCount")),
                         new CodeInstruction(OpCodes.Sub)
                     };
                     codes.InsertRange(index + 1, newStack);
@@ -106,16 +104,17 @@ namespace PanicSystem
                     Log(ex);
                 }
             }
-
-            public static int GetEjectionCount(UnitResult unitResult)
-            {
-                return unitResult.pilot.StatCollection.GetStatistic("MechsEjected") == null
-                    ? 0
-                    : unitResult.pilot.StatCollection.GetStatistic("MechsEjected").Value<int>();
-            }
         }
 
-        //  adapted from AddKilledMech()
+        public static int GetEjectionCount(UnitResult unitResult)
+        {
+            return unitResult.pilot.StatCollection.GetStatistic("MechsEjected") == null
+                ? 0
+                : unitResult.pilot.StatCollection.GetStatistic("MechsEjected").Value<int>();
+        }
+
+        //  adapted from AddKilledMech()    
+        //  
         private static void AddEjectedMech(RectTransform KillGridParent)
         {
             string id = "uixPrfIcon_AA_mechKillStamp";
@@ -123,7 +122,7 @@ namespace PanicSystem
             GameObject gameObject = dm.PooledInstantiate(id, BattleTechResourceType.UIModulePrefabs, null, null, KillGridParent);
             var image = gameObject.GetComponent<Image>();
             image.color = Color.red;
-            
+
             if (gameObject.GetComponent<Image>())
             {
                 gameObject.transform.localScale = Vector3.one;
@@ -178,12 +177,27 @@ namespace PanicSystem
         [HarmonyPatch(typeof(AbstractActor), "OnNewRound")]
         public static class AbstractActorBeginNewRoundPatch
         {
+            private static AbstractActor previousAbstractActor;
+
             public static void Prefix(AbstractActor __instance)
             {
-                if (!(__instance is Mech mech) || mech.IsDead || mech.IsFlaggedForDeath && mech.HasHandledDeath) return;
+                if (!(__instance is Mech mech) || mech.IsDead || mech.IsFlaggedForDeath && mech.HasHandledDeath)
+                {
+                    return;
+                }
 
+                // deal with duplicate invocations for random reasons
+                if (previousAbstractActor == __instance)
+                {
+                    return;
+                }
+
+                previousAbstractActor = __instance;
                 var pilot = mech.GetPilot();
-                if (pilot == null) return;
+                if (pilot == null)
+                {
+                    return;
+                }
 
                 var index = GetPilotIndex(mech);
                 // reduce panic level
@@ -308,8 +322,20 @@ namespace PanicSystem
         [HarmonyPatch(typeof(AttackStackSequence), "OnAttackComplete")]
         public static class AttackStackSequenceOnAttackCompletePatch
         {
+            private static AttackStackSequence previousSequence;
+
             public static void Prefix(AttackStackSequence __instance, MessageCenterMessage message)
             {
+                // seeing multiple invocations of this method without any in-game impact
+                // but it makes panic status levels jump up and down by twos
+                // assuming every duplicate is adjacent...
+                if (previousSequence == __instance)
+                {
+                    return;
+                }
+
+                previousSequence = __instance;
+
                 var stopwatch = new Stopwatch();
                 stopwatch.Start();
 
@@ -384,7 +410,6 @@ namespace PanicSystem
                 }
 
                 // remove effects, to prevent exceptions that occur for unknown reasons
-
                 var combat = UnityGameInstance.BattleTechGame.Combat;
                 List<Effect> effectsTargeting = combat.EffectManager.GetAllEffectsTargeting(defender);
                 foreach (var effect in effectsTargeting)

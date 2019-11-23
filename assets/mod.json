@@ -3,7 +3,7 @@
 
   "Enabled": true,
 
-  "Version": "3.5",
+  "Version": "3.5.1",
   "Description": "Simulates mechwarrior panic and automatic ejections",
   "Website": "https://github.com/gnivler/PanicSystem",
 
@@ -30,7 +30,6 @@
     "EnemiesCanPanic": true,
     "ConsiderEjectingWithNoWeaps": false,
     "LosingLimbAlwaysPanics": false,
-    "OneChangePerTurn": false,
 
     /* percent of remaining armor that must be destroyed to cause a panic save */
     "MinimumArmorDamagePercentageRequired": 10,

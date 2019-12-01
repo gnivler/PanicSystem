@@ -11,7 +11,6 @@ using BattleTech.Save.SaveGameStructure;
 using BattleTech.UI;
 using Harmony;
 using HBS;
-using SVGImporter;
 using UnityEngine;
 using UnityEngine.UI;
 using static PanicSystem.Controller;
@@ -32,7 +31,6 @@ namespace PanicSystem
         public static float mechArmorBeforeAttack;
         public static float mechStructureBeforeAttack;
         public static float mechHeatBeforeAttack;
-
         public static float heatDamage;
 
         public static void Init()
@@ -114,18 +112,19 @@ namespace PanicSystem
         }
 
         //  adapted from AddKilledMech()    
-        //  
         private static void AddEjectedMech(RectTransform KillGridParent)
         {
-            string id = "uixPrfIcon_AA_mechKillStamp";
-            var dm = UnityGameInstance.BattleTechGame.DataManager;
-            GameObject gameObject = dm.PooledInstantiate(id, BattleTechResourceType.UIModulePrefabs, null, null, KillGridParent);
-            var image = gameObject.GetComponent<Image>();
-            image.color = Color.red;
-
-            if (gameObject.GetComponent<Image>())
+            try
             {
-                gameObject.transform.localScale = Vector3.one;
+                var dm = UnityGameInstance.BattleTechGame.DataManager;
+                const string id = "uixPrfIcon_AA_mechKillStamp";
+                var prefab = dm.PooledInstantiate(id, BattleTechResourceType.Prefab, null, null, KillGridParent);
+                var image = prefab.GetComponent<Image>();
+                image.color = Color.red;
+            }
+            catch (Exception ex)
+            {
+                Logger.Log(ex);
             }
         }
 
@@ -166,12 +165,6 @@ namespace PanicSystem
                     }
                 }
             }
-        }
-
-        [HarmonyPatch(typeof(AAR_SalvageScreen), "OnCompleted")]
-        public static class AAR_SalvageScreenPatch
-        {
-            private static void Postfix() => Reset();
         }
 
         [HarmonyPatch(typeof(AbstractActor), "OnNewRound")]
@@ -329,6 +322,7 @@ namespace PanicSystem
                 // seeing multiple invocations of this method without any in-game impact
                 // but it makes panic status levels jump up and down by twos
                 // assuming every duplicate is adjacent...
+                LogReport(new string ('>', 50) + "AttackStackSequence");
                 if (previousSequence == __instance)
                 {
                     return;

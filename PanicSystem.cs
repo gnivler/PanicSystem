@@ -438,7 +438,7 @@ namespace PanicSystem
             return false;
         }
 
-// method is called despite the setting, so it can be controlled in one place
+        // method is called despite the setting, so it can be controlled in one place
         private static void SaySpamFloatie(Mech mech, string message)
         {
             if (!modSettings.FloatieSpam) return;
@@ -446,7 +446,7 @@ namespace PanicSystem
                 new ShowActorInfoSequence(mech, message, FloatieMessage.MessageNature.Neutral, false)));
         }
 
-// bool controls whether to display as buff or debuff
+        // bool controls whether to display as buff or debuff
         private static void SayStatusFloatie(Mech mech, bool buff)
         {
             var index = GetPilotIndex(mech);

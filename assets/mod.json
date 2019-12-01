@@ -3,14 +3,14 @@
 
   "Enabled": true,
 
-  "Version": "3.5.1",
+  "Version": "3.5.3",
   "Description": "Simulates mechwarrior panic and automatic ejections",
   "Website": "https://github.com/gnivler/PanicSystem",
 
   "DLL": "PanicSystem.dll",
 
   "Settings": {
-    "Debug": false,
+    "Debug": true,
 
     /* readds phrases.txt file and displays one randomly at eject */
     "EnableEjectPhrases": true,

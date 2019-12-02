@@ -1,6 +1,7 @@
 ﻿﻿using System;
 using System.Collections;
-using System.Collections.Generic;using System.Linq;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using BattleTech;
@@ -11,6 +12,7 @@ using BattleTech.UI;
 using Harmony;
 using UnityEngine;
 using UnityEngine.UI;
+
 using static PanicSystem.Controller;
 using static PanicSystem.PanicSystem;
 using static PanicSystem.Logger;
@@ -427,6 +429,7 @@ namespace PanicSystem
                         statCollection.Set("MechsEjected", value + 1);
                     }
                 
+
                     // add achievement kill (more complicated)
                     var combatProcessors = Traverse.Create(UnityGameInstance.BattleTechGame.Achievements).Field("combatProcessors").GetValue<AchievementProcessor[]>();
                     var combatProcessor = combatProcessors.FirstOrDefault(x => x.GetType() == AccessTools.TypeByName("BattleTech.Achievements.CombatProcessor"));

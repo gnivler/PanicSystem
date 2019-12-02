@@ -74,7 +74,7 @@ namespace PanicSystem
                 return;
             }
 
-            int Uid() => Random.Range(1, int.MaxValue);
+            //int Uid() => Random.Range(1, int.MaxValue);
             var effectManager = UnityGameInstance.BattleTechGame.Combat.EffectManager;
             var effects = Traverse.Create(effectManager).Field("effects").GetValue<List<Effect>>();
             for (var i = 0; i < effects.Count; i++)

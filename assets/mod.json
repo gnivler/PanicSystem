@@ -8,9 +8,10 @@
   "Website": "https://github.com/gnivler/PanicSystem",
 
   "DLL": "PanicSystem.dll",
+  "DLLEntryPoint": "PanicSystem.PanicSystem.Init",
 
   "Settings": {
-    "Debug": true,
+    "Debug": false,
 
     /* readds phrases.txt file and displays one randomly at eject */
     "EnableEjectPhrases": true,

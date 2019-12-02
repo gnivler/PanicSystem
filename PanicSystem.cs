@@ -74,7 +74,7 @@ namespace PanicSystem
                 return;
             }
 
-            int Uid() => Random.Range(1, int.MaxValue);
+            //int Uid() => Random.Range(1, int.MaxValue);
             var effectManager = UnityGameInstance.BattleTechGame.Combat.EffectManager;
             var effects = Traverse.Create(effectManager).Field("effects").GetValue<List<Effect>>();
             for (var i = 0; i < effects.Count; i++)
@@ -90,19 +90,19 @@ namespace PanicSystem
                 case PanicStatus.Confident:
                     LogReport($"{mech.DisplayName} condition worsened: Unsettled");
                     trackedPilots[index].panicStatus = PanicStatus.Unsettled;
-                    effectManager.CreateEffect(StatusEffect.UnsettledToHit, "PanicSystemToHit", Uid(), mech, mech, new WeaponHitInfo(), 0);
+                    //effectManager.CreateEffect(StatusEffect.UnsettledToHit, "PanicSystemToHit", Uid(), mech, mech, new WeaponHitInfo(), 0);
                     break;
                 case PanicStatus.Unsettled:
                     LogReport($"{mech.DisplayName} condition worsened: Stressed");
                     trackedPilots[index].panicStatus = PanicStatus.Stressed;
-                    effectManager.CreateEffect(StatusEffect.StressedToHit, "PanicSystemToHit", Uid(), mech, mech, new WeaponHitInfo(), 0);
-                    effectManager.CreateEffect(StatusEffect.StressedToBeHit, "PanicSystemToBeHit", Uid(), mech, mech, new WeaponHitInfo(), 0);
+                    //effectManager.CreateEffect(StatusEffect.StressedToHit, "PanicSystemToHit", Uid(), mech, mech, new WeaponHitInfo(), 0);
+                    //effectManager.CreateEffect(StatusEffect.StressedToBeHit, "PanicSystemToBeHit", Uid(), mech, mech, new WeaponHitInfo(), 0);
                     break;
                 default:
                     LogReport($"{mech.DisplayName} condition worsened: Panicked");
                     trackedPilots[index].panicStatus = PanicStatus.Panicked;
-                    effectManager.CreateEffect(StatusEffect.PanickedToHit, "PanicSystemToHit", Uid(), mech, mech, new WeaponHitInfo(), 0);
-                    effectManager.CreateEffect(StatusEffect.PanickedToBeHit, "PanicSystemToBeHit", Uid(), mech, mech, new WeaponHitInfo(), 0);
+                    //effectManager.CreateEffect(StatusEffect.PanickedToHit, "PanicSystemToHit", Uid(), mech, mech, new WeaponHitInfo(), 0);
+                    //effectManager.CreateEffect(StatusEffect.PanickedToBeHit, "PanicSystemToBeHit", Uid(), mech, mech, new WeaponHitInfo(), 0);
                     break;
             }
 
@@ -438,7 +438,7 @@ namespace PanicSystem
             return false;
         }
 
-// method is called despite the setting, so it can be controlled in one place
+        // method is called despite the setting, so it can be controlled in one place
         private static void SaySpamFloatie(Mech mech, string message)
         {
             if (!modSettings.FloatieSpam) return;
@@ -446,7 +446,7 @@ namespace PanicSystem
                 new ShowActorInfoSequence(mech, message, FloatieMessage.MessageNature.Neutral, false)));
         }
 
-// bool controls whether to display as buff or debuff
+        // bool controls whether to display as buff or debuff
         private static void SayStatusFloatie(Mech mech, bool buff)
         {
             var index = GetPilotIndex(mech);

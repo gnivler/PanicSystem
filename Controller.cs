@@ -19,7 +19,28 @@ namespace PanicSystem
 
         public static void Reset()
         {
-            trackedPilots = new List<PilotTracker>();
+            try
+            {
+                var combat = UnityGameInstance.BattleTechGame.Combat;
+                var group = combat?.AllMechs.Except(combat.AllEnemies);
+                if (group == null)
+                {
+                    return;
+                }
+
+                foreach (var mech in group)
+                {
+                    var pilot = mech.GetPilot();
+                    var statCollection = pilot.StatCollection;
+                    statCollection.Set("MechsEjected", 0);
+                }
+
+                trackedPilots = new List<PilotTracker>();
+            }
+            catch (Exception ex)
+            {
+                Logger.Log(ex.ToString());
+            }
         }
 
         // fired before a save deserializes itself through a patch on GameInstanceSave's PostDeserialization

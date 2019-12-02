@@ -90,19 +90,19 @@ namespace PanicSystem
                 case PanicStatus.Confident:
                     LogReport($"{mech.DisplayName} condition worsened: Unsettled");
                     trackedPilots[index].panicStatus = PanicStatus.Unsettled;
-                    effectManager.CreateEffect(StatusEffect.UnsettledToHit, "PanicSystemToHit", Uid(), mech, mech, new WeaponHitInfo(), 0);
+                    //effectManager.CreateEffect(StatusEffect.UnsettledToHit, "PanicSystemToHit", Uid(), mech, mech, new WeaponHitInfo(), 0);
                     break;
                 case PanicStatus.Unsettled:
                     LogReport($"{mech.DisplayName} condition worsened: Stressed");
                     trackedPilots[index].panicStatus = PanicStatus.Stressed;
-                    effectManager.CreateEffect(StatusEffect.StressedToHit, "PanicSystemToHit", Uid(), mech, mech, new WeaponHitInfo(), 0);
-                    effectManager.CreateEffect(StatusEffect.StressedToBeHit, "PanicSystemToBeHit", Uid(), mech, mech, new WeaponHitInfo(), 0);
+                    //effectManager.CreateEffect(StatusEffect.StressedToHit, "PanicSystemToHit", Uid(), mech, mech, new WeaponHitInfo(), 0);
+                    //effectManager.CreateEffect(StatusEffect.StressedToBeHit, "PanicSystemToBeHit", Uid(), mech, mech, new WeaponHitInfo(), 0);
                     break;
                 default:
                     LogReport($"{mech.DisplayName} condition worsened: Panicked");
                     trackedPilots[index].panicStatus = PanicStatus.Panicked;
-                    effectManager.CreateEffect(StatusEffect.PanickedToHit, "PanicSystemToHit", Uid(), mech, mech, new WeaponHitInfo(), 0);
-                    effectManager.CreateEffect(StatusEffect.PanickedToBeHit, "PanicSystemToBeHit", Uid(), mech, mech, new WeaponHitInfo(), 0);
+                    //effectManager.CreateEffect(StatusEffect.PanickedToHit, "PanicSystemToHit", Uid(), mech, mech, new WeaponHitInfo(), 0);
+                    //effectManager.CreateEffect(StatusEffect.PanickedToBeHit, "PanicSystemToBeHit", Uid(), mech, mech, new WeaponHitInfo(), 0);
                     break;
             }
 

@@ -6,7 +6,7 @@ using static PanicSystem.PanicSystem;
 
 // ReSharper disable InconsistentNaming
 
-namespace PanicSystem
+namespace PanicSystem.Components
 {
     // ReSharper disable once ClassNeverInstantiated.Global
     internal class StatusEffect
@@ -28,7 +28,7 @@ namespace PanicSystem
 
         // base settings for the EffectData members
         private static EffectDurationData Duration =>
-            new EffectDurationData()
+            new EffectDurationData
             {
                 duration = -1,
                 stackLimit = 1
@@ -48,7 +48,7 @@ namespace PanicSystem
                 forcePathRebuild = false,
                 forceVisRebuild = false,
                 showInTargetPreview = true,
-                showInStatusPanel = true,
+                showInStatusPanel = true
             };
 
         private static EffectTargetingData Hide

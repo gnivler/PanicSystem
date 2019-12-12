@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using BattleTech;
 
 // HUGE thanks to RealityMachina and mpstark for their work, outstanding.
-namespace PanicSystem
+namespace PanicSystem.Components
 {
     public enum PanicStatus
     {
@@ -15,20 +15,20 @@ namespace PanicSystem
 
     public class PilotTracker
     {
-        public bool panicWorsenedRecently;
-        public PanicStatus panicStatus;
-        public string mech;
+        public bool PanicWorsenedRecently;
+        public PanicStatus PanicStatus;
+        public readonly string Mech;
 
         public PilotTracker()
         {
             // do nothing here, if this is called, then JSON is deserializing us
         }
 
-        public PilotTracker(Mech mech)
+        public PilotTracker(IGuid mech)
         {
-            this.mech = mech.GUID;
-            panicStatus = PanicStatus.Confident;
-            panicWorsenedRecently = false;
+            Mech = mech.GUID;
+            PanicStatus = PanicStatus.Confident;
+            PanicWorsenedRecently = false;
         }
     }
 
@@ -36,12 +36,12 @@ namespace PanicSystem
     {
         public List<PilotTracker> TrackedPilots { get; set; }
         public DateTime SaveGameTimeStamp { get; set; }
-        public string SimGameGUID { get; set; }
+        public string SimGameGuid { get; set; }
 
         // ReSharper disable once InconsistentNaming
-        public void SetGameGUID(string GUID)
+        public void SetGameGUID(string guid)
         {
-            SimGameGUID = GUID;
+            SimGameGuid = guid;
         }
 
         public void SetSaveGameTime(DateTime savedate)

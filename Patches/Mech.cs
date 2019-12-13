@@ -36,10 +36,10 @@ namespace PanicSystem.Patches
                 return;
             }
 
-            var index = GetPilotIndex(mech);
-            if (TrackedPilots[index].Mech != mech.GUID) return;
+            var index = GetActorIndex(mech);
+            if (TrackedActors[index].Mech != mech.GUID) return;
 
-            if (TrackedPilots[index].PanicWorsenedRecently && modSettings.OneChangePerTurn) return;
+            if (TrackedActors[index].PanicWorsenedRecently && modSettings.OneChangePerTurn) return;
 
             ApplyPanicDebuff(mech);
         }

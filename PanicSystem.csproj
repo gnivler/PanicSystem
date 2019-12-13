@@ -67,9 +67,11 @@
         </Reference>
     </ItemGroup>
     <ItemGroup>
+        <Compile Include="Components\AARIcons.cs" />
         <Compile Include="Components\ColorFloaties.cs" />
         <Compile Include="Components\Controller.cs" />
         <Compile Include="Components\PilotTracker.cs" />
+        <Compile Include="Components\SavingThrows.cs" />
         <Compile Include="Components\StatusEffect.cs" />
         <Compile Include="Helpers.cs" />
         <Compile Include="Logger.cs" />
@@ -82,6 +84,7 @@
         <Compile Include="Patches\GameInstanceSave.cs" />
         <Compile Include="Patches\Mech.cs" />
         <Compile Include="Patches\SimGameState.cs" />
+        <Compile Include="Patches\VehicleRepresentation.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />
         <Compile Include="Settings.cs" />
     </ItemGroup>
@@ -98,6 +101,7 @@
         <PostBuildEvent>
             xcopy "$(TargetPath)" N:\SteamLibrary\steamapps\common\BATTLETECH\Mods\PanicSystem /Y
             xcopy "$(ProjectDir)"assets\* N:\SteamLibrary\steamapps\common\BATTLETECH\Mods\PanicSystem /y
+            
         </PostBuildEvent>
     </PropertyGroup>
 </Project>

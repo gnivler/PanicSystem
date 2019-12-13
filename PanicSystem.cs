@@ -17,7 +17,7 @@ namespace PanicSystem
         internal static string storageJsonPath; //store our meta trackers here
         internal static string modDirectory;
         internal static List<string> ejectPhraseList = new List<string>();
-        private static HarmonyInstance harmony;
+        internal static HarmonyInstance harmony;
 
         public static void Init(string modDir, string settings)
         {
@@ -34,7 +34,7 @@ namespace PanicSystem
                 Log(ex);
                 modSettings = new Settings();
             }
-
+            
             harmony.PatchAll();
             Helpers.SetupEjectPhrases(modDir);
         }

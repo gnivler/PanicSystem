@@ -34,12 +34,11 @@ namespace PanicSystem.Components
 
     public class MetaTracker
     {
-        public List<PilotTracker> TrackedPilots { get; set; }
+        public List<PilotTracker> TrackedActors { get; set; }
         public DateTime SaveGameTimeStamp { get; set; }
         public string SimGameGuid { get; set; }
-
-        // ReSharper disable once InconsistentNaming
-        public void SetGameGUID(string guid)
+        
+        public void SetGameGuid(string guid)
         {
             SimGameGuid = guid;
         }
@@ -49,9 +48,9 @@ namespace PanicSystem.Components
             SaveGameTimeStamp = savedate;
         }
 
-        public void SetTrackedPilots(List<PilotTracker> trackers)
+        public void SetTrackedActors(List<PilotTracker> trackers)
         {
-            TrackedPilots = trackers;
+            TrackedActors = trackers;
         }
     }
 }

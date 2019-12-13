@@ -26,16 +26,16 @@ namespace PanicSystem.Patches
                 return;
             }
 
-            var index = GetPilotIndex(mech);
+            var index = GetActorIndex(mech);
             // reduce panic level
-            var originalStatus = TrackedPilots[index].PanicStatus;
+            var originalStatus = TrackedActors[index].PanicStatus;
 
-            if (!TrackedPilots[index].PanicWorsenedRecently && (int) TrackedPilots[index].PanicStatus > 0)
+            if (!TrackedActors[index].PanicWorsenedRecently && (int) TrackedActors[index].PanicStatus > 0)
             {
-                TrackedPilots[index].PanicStatus--;
+                TrackedActors[index].PanicStatus--;
             }
 
-            if (TrackedPilots[index].PanicStatus != originalStatus) // status has changed, reset modifiers
+            if (TrackedActors[index].PanicStatus != originalStatus) // status has changed, reset modifiers
             {
                 int Uid() => Random.Range(1, int.MaxValue);
                 var effectManager = UnityGameInstance.BattleTechGame.Combat.EffectManager;
@@ -52,7 +52,7 @@ namespace PanicSystem.Patches
 
                 // re-apply effects
                 var message = __instance.Combat.MessageCenter;
-                switch (TrackedPilots[index].PanicStatus)
+                switch (TrackedActors[index].PanicStatus)
                 {
                     case PanicStatus.Unsettled:
                         LogReport($"{mech.DisplayName} condition improved: Unsettled");
@@ -73,7 +73,7 @@ namespace PanicSystem.Patches
             }
 
             // reset flag after reduction effect
-            TrackedPilots[index].PanicWorsenedRecently = false;
+            TrackedActors[index].PanicWorsenedRecently = false;
             SaveTrackedPilots();
         }
     }

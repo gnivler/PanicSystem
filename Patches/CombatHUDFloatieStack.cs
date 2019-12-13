@@ -2,8 +2,8 @@ using System;
 using BattleTech;
 using BattleTech.UI;
 using Harmony;
+using Localize;
 using PanicSystem.Components;
-using UnityEngine.UI;
 using static PanicSystem.Logger;
 using static PanicSystem.PanicSystem;
 

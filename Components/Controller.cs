@@ -12,7 +12,7 @@ namespace PanicSystem.Components
 {
     public static class Controller
     {
-        public static List<PilotTracker> TrackedPilots;
+        public static List<PilotTracker> TrackedActors;
         private static List<MetaTracker> metaTrackers;
         private static int currentIndex = -1;
 
@@ -34,7 +34,7 @@ namespace PanicSystem.Components
                     statCollection.Set("MechsEjected", 0);
                 }
 
-                TrackedPilots = new List<PilotTracker>();
+                TrackedActors = new List<PilotTracker>();
             }
             catch (Exception ex)
             {
@@ -50,9 +50,9 @@ namespace PanicSystem.Components
             if (index > -1)
             {
                 // part where everything seems to fall apart?  (legacy comment)
-                if (metaTrackers[index]?.TrackedPilots != null)
+                if (metaTrackers[index]?.TrackedActors != null)
                 {
-                    TrackedPilots = metaTrackers[index]?.TrackedPilots;
+                    TrackedActors = metaTrackers[index]?.TrackedActors;
                 }
 
                 currentIndex = index;
@@ -62,7 +62,7 @@ namespace PanicSystem.Components
             {
                 var tracker = new MetaTracker();
 
-                tracker.SetTrackedPilots(TrackedPilots);
+                tracker.SetTrackedActors(TrackedActors);
                 metaTrackers.Add(tracker);
                 // -1 due to zero-based arrays
                 currentIndex = metaTrackers.Count - 1;
@@ -77,7 +77,7 @@ namespace PanicSystem.Components
             if (metaTrackers != null)
             {
                 var tracker = new MetaTracker();
-                tracker.SetTrackedPilots(TrackedPilots);
+                tracker.SetTrackedActors(TrackedActors);
                 metaTrackers.Add(tracker);
                 // -1 due to zero-based arrays
                 currentIndex = metaTrackers.Count - 1;
@@ -113,7 +113,7 @@ namespace PanicSystem.Components
                 // have our meta tracker get the latest data
                 if (metaTrackers[index] != null)
                 {
-                    metaTrackers[index].SetTrackedPilots(TrackedPilots);
+                    metaTrackers[index].SetTrackedActors(TrackedActors);
                 }
 
                 metaTrackers[index].SetSaveGameTime(dateTime);
@@ -123,7 +123,7 @@ namespace PanicSystem.Components
                 {
                     if (metaTrackers[index].SimGameGuid != GUID)
                     {
-                        metaTrackers[index].SetGameGUID(GUID);
+                        metaTrackers[index].SetGameGuid(GUID);
                     }
                 }
 
@@ -168,9 +168,9 @@ namespace PanicSystem.Components
         {
             try
             {
-                if (TrackedPilots != null)
+                if (TrackedActors != null)
                 {
-                    File.WriteAllText(activeJsonPath, JsonConvert.SerializeObject(TrackedPilots));
+                    File.WriteAllText(activeJsonPath, JsonConvert.SerializeObject(TrackedActors));
                 }
             }
             catch (Exception ex)
@@ -182,7 +182,7 @@ namespace PanicSystem.Components
         private static void DeserializeActiveJson()
         {
             // we only need to deserialize if we have nothing here: this way resets should work properly
-            if (TrackedPilots != null) return;
+            if (TrackedActors != null) return;
             List<PilotTracker> panicTrackers = null;
             try
             {
@@ -196,37 +196,37 @@ namespace PanicSystem.Components
 
             if (panicTrackers == null)
             {
-                TrackedPilots = new List<PilotTracker>();
+                TrackedActors = new List<PilotTracker>();
             }
             else
             {
-                TrackedPilots = panicTrackers;
+                TrackedActors = panicTrackers;
             }
         }
 
-        public static int GetPilotIndex(Mech mech)
+        public static int GetActorIndex(AbstractActor actor)
         {
             while (true)
             {
-                if (mech == null)
+                if (actor == null)
                 {
                     return -1;
                 }
 
-                if (TrackedPilots == null)
+                if (TrackedActors == null)
                 {
                     DeserializeActiveJson();
                 }
 
-                for (var i = 0; i < TrackedPilots?.Count; i++)
+                for (var i = 0; i < TrackedActors?.Count; i++)
                 {
-                    if (TrackedPilots[i].Mech == mech.GUID)
+                    if (TrackedActors[i].Mech == actor.GUID)
                     {
                         return i;
                     }
                 }
 
-                TrackedPilots?.Add(new PilotTracker(mech));
+                TrackedActors?.Add(new PilotTracker(actor));
                 SaveTrackedPilots();
             }
         }

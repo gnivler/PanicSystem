@@ -13,7 +13,8 @@ namespace PanicSystem
         public bool PlayersCanPanic = true;
         public bool EnemiesCanPanic = true;
         public float MinimumDamagePercentageRequired = 10;
-        public float MinimumStructureDamageRequired = 5;
+        public float MinimumMechStructureDamageRequired = 5;
+        public float MinimumVehicleStructureDamageRequired = 5;
         public bool OneChangePerTurn = false;
         public bool LosingLimbAlwaysPanics = false;
         public float UnsteadyModifier = 10;

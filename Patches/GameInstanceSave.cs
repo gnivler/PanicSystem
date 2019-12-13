@@ -24,7 +24,7 @@ namespace PanicSystem.Patches
         public static void Postfix(LanceSpawnerGameLogic __instance)
         {
             Log("Lance spawn - building pilot index");
-            __instance.Combat.AllMechs.ForEach(x => GetPilotIndex(x));
+            __instance.Combat.AllMechs.ForEach(x => GetActorIndex(x));
         }
     }
 }

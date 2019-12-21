@@ -17,6 +17,11 @@ All downloads now at Nexus Mods https://www.nexusmods.com/battletech/mods/461/
 
 ## General Details
 
+Optional Vehicle Panic
+Enable it in the mod.json if you want to use this.
+When sufficient damage is inflicted, they will make panic saves where a failure jumps immediately to panicked.
+When panicked and failing more saving throws they will flee and self destruct.
+
 There are four states for a pilot to be in: Confident, Unsettled, Stressed, and Panicked.
 
 Panic rolls are made when sufficient damage is dealt.  This roll considers multiple factors to calculate a saving throw and a failure will increase panic by one level.  Guts and Tactics can affect this, as well as Quirks from don Zappo's [Pilot Quirks mod](https://www.nexusmods.com/battletech/mods/282/).  Lance morale also comes into play.  Rolling 100 on a saving throw will reduce panic level by one state.  Succeeding all saving throws in a turn will improve panic state by one level as well.

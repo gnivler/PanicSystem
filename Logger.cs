@@ -36,7 +36,7 @@ namespace PanicSystem
             }
         }
 
-        internal static void Log(object input)
+        internal static void LogDebug(object input)
         {
             FileLog.Log($"[PanicSystem] {input}");
         }

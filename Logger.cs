@@ -36,12 +36,9 @@ namespace PanicSystem
             }
         }
 
-        internal static void LogDebug(object input)
+        internal static void Log(object input)
         {
-            if (modSettings.Debug)
-            {
-                FileLog.Log($"[PanicSystem] {input}");
-            }
+            FileLog.Log($"[PanicSystem] {input}");
         }
     }
 }

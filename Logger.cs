@@ -4,6 +4,8 @@ using System.Reflection;
 using Harmony;
 using static PanicSystem.PanicSystem;
 
+// ReSharper disable ClassNeverInstantiated.Global
+
 namespace PanicSystem
 {
     public class Logger
@@ -15,13 +17,17 @@ namespace PanicSystem
 
         public static void LogReport(object line)
         {
-            if (!modSettings.Debug) return;
+            if (!modSettings.CombatLog)
+            {
+                return;
+            }
+
             using (var writer = new StreamWriter(LogFilePath, true))
             {
                 writer.WriteLine($"{line}");
             }
         }
-        
+
         public static void LogClear()
         {
             using (var writer = new StreamWriter(LogFilePath, false))
@@ -30,9 +36,9 @@ namespace PanicSystem
             }
         }
 
-        internal static void Log(object input)
+        internal static void LogDebug(object input)
         {
-            //FileLog.Log($"[PanicSystem] {input}");
+            FileLog.Log($"[PanicSystem] {input}");
         }
     }
 }

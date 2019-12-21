@@ -8,7 +8,7 @@ using static PanicSystem.Logger;
 
 // ReSharper disable InconsistentNaming
 
-namespace PanicSystem
+namespace PanicSystem.Components
 {
     public static class ColorFloaties
     {
@@ -62,7 +62,7 @@ namespace PanicSystem
             }
             catch (Exception ex)
             {
-                Log(ex);
+                LogDebug(ex);
             }
         }
     }

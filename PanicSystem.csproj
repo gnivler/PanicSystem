@@ -9,9 +9,9 @@
         <AppDesignerFolder>Properties</AppDesignerFolder>
         <RootNamespace>PanicSystem</RootNamespace>
         <AssemblyName>PanicSystem</AssemblyName>
-        <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
+        <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
         <FileAlignment>512</FileAlignment>
-        <LangVersion>7.2</LangVersion>
+        <LangVersion>default</LangVersion>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
         <DebugSymbols>true</DebugSymbols>
@@ -67,16 +67,26 @@
         </Reference>
     </ItemGroup>
     <ItemGroup>
-        <Compile Include="ColorFloaties.cs" />
-        <Compile Include="Controller.cs" />
+        <Compile Include="Components\AARIcons.cs" />
+        <Compile Include="Components\ColorFloaties.cs" />
+        <Compile Include="Components\Controller.cs" />
+        <Compile Include="Components\PilotTracker.cs" />
+        <Compile Include="Components\SavingThrows.cs" />
+        <Compile Include="Components\StatusEffect.cs" />
+        <Compile Include="Helpers.cs" />
         <Compile Include="Logger.cs" />
-        <Compile Include="MechChecks.cs" />
         <Compile Include="PanicSystem.cs" />
-        <Compile Include="PilotTracker.cs" />
-        <Compile Include="Patches.cs" />
+        <Compile Include="Patches\AAR_UnitStatusWidget.cs" />
+        <Compile Include="Patches\AbstractActor.cs" />
+        <Compile Include="Patches\AttackStackSequence.cs" />
+        <Compile Include="Patches\CombatHUDFloatieStack.cs" />
+        <Compile Include="Patches\GameInstance.cs" />
+        <Compile Include="Patches\GameInstanceSave.cs" />
+        <Compile Include="Patches\Mech.cs" />
+        <Compile Include="Patches\SimGameState.cs" />
+        <Compile Include="Patches\VehicleRepresentation.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />
         <Compile Include="Settings.cs" />
-        <Compile Include="StatusEffect.cs" />
     </ItemGroup>
     <ItemGroup>
         <None Include="assets\mod.json" />
@@ -91,8 +101,7 @@
         <PostBuildEvent>
             xcopy "$(TargetPath)" N:\SteamLibrary\steamapps\common\BATTLETECH\Mods\PanicSystem /Y
             xcopy "$(ProjectDir)"assets\* N:\SteamLibrary\steamapps\common\BATTLETECH\Mods\PanicSystem /y
-            xcopy "$(TargetPath)" "C:\Users\mason\Documents\My Games\BattleTech\mods\PanicSystem" /Y
-            xcopy "$(ProjectDir)"assets\* "C:\Users\mason\Documents\My Games\BattleTech\mods\PanicSystem" /y            
+            
         </PostBuildEvent>
     </PropertyGroup>
 </Project>

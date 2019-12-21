@@ -1,61 +1,67 @@
+// ReSharper disable FieldCanBeMadeReadOnly.Global
+// ReSharper disable ConvertToConstant.Global
+// ReSharper disable UnassignedField.Global
+
 namespace PanicSystem
 {
     public class Settings
     {
-        public bool Debug = false;
+        public bool Debug;
+        public bool CombatLog;
         public bool EnableEjectPhrases;
-        public bool FloatieSpam = false;
-        public float EjectPhraseChance = 100;
-        public bool ColorizeFloaties = true;
-        public bool CountAsKills = true;
+        public bool FloatieSpam;
+        public float EjectPhraseChance;
+        public bool ColorizeFloaties;
+        public bool CountAsKills;
 
         // panic
-        public bool PlayersCanPanic = true;
-        public bool EnemiesCanPanic = true;
-        public float MinimumDamagePercentageRequired = 10;
-        public float MinimumMechStructureDamageRequired = 5;
-        public float MinimumVehicleStructureDamageRequired = 5;
-        public bool OneChangePerTurn = false;
-        public bool LosingLimbAlwaysPanics = false;
-        public float UnsteadyModifier = 10;
-        public float PilotHealthMaxModifier = 15;
-        public float HeadMaxModifier = 15;
-        public float CenterTorsoMaxModifier = 45;
-        public float SideTorsoMaxModifier = 20;
-        public float LeggedMaxModifier = 10;
-        public float WeaponlessModifier = 10;
-        public float AloneModifier = 10;
-        public float UnsettledAimModifier = 1;
-        public float StressedAimModifier = 1;
-        public float StressedToHitModifier = -1;
-        public float PanickedAimModifier = 2;
-        public float PanickedToHitModifier = -2;
-        public float MedianResolve = 50;
-        public float ResolveMaxModifier = 10;
-        public float DistractingModifier = 0;
-        public float OverheatedModifier = 0;
-        public float ShutdownModifier = 0;
-        public float HeatDamageModifier = 0;
-
-        //deprecated public float MechHealthAlone = 50;
-        public float MechHealthForCrit = 0.9f;
-        public float CritOver = 70;
-        public float UnsettledPanicModifier = 1f;
-        public float StressedPanicModifier = 0.66f;
-        public float PanickedPanicModifier = 0.33f;
+        public bool PlayersCanPanic;
+        public bool EnemiesCanPanic;
+        public bool VehiclesCanPanic;
+        public float MinimumDamagePercentageRequired;
+        public float MinimumMechStructureDamageRequired;
+        public float MinimumVehicleStructureDamageRequired;
+        public bool OneChangePerTurn;
+        public bool LosingLimbAlwaysPanics;
+        public float UnsteadyModifier;
+        public float PilotHealthMaxModifier;
+        public float HeadMaxModifier;
+        public float CenterTorsoMaxModifier;
+        public float SideTorsoMaxModifier;
+        public float LeggedMaxModifier;
+        public float WeaponlessModifier;
+        public float AloneModifier;
+        public float UnsettledAimModifier;
+        public float StressedAimModifier;
+        public float StressedToHitModifier;
+        public float PanickedAimModifier;
+        public float PanickedToHitModifier;
+        public float MedianResolve;
+        public float VehicleResolveFactor;
+        public float ResolveMaxModifier;
+        public float DistractingModifier;
+        public float OverheatedModifier;
+        public float ShutdownModifier;
+        public float HeatDamageFactor;
+        public float MechHealthForCrit;
+        public float CritOver;
+        public float UnsettledPanicFactor;
+        public float StressedPanicFactor;
+        public float PanickedPanicFactor;
 
         // Quirks
-        public bool QuirksEnabled = true;
-        public float BraveModifier = 5;
-        public float DependableModifier = 5;
+        public bool QuirksEnabled;
+        public float BraveModifier;
+        public float DependableModifier;
 
         // ejection
-        public float MaxEjectChance = 50;
-        public float EjectChanceMultiplier = 0.75f;
+        public float MaxEjectChance;
+        public float EjectChanceFactor;
 
-        // deprecated public bool ConsiderEjectingWhenAlone = false;
-        public float BaseEjectionResist = 50;
-        public float GutsEjectionResistPerPoint = 2;
-        public float TacticsEjectionResistPerPoint = 0;
+        public float BaseEjectionResist;
+        public float BaseVehicleEjectionResist;
+        public float GutsEjectionResistPerPoint;
+        public float TacticsEjectionResistPerPoint;
+        public float VehicleGutAndTacticsFactor;
     }
 }

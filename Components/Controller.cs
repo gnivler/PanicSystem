@@ -12,7 +12,7 @@ namespace PanicSystem.Components
 {
     public static class Controller
     {
-        public static List<PilotTracker> TrackedActors;
+        internal static List<PilotTracker> TrackedActors;
         private static List<MetaTracker> metaTrackers;
         private static int currentIndex = -1;
 
@@ -38,7 +38,7 @@ namespace PanicSystem.Components
             }
             catch (Exception ex)
             {
-                Log(ex.ToString());
+                LogDebug(ex.ToString());
             }
         }
 
@@ -136,7 +136,7 @@ namespace PanicSystem.Components
                 }
                 catch (Exception ex)
                 {
-                    Log(ex);
+                    LogDebug(ex);
                 }
             }
         }
@@ -175,7 +175,7 @@ namespace PanicSystem.Components
             }
             catch (Exception ex)
             {
-                Log(ex);
+                LogDebug(ex);
             }
         }
 

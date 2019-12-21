@@ -9,6 +9,7 @@ using Harmony;
 using PanicSystem.Components;
 using UnityEngine;
 using static PanicSystem.Logger;
+using static PanicSystem.PanicSystem;
 
 // ReSharper disable InconsistentNaming
 
@@ -26,18 +27,18 @@ namespace PanicSystem.Patches
             {
                 // get the total and decrement it globally
                 mechEjections = ___UnitData.pilot.StatCollection.GetStatistic("MechsEjected")?.Value<int>();
-                Log($"{___UnitData.pilot.Callsign} MechsEjected {mechEjections}");
+                LogDebug($"{___UnitData.pilot.Callsign} MechsEjected {mechEjections}");
                 vehicleEjections = ___UnitData.pilot.StatCollection.GetStatistic("VehiclesEjected")?.Value<int>();
-                Log($"{___UnitData.pilot.Callsign} vehicleEjections {vehicleEjections}");
+                LogDebug($"{___UnitData.pilot.Callsign} vehicleEjections {vehicleEjections}");
             }
             catch (Exception ex)
             {
-                Log(ex);
+                LogDebug(ex);
             }
         }
 
-        // subtract ejection kills to limit the number of regular kill stamps drawn
-        // then draw red ones in Postfix
+        // subtract ejection kills to reduce the number of regular kill stamps drawn
+        // then draw red ones to replace them in Postfix
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             var codes = instructions.ToList();
@@ -45,21 +46,37 @@ namespace PanicSystem.Patches
             {
                 // subtract our value right as the getter comes back
                 // makes the game draw fewer normal stamps
-                var index = codes.FindIndex(x => x.operand is MethodInfo info &&
-                                                 info == AccessTools.Method(typeof(Pilot), "get_MechsKilled"));
+                if (modSettings.VehiclesCanPanic)
+                {
+                    var vehicleIndex = codes.FindIndex(x => x.operand is MethodInfo info &&
+                                                            info == AccessTools.Method(typeof(Pilot), "get_OthersKilled"));
 
-                var newStack = new List<CodeInstruction>
+                    var vehicleStack = new List<CodeInstruction>
+                    {
+                        new CodeInstruction(OpCodes.Ldarg_0),
+                        new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(AAR_UnitStatusWidget), "UnitData")),
+                        new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(AARIcons), "GetVehicleEjectionCount")),
+                        new CodeInstruction(OpCodes.Sub)
+                    };
+
+                    codes.InsertRange(vehicleIndex + 1, vehicleStack);
+                }
+
+                var mechIndex = codes.FindIndex(x => x.operand is MethodInfo info &&
+                                                     info == AccessTools.Method(typeof(Pilot), "get_MechsKilled"));
+
+                var mechStack = new List<CodeInstruction>
                 {
                     new CodeInstruction(OpCodes.Ldarg_0),
                     new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(AAR_UnitStatusWidget), "UnitData")),
-                    new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(AARIcons), nameof(AARIcons.GetEjectionCount))),
+                    new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(AARIcons), "GetMechEjectionCount")),
                     new CodeInstruction(OpCodes.Sub)
                 };
-                codes.InsertRange(index + 1, newStack);
+                codes.InsertRange(mechIndex + 1, mechStack);
             }
             catch (Exception ex)
             {
-                Log(ex);
+                LogDebug(ex);
             }
 
             return codes.AsEnumerable();
@@ -69,16 +86,31 @@ namespace PanicSystem.Patches
         {
             try
             {
+                var statCollection = ___UnitData.pilot.StatCollection;
+                if (modSettings.VehiclesCanPanic)
+                {
+                    // weird loop
+                    for (var x = 0; x < vehicleEjections--; x++)
+                    {
+                        LogDebug("Adding vehicle stamp");
+                        AARIcons.AddEjectedVehicle(___KillGridParent);
+                    }
+
+                    statCollection.Set("VehiclesEjected", 0);
+                }
+
                 // weird loop
                 for (var x = 0; x < mechEjections--; x++)
                 {
-                    Log("Adding stamp");
+                    LogDebug("Adding mech stamp");
                     AARIcons.AddEjectedMech(___KillGridParent);
                 }
+
+                statCollection.Set("MechsEjected", 0);
             }
             catch (Exception ex)
             {
-                Log(ex);
+                LogDebug(ex);
             }
         }
     }

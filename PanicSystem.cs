@@ -31,7 +31,7 @@ namespace PanicSystem
             }
             catch (Exception ex)
             {
-                Log(ex);
+                LogDebug(ex);
                 modSettings = new Settings();
             }
             

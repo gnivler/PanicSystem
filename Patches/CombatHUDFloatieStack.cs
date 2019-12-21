@@ -25,7 +25,7 @@ namespace PanicSystem.Patches
                 }
                 catch (Exception ex)
                 {
-                    Log(ex);
+                    LogDebug(ex);
                 }
             }
         }
@@ -44,7 +44,7 @@ namespace PanicSystem.Patches
                 }
                 catch (Exception ex)
                 {
-                    Log(ex);
+                    LogDebug(ex);
                 }
             }
         }

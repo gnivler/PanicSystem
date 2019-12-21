@@ -69,7 +69,7 @@ namespace PanicSystem.Patches
             AbstractActor defender = null;
             switch (director[0]?.chosenTarget)
             {
-                case Vehicle vee:
+                case Vehicle _:
                     defender = (Vehicle) director[0]?.chosenTarget;
                     break;
                 case Mech _:
@@ -80,14 +80,16 @@ namespace PanicSystem.Patches
             // a building?
             if (defender == null)
             {
-                Log("Not a mech or vehicle");
+                LogDebug("Not a mech or vehicle");
                 return;
             }
 
-
             var attacker = director[0].attacker;
             var index = GetActorIndex(defender);
-            if (!ShouldPanic(defender, attackCompleteMessage.attackSequence)) return;
+            if (!ShouldPanic(defender, attackCompleteMessage.attackSequence))
+            {
+                return;
+            }
 
             // automatically eject a klutzy pilot on knockdown with an additional roll failing on 13
             if (defender.IsFlaggedForKnockdown)
@@ -131,6 +133,7 @@ namespace PanicSystem.Patches
             // ejecting
             // random phrase
             if (modSettings.EnableEjectPhrases &&
+                defender is Mech &&
                 Random.Range(1, 100) <= modSettings.EjectPhraseChance)
             {
                 var ejectMessage = ejectPhraseList[Random.Range(1, ejectPhraseList.Count)];
@@ -138,7 +141,6 @@ namespace PanicSystem.Patches
                     new AddSequenceToStackMessage(
                         new ShowActorInfoSequence(defender, $"{ejectMessage}", FloatieMessage.MessageNature.Debuff, true)));
             }
-
 
             // remove effects, to prevent exceptions that occur for unknown reasons
             var combat = UnityGameInstance.BattleTechGame.Combat;
@@ -156,8 +158,10 @@ namespace PanicSystem.Patches
                 }
             }
 
-            if (defender is Vehicle)
+            if (modSettings.VehiclesCanPanic &&
+                defender is Vehicle)
             {
+                // make the regular Pilot Ejected floatie not appear, for this ejection
                 var original = AccessTools.Method(typeof(BattleTech.VehicleRepresentation), "PlayDeathFloatie");
                 var prefix = AccessTools.Method(typeof(VehicleRepresentation), nameof(VehicleRepresentation.PrefixDeathFloatie));
                 harmony.Patch(original, new HarmonyMethod(prefix));
@@ -221,7 +225,8 @@ namespace PanicSystem.Patches
                         }
                     }
                 }
-                else
+                else if (modSettings.VehiclesCanPanic &&
+                         defender is Vehicle)
                 {
                     var value = statCollection.GetStatistic("VehiclesEjected")?.Value<int?>();
                     if (statCollection.GetStatistic("VehiclesEjected") == null)
@@ -236,7 +241,7 @@ namespace PanicSystem.Patches
             }
             catch (Exception ex)
             {
-                Log(ex);
+                LogDebug(ex);
             }
         }
     }

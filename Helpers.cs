@@ -6,8 +6,6 @@ using BattleTech;
 using Harmony;
 using PanicSystem.Components;
 using PanicSystem.Patches;
-using UnityEngine;
-using UnityEngine.UI;
 using static PanicSystem.Logger;
 using static PanicSystem.Components.Controller;
 using static PanicSystem.PanicSystem;
@@ -19,6 +17,9 @@ namespace PanicSystem
 {
     public class Helpers
     {
+        // need a global to check the value in another code path
+        internal static float damageWithHeatDamage;
+
         // used in strings
         internal static float ActorHealth(AbstractActor actor) =>
             (actor.SummaryArmorCurrent + actor.SummaryStructureCurrent) /
@@ -73,10 +74,11 @@ namespace PanicSystem
             var index = GetActorIndex(actor);
             if (TrackedActors[index].Mech != actor.GUID)
             {
-                Log("Pilot and mech mismatch; no status to change");
+                LogDebug("Pilot and mech mismatch; no status to change");
                 return;
             }
 
+            // remove existing panic debuffs first
             int Uid() => Random.Range(1, int.MaxValue);
             var effectManager = UnityGameInstance.BattleTechGame.Combat.EffectManager;
             var effects = Traverse.Create(effectManager).Field("effects").GetValue<List<Effect>>();
@@ -88,10 +90,12 @@ namespace PanicSystem
                 }
             }
 
-            if (actor is Vehicle)
+            if (modSettings.VehiclesCanPanic &&
+                actor is Vehicle)
             {
                 LogReport($"{actor.DisplayName} condition worsened: Panicked");
                 TrackedActors[index].PanicStatus = PanicStatus.Panicked;
+                TrackedActors[index].PreventEjection = true;
                 effectManager.CreateEffect(StatusEffect.PanickedToHit, "PanicSystemToHit", Uid(), actor, actor, new WeaponHitInfo(), 0);
                 effectManager.CreateEffect(StatusEffect.PanickedToBeHit, "PanicSystemToBeHit", Uid(), actor, actor, new WeaponHitInfo(), 0);
             }
@@ -147,9 +151,9 @@ namespace PanicSystem
             // ReSharper disable once SwitchStatementMissingSomeCases
             switch (pilotStatus)
             {
-                case PanicStatus.Unsettled: return modSettings.UnsettledPanicModifier;
-                case PanicStatus.Stressed: return modSettings.StressedPanicModifier;
-                case PanicStatus.Panicked: return modSettings.PanickedPanicModifier;
+                case PanicStatus.Unsettled: return modSettings.UnsettledPanicFactor;
+                case PanicStatus.Stressed: return modSettings.StressedPanicFactor;
+                case PanicStatus.Panicked: return modSettings.PanickedPanicFactor;
                 default: return 1f;
             }
         }
@@ -226,7 +230,7 @@ namespace PanicSystem
             {
                 return false;
             }
-
+            
             var id = attackSequence.chosenTarget.GUID;
             if (!attackSequence.GetAttackDidDamage(id))
             {
@@ -236,11 +240,16 @@ namespace PanicSystem
 
             var previousArmor = AttackStackSequence_OnAttackBegin_Patch.armorBeforeAttack;
             var previousStructure = AttackStackSequence_OnAttackBegin_Patch.structureBeforeAttack;
-            LogReport($"Damage >>> A: {attackSequence.GetArmorDamageDealt(id):#.###}" +
-                      $" S: {attackSequence.GetStructureDamageDealt(id):#.###}" +
-                      $" ({(attackSequence.GetArmorDamageDealt(id) + attackSequence.GetStructureDamageDealt(id)) / (previousArmor + previousStructure) * 100:#.##}%)  H: {Mech_AddExternalHeat_Patch.heatDamage}");
+            var armorDamage = attackSequence.GetArmorDamageDealt(id);
+            var structureDamage = attackSequence.GetStructureDamageDealt(id);
+            var percentDamageDone = (attackSequence.GetArmorDamageDealt(id) + attackSequence.GetStructureDamageDealt(id)) / (previousArmor + previousStructure) * 100;
+            damageWithHeatDamage = percentDamageDone + Mech_AddExternalHeat_Patch.heatDamage * modSettings.HeatDamageFactor;
+
+            // have to check structure here AFTER armor, despite it being the priority, because we need to set the global
+            LogReport($"Damage >>> A: {armorDamage:F3} S: {structureDamage:F3} ({percentDamageDone:F2}%) H: {Mech_AddExternalHeat_Patch.heatDamage}");
             if (attackSequence.chosenTarget is Mech &&
                 attackSequence.GetStructureDamageDealt(id) >= modSettings.MinimumMechStructureDamageRequired ||
+                modSettings.VehiclesCanPanic &&
                 attackSequence.chosenTarget is Vehicle &&
                 attackSequence.GetStructureDamageDealt(id) >= modSettings.MinimumVehicleStructureDamageRequired)
             {
@@ -248,25 +257,10 @@ namespace PanicSystem
                 return true;
             }
 
-            // it's a vehicle and we only want to check structure damage, so abort here
-            if (attackSequence.chosenTarget is Vehicle)
-            {
-                return false;
-            }
-
-            // ReSharper disable once NotAccessedVariable
-            float heatTaken = 0;
-            if (attackSequence.chosenTarget is Mech defender)
-            {
-                heatTaken = defender.CurrentHeat - AttackStackSequence_OnAttackBegin_Patch.mechHeatBeforeAttack;
-                LogReport($"Took {Mech_AddExternalHeat_Patch.heatDamage} heat");
-            }
-
-            if (attackSequence.GetArmorDamageDealt(id) + attackSequence.GetStructureDamageDealt(id) + Mech_AddExternalHeat_Patch.heatDamage * modSettings.HeatDamageModifier /
-                (previousArmor + previousStructure) +
-                100 <= modSettings.MinimumDamagePercentageRequired)
+            if (damageWithHeatDamage <= modSettings.MinimumDamagePercentageRequired)
             {
                 LogReport("Not enough damage");
+                Mech_AddExternalHeat_Patch.heatDamage = 0;
                 return false;
             }
 
@@ -289,10 +283,46 @@ namespace PanicSystem
             catch (Exception ex)
             {
                 LogReport("Error - problem loading phrases.txt but the setting is enabled");
-                Log(ex);
+                LogDebug(ex);
                 // in case the file is missing but the setting is enabled
                 modSettings.EnableEjectPhrases = false;
             }
+        }
+
+        // unused.  another option for handling vehicle ejection
+        internal static int GetExposedSides(Vehicle vehicle)
+        {
+            var result = 0;
+            if (vehicle.LeftSideArmor <= float.Epsilon)
+            {
+                result++;
+            }
+
+            if (vehicle.RightSideArmor <= float.Epsilon)
+            {
+                result++;
+            }
+
+            if (vehicle.FrontArmor <= float.Epsilon)
+            {
+                result++;
+            }
+
+            if (vehicle.RearArmor <= float.Epsilon)
+            {
+                result++;
+            }
+
+            // in case there is no turret? untested
+            if (vehicle.MaxArmorForLocation(1) > float.Epsilon &&
+                vehicle.TurretArmor <= float.Epsilon)
+            {
+                // TODO delete this log line when tested
+                LogReport("Turret exposed");
+                result++;
+            }
+
+            return result;
         }
     }
 }

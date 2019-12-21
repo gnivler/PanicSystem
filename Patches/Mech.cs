@@ -1,6 +1,5 @@
 using BattleTech;
 using Harmony;
-using static PanicSystem.Logger;
 using static PanicSystem.PanicSystem;
 using static PanicSystem.Components.Controller;
 using static PanicSystem.Helpers;
@@ -11,7 +10,6 @@ using static PanicSystem.Helpers;
 
 namespace PanicSystem.Patches
 {
-    // properly aggregates heat damage?
     [HarmonyPatch(typeof(Mech), "AddExternalHeat")]
     public class Mech_AddExternalHeat_Patch
     {
@@ -20,7 +18,6 @@ namespace PanicSystem.Patches
         private static void Prefix(int amt)
         {
             heatDamage += amt;
-            LogReport($"Running heat total: {heatDamage}");
         }
     }
 

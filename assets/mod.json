@@ -31,14 +31,13 @@
     "PlayersCanPanic": true,
     "EnemiesCanPanic": true,
     "VehiclesCanPanic": false,
-    "ConsiderEjectingWithNoWeaps": false,
     "LosingLimbAlwaysPanics": false,
 
     /* percent of remaining armor that must be destroyed to cause a panic save */
     "MinimumDamagePercentageRequired": 10,
 
     /* integer number of cumulative structure damage required to cause a panic save */
-    "MinimumStructureDamageRequired": 5,
+    "MinimumMechStructureDamageRequired": 5,
     "MinimumVehicleStructureDamageRequired": 0,
 
     /* Effect Modifiers */

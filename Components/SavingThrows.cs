@@ -86,7 +86,8 @@ namespace PanicSystem.Components
                 }
 
                 // continue if roll wasn't 100
-                if (roll >= savingThrow)
+                if (!modSettings.AlwaysPanic &&
+                    roll >= savingThrow)
                 {
                     SaySpamFloatie(defender, "PANIC SAVE!");
                     LogReport("Successful panic save");
@@ -336,7 +337,8 @@ namespace PanicSystem.Components
             LogReport(new string('-', 46));
             LogReport($"{"Saving throw",-20} | {savingThrow,-5:###}{roll,5} | {"Roll",10}");
             LogReport(new string('-', 46));
-            if (savingThrow <= 0)
+            if (!modSettings.AlwaysPanic &&
+                savingThrow <= 0)
             {
                 LogReport("Negative saving throw| skipping");
                 SaySpamFloatie(actor, "EJECT RESIST!");
@@ -347,7 +349,8 @@ namespace PanicSystem.Components
             savingThrow = (int) Math.Min(savingThrow, modSettings.MaxEjectChance);
 
             SaySpamFloatie(actor, $"SAVE: {savingThrow}  ROLL: {roll}!");
-            if (roll >= savingThrow)
+            if (!modSettings.AlwaysPanic &&
+                roll >= savingThrow)
             {
                 LogReport("Successful ejection save");
                 SaySpamFloatie(actor, $"EJECT SAVE! HEALTH: {ActorHealth(actor):#.#}%");

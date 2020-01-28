@@ -6,6 +6,7 @@ namespace PanicSystem
 {
     public class Settings
     {
+        public bool AlwaysPanic = false;
         public bool Debug;
         public bool CombatLog;
         public bool EnableEjectPhrases;

@@ -6,6 +6,8 @@ using BattleTech.Achievements;
 using Harmony;
 using HBS;
 using PanicSystem.Components;
+using UnityEngine;
+using us.frostraptor.modUtils.CustomDialog;
 using static PanicSystem.Logger;
 using static PanicSystem.PanicSystem;
 using static PanicSystem.Components.Controller;
@@ -77,7 +79,7 @@ namespace PanicSystem.Patches
                     break;
             }
 
-            // a building?
+            // a building or turret?
             if (defender == null)
             {
                 LogDebug("Not a mech or vehicle");
@@ -86,7 +88,8 @@ namespace PanicSystem.Patches
 
             var attacker = director[0].attacker;
             var index = GetActorIndex(defender);
-            if (!ShouldPanic(defender, attackCompleteMessage.attackSequence))
+            if (!modSettings.AlwaysPanic &&
+                !ShouldPanic(defender, attackCompleteMessage.attackSequence))
             {
                 return;
             }
@@ -125,7 +128,8 @@ namespace PanicSystem.Patches
             }
 
             // eject saving throw
-            if (SavingThrows.SavedVsEject(defender, savingThrow))
+            if (!modSettings.AlwaysPanic &&
+                SavingThrows.SavedVsEject(defender, savingThrow))
             {
                 return;
             }
@@ -137,9 +141,14 @@ namespace PanicSystem.Patches
                 Random.Range(1, 100) <= modSettings.EjectPhraseChance)
             {
                 var ejectMessage = ejectPhraseList[Random.Range(1, ejectPhraseList.Count)];
-                defender.Combat.MessageCenter.PublishMessage(
-                    new AddSequenceToStackMessage(
-                        new ShowActorInfoSequence(defender, $"{ejectMessage}", FloatieMessage.MessageNature.Debuff, true)));
+                // thank you IRBTModUtils
+                LogDebug($"defender {defender}");
+                var castDef = Coordinator.CreateCast(defender);
+                var content = new DialogueContent(
+                    ejectMessage, Color.white, castDef.id, null, null, DialogCameraDistance.Medium, DialogCameraHeight.Default, 0
+                );
+                content.ContractInitialize(defender.Combat);
+                defender.Combat.MessageCenter.PublishMessage(new CustomDialogMessage(defender, content, 6));
             }
 
             // remove effects, to prevent exceptions that occur for unknown reasons
@@ -167,15 +176,20 @@ namespace PanicSystem.Patches
                 harmony.Patch(original, new HarmonyMethod(prefix));
                 defender.EjectPilot(defender.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, true);
                 harmony.Unpatch(original, HarmonyPatchType.Prefix);
-                defender.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
-                    new ShowActorInfoSequence(defender, "Crew destroys vehicle!", FloatieMessage.MessageNature.Inspiration, true)));
+                CastDef castDef = Coordinator.CreateCast(defender);
+                DialogueContent content = new DialogueContent(
+                    "Destroy the tech, let's get outta here!", Color.white, castDef.id, null, null, DialogCameraDistance.Medium, DialogCameraHeight.Default, 0
+                );
+                content.ContractInitialize(defender.Combat);
+                defender.Combat.MessageCenter.PublishMessage(new CustomDialogMessage(defender, content, 5));
             }
             else
             {
                 defender.EjectPilot(defender.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
             }
 
-            LogReport($"Ejected.  Runtime {stopwatch.ElapsedMilliSeconds}ms");
+            LogReport("Ejected");
+            LogDebug($"Runtime {stopwatch.Elapsed}");
 
             if (!modSettings.CountAsKills)
             {

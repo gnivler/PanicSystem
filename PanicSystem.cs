@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using Harmony;
 using Newtonsoft.Json;
+using PanicSystem.Patches;
 using static PanicSystem.Logger;
 
 // ReSharper disable InconsistentNaming

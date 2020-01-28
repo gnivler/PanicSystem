@@ -197,6 +197,11 @@ namespace PanicSystem
         // true implies a panic condition was met
         public static bool ShouldPanic(AbstractActor actor, AttackDirector.AttackSequence attackSequence)
         {
+            if (modSettings.AlwaysPanic)
+            {
+                return true;
+            }
+            
             if (!CanPanic(actor, attackSequence))
             {
                 return false;

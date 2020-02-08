@@ -24,33 +24,28 @@ namespace PanicSystem.Patches
     {
         internal static float armorBeforeAttack;
         internal static float structureBeforeAttack;
-        internal static float mechHeatBeforeAttack;
 
         public static void Prefix(AttackStackSequence __instance)
         {
             if (__instance.directorSequences == null || __instance.directorSequences.Count == 0)
+            {
                 return;
+            }
 
             var target = __instance.directorSequences[0].chosenTarget;
             armorBeforeAttack = target.SummaryArmorCurrent;
             structureBeforeAttack = target.SummaryStructureCurrent;
-
-            // get defender's current heat
-            if (__instance.directorSequences[0].chosenTarget is Mech defender)
-            {
-                mechHeatBeforeAttack = defender.CurrentHeat;
-            }
         }
     }
 
     [HarmonyPatch(typeof(AttackStackSequence), "OnAttackComplete")]
     public static class AttackStackSequence_OnAttackComplete_Patch
     {
+        private static readonly Stopwatch stopwatch = new Stopwatch();
+
         public static void Prefix(AttackStackSequence __instance, MessageCenterMessage message)
         {
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
-
+            stopwatch.Restart();
             if (ShouldSkipProcessing(__instance, message))
             {
                 return;

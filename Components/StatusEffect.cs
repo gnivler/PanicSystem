@@ -11,7 +11,9 @@ namespace PanicSystem.Components
     // ReSharper disable once ClassNeverInstantiated.Global
     internal class StatusEffect
     {
-        private const string Icon = "uixSvgIcon_status_sensorsImpaired";
+        private const string Unsettled = "unsettled";
+        private const string Stressed = "stressed";
+        private const string Panicked = "panicked";
 
         // thanks Denedan!
         [HarmonyPatch(typeof(CombatGameState), "_Init")]
@@ -21,7 +23,9 @@ namespace PanicSystem.Components
             {
                 var dm = UnityGameInstance.BattleTechGame.DataManager;
                 var loadRequest = dm.CreateLoadRequest();
-                loadRequest.AddLoadRequest<SVGAsset>(BattleTechResourceType.SVGAsset, Icon, null);
+                loadRequest.AddLoadRequest<SVGAsset>(BattleTechResourceType.SVGAsset, Unsettled, null);
+                loadRequest.AddLoadRequest<SVGAsset>(BattleTechResourceType.SVGAsset, Stressed, null);
+                loadRequest.AddLoadRequest<SVGAsset>(BattleTechResourceType.SVGAsset, Panicked, null);
                 loadRequest.ProcessRequests();
             }
         }
@@ -69,7 +73,7 @@ namespace PanicSystem.Components
                 effectType = EffectType.StatisticEffect,
                 targetingData = Hide,
                 Description = new DescriptionDef("PanicSystemToBeHit", "Panicked", "",
-                    Icon, 0, 0, false, null, null, null),
+                    Panicked, 0, 0, false, null, null, null),
                 durationData = Duration,
                 statisticData = new StatisticEffectData
                 {
@@ -88,7 +92,7 @@ namespace PanicSystem.Components
                 Description = new DescriptionDef("PanicSystemToBeHit", "Panicked",
                     modSettings.PanickedAimModifier + " Difficulty to all of this unit's attacks\n" +
                     modSettings.PanickedToHitModifier + " Difficulty to hit this unit",
-                    Icon, 0, 0, false, null, null, null),
+                    Panicked, 0, 0, false, null, null, null),
                 durationData = Duration,
                 statisticData = new StatisticEffectData
                 {
@@ -105,7 +109,7 @@ namespace PanicSystem.Components
                 effectType = EffectType.StatisticEffect,
                 targetingData = Hide,
                 Description = new DescriptionDef("PanicSystemToBeHit", "Stressed", "",
-                    Icon, 0, 0, false, null, null, null),
+                    Stressed, 0, 0, false, null, null, null),
                 durationData = Duration,
                 statisticData = new StatisticEffectData
                 {
@@ -123,7 +127,7 @@ namespace PanicSystem.Components
                 targetingData = Show,
                 Description = new DescriptionDef("PanicSystemToBeHit", "Stressed",
                     modSettings.StressedAimModifier + " Difficulty to all of this unit's attacks\n" + modSettings.StressedToHitModifier + " Difficulty to hit this unit",
-                    Icon, 0, 0, false, null, null, null),
+                    Stressed, 0, 0, false, null, null, null),
                 durationData = Duration,
                 statisticData = new StatisticEffectData
                 {
@@ -141,7 +145,7 @@ namespace PanicSystem.Components
                 targetingData = Show,
                 Description = new DescriptionDef("PanicSystemToBeHit", "Unsettled",
                     modSettings.UnsettledAimModifier + " Difficulty to all of this unit's attacks",
-                    Icon, 0, 0, false, null, null, null),
+                    Unsettled, 0, 0, false, null, null, null),
                 durationData = Duration,
                 statisticData = new StatisticEffectData
                 {

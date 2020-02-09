@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using BattleTech;
-using BattleTech.Save.Core;
 using PanicSystem.Patches;
 using static PanicSystem.PanicSystem;
 using static PanicSystem.Logger;
@@ -20,14 +19,23 @@ namespace PanicSystem.Components
             try
             {
                 AbstractActor defender = null;
-                if (modSettings.VehiclesCanPanic &&
-                    actor is Vehicle vehicle)
+                if (actor is Vehicle vehicle)
                 {
+                    if (!modSettings.VehiclesCanPanic)
+                    {
+                        return true;
+                    }
                     defender = vehicle;
                 }
                 else if (actor is Mech mech)
                 {
                     defender = mech;
+                }
+
+                if (defender == null)
+                {
+                    LogDebug($"defender null, passing save. actor {actor} is type {actor.GetType()}");
+                    return true;
                 }
 
                 if (modSettings.QuirksEnabled)
@@ -47,11 +55,11 @@ namespace PanicSystem.Components
                 LogReport($"{"Panic multiplier",-20} | {GetPanicModifier(TrackedActors[index].PanicStatus),10} | {savingThrow,10:F3}");
                 savingThrow = (float) Math.Max(0f, Math.Round(savingThrow));
 
-                if (!(savingThrow >= 1))
+                if (savingThrow < 1)
                 {
                     LogReport(new string('-', 46));
                     LogReport("Negative saving throw| skipping");
-                    return false;
+                    return true;
                 }
 
                 var roll = Random.Range(1, 100);
@@ -86,7 +94,8 @@ namespace PanicSystem.Components
                 }
 
                 // continue if roll wasn't 100
-                if (roll >= savingThrow)
+                if (!modSettings.AlwaysPanic &&
+                    roll >= savingThrow)
                 {
                     SaySpamFloatie(defender, "PANIC SAVE!");
                     LogReport("Successful panic save");
@@ -260,7 +269,7 @@ namespace PanicSystem.Components
                 defender is Vehicle)
             {
                 // total damage inflicted THIS ATTACK is the saving throw
-                totalMultiplier += damageWithHeatDamage;
+                totalMultiplier += damageIncludingHeatDamage;
             }
 
             var resolveModifier = modSettings.ResolveMaxModifier *
@@ -327,7 +336,7 @@ namespace PanicSystem.Components
             if (modSettings.VehiclesCanPanic &&
                 actor is Vehicle)
             {
-                savingThrow = damageWithHeatDamage;
+                savingThrow = damageIncludingHeatDamage;
             }
 
             savingThrow = (float) Math.Round(savingThrow);
@@ -336,7 +345,8 @@ namespace PanicSystem.Components
             LogReport(new string('-', 46));
             LogReport($"{"Saving throw",-20} | {savingThrow,-5:###}{roll,5} | {"Roll",10}");
             LogReport(new string('-', 46));
-            if (savingThrow <= 0)
+            if (!modSettings.AlwaysPanic &&
+                savingThrow < 1)
             {
                 LogReport("Negative saving throw| skipping");
                 SaySpamFloatie(actor, "EJECT RESIST!");
@@ -347,7 +357,8 @@ namespace PanicSystem.Components
             savingThrow = (int) Math.Min(savingThrow, modSettings.MaxEjectChance);
 
             SaySpamFloatie(actor, $"SAVE: {savingThrow}  ROLL: {roll}!");
-            if (roll >= savingThrow)
+            if (!modSettings.AlwaysPanic &&
+                roll >= savingThrow)
             {
                 LogReport("Successful ejection save");
                 SaySpamFloatie(actor, $"EJECT SAVE! HEALTH: {ActorHealth(actor):#.#}%");

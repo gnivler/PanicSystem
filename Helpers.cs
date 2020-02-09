@@ -11,14 +11,20 @@ using static PanicSystem.Components.Controller;
 using static PanicSystem.PanicSystem;
 using Random = UnityEngine.Random;
 
+// ReSharper disable ClassNeverInstantiated.Global
 // ReSharper disable InconsistentNaming
 
 namespace PanicSystem
 {
     public class Helpers
     {
-        // need a global to check the value in another code path
-        internal static float damageWithHeatDamage;
+        // values for combining melee with support weapon fire
+        internal static float initialArmorMelee;
+        internal static float initialStructureMelee;
+        internal static float armorDamageMelee;
+        internal static float structureDamageMelee;
+        internal static bool hadMeleeAttack;
+        internal static float damageIncludingHeatDamage;
 
         // used in strings
         internal static float ActorHealth(AbstractActor actor) =>
@@ -66,7 +72,6 @@ namespace PanicSystem
             (mech.HeadStructure + mech.HeadArmor) /
             (mech.MaxStructureForLocation((int) ChassisLocations.Head) +
              mech.MaxArmorForLocation((int) ArmorLocation.Head));
-
 
         // applies combat modifiers to tracked mechs based on panic status
         public static void ApplyPanicDebuff(AbstractActor actor)
@@ -158,14 +163,12 @@ namespace PanicSystem
             }
         }
 
-
         internal static void DrawHeader()
         {
             LogReport(new string('-', 46));
             LogReport($"{"Factors",-20} | {"Change",10} | {"Total",10}");
             LogReport(new string('-', 46));
         }
-
 
         // method is called despite the setting, so it can be controlled in one place
         internal static void SaySpamFloatie(AbstractActor actor, string message)
@@ -230,7 +233,7 @@ namespace PanicSystem
             {
                 return false;
             }
-            
+
             var id = attackSequence.chosenTarget.GUID;
             if (!attackSequence.GetAttackDidDamage(id))
             {
@@ -238,15 +241,56 @@ namespace PanicSystem
                 return false;
             }
 
+            // Account for melee attacks so separate panics are not triggered.
+            if (attackSequence.isMelee && MechMeleeSequence_FireWeapons_Patch.meleeHasSupportWeapons)
+            {
+                initialArmorMelee = AttackStackSequence_OnAttackBegin_Patch.armorBeforeAttack;
+                initialStructureMelee = AttackStackSequence_OnAttackBegin_Patch.structureBeforeAttack;
+                armorDamageMelee = attackSequence.GetArmorDamageDealt(id);
+                structureDamageMelee = attackSequence.GetStructureDamageDealt(id);
+                hadMeleeAttack = true;
+                LogReport("Stashing melee damage for support weapon firing");
+                return false;
+            }
+
             var previousArmor = AttackStackSequence_OnAttackBegin_Patch.armorBeforeAttack;
             var previousStructure = AttackStackSequence_OnAttackBegin_Patch.structureBeforeAttack;
-            var armorDamage = attackSequence.GetArmorDamageDealt(id);
-            var structureDamage = attackSequence.GetStructureDamageDealt(id);
-            var percentDamageDone = (attackSequence.GetArmorDamageDealt(id) + attackSequence.GetStructureDamageDealt(id)) / (previousArmor + previousStructure) * 100;
-            damageWithHeatDamage = percentDamageDone + Mech_AddExternalHeat_Patch.heatDamage * modSettings.HeatDamageFactor;
+
+            if (hadMeleeAttack)
+            {
+                LogReport("Adding stashed melee damage");
+                previousArmor = initialArmorMelee;
+                previousStructure = initialStructureMelee;
+            }
+            else
+            {
+                armorDamageMelee = 0;
+                structureDamageMelee = 0;
+            }
+
+            var armorDamage = attackSequence.GetArmorDamageDealt(id) + armorDamageMelee;
+            var structureDamage = attackSequence.GetStructureDamageDealt(id) + structureDamageMelee;
+            var heatDamage = Mech_AddExternalHeat_Patch.heatDamage * modSettings.HeatDamageFactor;
+            // used in SavingThrows.cs
+            damageIncludingHeatDamage = armorDamage + structureDamage + heatDamage;
+            var percentDamageDone =
+                (damageIncludingHeatDamage) / (previousArmor + previousStructure) * 100;
+
+            // clear melee values
+            initialArmorMelee = 0;
+            initialStructureMelee = 0;
+            armorDamageMelee = 0;
+            structureDamageMelee = 0;
+            hadMeleeAttack = false;
 
             // have to check structure here AFTER armor, despite it being the priority, because we need to set the global
             LogReport($"Damage >>> A: {armorDamage:F3} S: {structureDamage:F3} ({percentDamageDone:F2}%) H: {Mech_AddExternalHeat_Patch.heatDamage}");
+            if (modSettings.AlwaysPanic)
+            {
+                LogReport("AlwaysPanic");
+                return true;
+            }
+
             if (attackSequence.chosenTarget is Mech &&
                 attackSequence.GetStructureDamageDealt(id) >= modSettings.MinimumMechStructureDamageRequired ||
                 modSettings.VehiclesCanPanic &&
@@ -257,7 +301,7 @@ namespace PanicSystem
                 return true;
             }
 
-            if (damageWithHeatDamage <= modSettings.MinimumDamagePercentageRequired)
+            if (armorDamage + structureDamage + heatDamage <= modSettings.MinimumDamagePercentageRequired)
             {
                 LogReport("Not enough damage");
                 Mech_AddExternalHeat_Patch.heatDamage = 0;
@@ -287,42 +331,6 @@ namespace PanicSystem
                 // in case the file is missing but the setting is enabled
                 modSettings.EnableEjectPhrases = false;
             }
-        }
-
-        // unused.  another option for handling vehicle ejection
-        internal static int GetExposedSides(Vehicle vehicle)
-        {
-            var result = 0;
-            if (vehicle.LeftSideArmor <= float.Epsilon)
-            {
-                result++;
-            }
-
-            if (vehicle.RightSideArmor <= float.Epsilon)
-            {
-                result++;
-            }
-
-            if (vehicle.FrontArmor <= float.Epsilon)
-            {
-                result++;
-            }
-
-            if (vehicle.RearArmor <= float.Epsilon)
-            {
-                result++;
-            }
-
-            // in case there is no turret? untested
-            if (vehicle.MaxArmorForLocation(1) > float.Epsilon &&
-                vehicle.TurretArmor <= float.Epsilon)
-            {
-                // TODO delete this log line when tested
-                LogReport("Turret exposed");
-                result++;
-            }
-
-            return result;
         }
     }
 }

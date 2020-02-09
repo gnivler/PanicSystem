@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
     <PropertyGroup>
@@ -43,9 +43,8 @@
         <Reference Include="Assembly-CSharp-firstpass, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
             <HintPath>..\..\SteamLibrary\steamapps\common\BATTLETECH\BattleTech_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
         </Reference>
-        <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-            <SpecificVersion>False</SpecificVersion>
-            <HintPath>C:\\References\Newtonsoft.Json.dll</HintPath>
+        <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
+          <HintPath>..\..\SteamLibrary\steamapps\common\BATTLETECH\BattleTech_Data\Managed\Newtonsoft.Json.dll</HintPath>
         </Reference>
         <Reference Include="System" />
         <Reference Include="System.Core" />
@@ -70,6 +69,12 @@
         <Compile Include="Components\AARIcons.cs" />
         <Compile Include="Components\ColorFloaties.cs" />
         <Compile Include="Components\Controller.cs" />
+        <Compile Include="Components\IRBTModUtilsCustomDialog\Coordinator.cs" />
+        <Compile Include="Components\IRBTModUtilsCustomDialog\CustomDialogMessage.cs" />
+        <Compile Include="Components\IRBTModUtilsCustomDialog\CustomDialogSequence.cs" />
+        <Compile Include="Components\IRBTModUtilsCustomDialog\MessageTypes.cs" />
+        <Compile Include="Components\IRBTModUtilsCustomDialog\ModState.cs" />
+        <Compile Include="Components\IRBTModUtilsCustomDialog\Patches.cs" />
         <Compile Include="Components\PilotTracker.cs" />
         <Compile Include="Components\SavingThrows.cs" />
         <Compile Include="Components\StatusEffect.cs" />
@@ -79,10 +84,12 @@
         <Compile Include="Patches\AAR_UnitStatusWidget.cs" />
         <Compile Include="Patches\AbstractActor.cs" />
         <Compile Include="Patches\AttackStackSequence.cs" />
+        <Compile Include="Patches\CombatGameState.cs" />
         <Compile Include="Patches\CombatHUDFloatieStack.cs" />
         <Compile Include="Patches\GameInstance.cs" />
         <Compile Include="Patches\GameInstanceSave.cs" />
         <Compile Include="Patches\Mech.cs" />
+        <Compile Include="Patches\MechMeleeSequence.cs" />
         <Compile Include="Patches\SimGameState.cs" />
         <Compile Include="Patches\VehicleRepresentation.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />

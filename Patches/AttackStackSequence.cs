@@ -6,6 +6,8 @@ using BattleTech.Achievements;
 using Harmony;
 using HBS;
 using PanicSystem.Components;
+using UnityEngine;
+using us.frostraptor.modUtils.CustomDialog;
 using static PanicSystem.Logger;
 using static PanicSystem.PanicSystem;
 using static PanicSystem.Components.Controller;
@@ -22,33 +24,28 @@ namespace PanicSystem.Patches
     {
         internal static float armorBeforeAttack;
         internal static float structureBeforeAttack;
-        internal static float mechHeatBeforeAttack;
 
         public static void Prefix(AttackStackSequence __instance)
         {
             if (__instance.directorSequences == null || __instance.directorSequences.Count == 0)
+            {
                 return;
+            }
 
             var target = __instance.directorSequences[0].chosenTarget;
             armorBeforeAttack = target.SummaryArmorCurrent;
             structureBeforeAttack = target.SummaryStructureCurrent;
-
-            // get defender's current heat
-            if (__instance.directorSequences[0].chosenTarget is Mech defender)
-            {
-                mechHeatBeforeAttack = defender.CurrentHeat;
-            }
         }
     }
 
     [HarmonyPatch(typeof(AttackStackSequence), "OnAttackComplete")]
     public static class AttackStackSequence_OnAttackComplete_Patch
     {
+        private static readonly Stopwatch stopwatch = new Stopwatch();
+
         public static void Prefix(AttackStackSequence __instance, MessageCenterMessage message)
         {
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
-
+            stopwatch.Restart();
             if (ShouldSkipProcessing(__instance, message))
             {
                 return;
@@ -77,7 +74,7 @@ namespace PanicSystem.Patches
                     break;
             }
 
-            // a building?
+            // a building or turret?
             if (defender == null)
             {
                 LogDebug("Not a mech or vehicle");
@@ -86,7 +83,8 @@ namespace PanicSystem.Patches
 
             var attacker = director[0].attacker;
             var index = GetActorIndex(defender);
-            if (!ShouldPanic(defender, attackCompleteMessage.attackSequence))
+            if (!modSettings.AlwaysPanic &&
+                !ShouldPanic(defender, attackCompleteMessage.attackSequence))
             {
                 return;
             }
@@ -125,7 +123,8 @@ namespace PanicSystem.Patches
             }
 
             // eject saving throw
-            if (SavingThrows.SavedVsEject(defender, savingThrow))
+            if (!modSettings.AlwaysPanic &&
+                SavingThrows.SavedVsEject(defender, savingThrow))
             {
                 return;
             }
@@ -137,9 +136,14 @@ namespace PanicSystem.Patches
                 Random.Range(1, 100) <= modSettings.EjectPhraseChance)
             {
                 var ejectMessage = ejectPhraseList[Random.Range(1, ejectPhraseList.Count)];
-                defender.Combat.MessageCenter.PublishMessage(
-                    new AddSequenceToStackMessage(
-                        new ShowActorInfoSequence(defender, $"{ejectMessage}", FloatieMessage.MessageNature.Debuff, true)));
+                // thank you IRBTModUtils
+                //LogDebug($"defender {defender}");
+                var castDef = Coordinator.CreateCast(defender);
+                var content = new DialogueContent(
+                    ejectMessage, Color.white, castDef.id, null, null, DialogCameraDistance.Medium, DialogCameraHeight.Default, 0
+                );
+                content.ContractInitialize(defender.Combat);
+                defender.Combat.MessageCenter.PublishMessage(new CustomDialogMessage(defender, content, 6));
             }
 
             // remove effects, to prevent exceptions that occur for unknown reasons
@@ -167,15 +171,20 @@ namespace PanicSystem.Patches
                 harmony.Patch(original, new HarmonyMethod(prefix));
                 defender.EjectPilot(defender.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, true);
                 harmony.Unpatch(original, HarmonyPatchType.Prefix);
-                defender.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
-                    new ShowActorInfoSequence(defender, "Crew destroys vehicle!", FloatieMessage.MessageNature.Inspiration, true)));
+                CastDef castDef = Coordinator.CreateCast(defender);
+                DialogueContent content = new DialogueContent(
+                    "Destroy the tech, let's get outta here!", Color.white, castDef.id, null, null, DialogCameraDistance.Medium, DialogCameraHeight.Default, 0
+                );
+                content.ContractInitialize(defender.Combat);
+                defender.Combat.MessageCenter.PublishMessage(new CustomDialogMessage(defender, content, 5));
             }
             else
             {
                 defender.EjectPilot(defender.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
             }
 
-            LogReport($"Ejected.  Runtime {stopwatch.ElapsedMilliSeconds}ms");
+            LogReport("Ejected");
+            //LogDebug($"Runtime {stopwatch.Elapsed}");
 
             if (!modSettings.CountAsKills)
             {
@@ -197,46 +206,48 @@ namespace PanicSystem.Patches
                 if (defender is Mech)
                 {
                     // add UI icons.. and pilot history?   ... MechsKilled already incremented??
+                    // TODO count kills recorded on pilot history so it's not applied twice
                     statCollection.Set("MechsKilled", attackerPilot.MechsKilled + 1);
-                    var value = statCollection.GetStatistic("MechsEjected")?.Value<int?>();
-                    if (statCollection.GetStatistic("MechsEjected") == null)
+                    var stat = statCollection.GetStatistic("MechsEjected");
+                    if (stat == null)
                     {
                         statCollection.AddStatistic("MechsEjected", 1);
-                    }
-                    else
-                    {
-                        statCollection.Set("MechsEjected", value + 1);
+                        return;
                     }
 
-                    // add achievement kill (more complicated)
-                    var combatProcessors = Traverse.Create(UnityGameInstance.BattleTechGame.Achievements).Field("combatProcessors").GetValue<AchievementProcessor[]>();
-                    var combatProcessor = combatProcessors.FirstOrDefault(x => x.GetType() == AccessTools.TypeByName("BattleTech.Achievements.CombatProcessor"));
+                    var value = stat.Value<int>();
+                    statCollection.Set("MechsEjected", value + 1);
+                }
 
-                    // field is of type Dictionary<string, CombatProcessor.MechCombatStats>
-                    var playerMechStats = Traverse.Create(combatProcessor).Field("playerMechStats").GetValue<IDictionary>();
-                    if (playerMechStats != null)
+                // add achievement kill (more complicated)
+                var combatProcessors = Traverse.Create(UnityGameInstance.BattleTechGame.Achievements).Field("combatProcessors").GetValue<AchievementProcessor[]>();
+                var combatProcessor = combatProcessors.FirstOrDefault(x => x.GetType() == AccessTools.TypeByName("BattleTech.Achievements.CombatProcessor"));
+
+                // field is of type Dictionary<string, CombatProcessor.MechCombatStats>
+                var playerMechStats = Traverse.Create(combatProcessor).Field("playerMechStats").GetValue<IDictionary>();
+                if (playerMechStats != null)
+                {
+                    foreach (DictionaryEntry kvp in playerMechStats)
                     {
-                        foreach (DictionaryEntry kvp in playerMechStats)
+                        if ((string) kvp.Key == attackerPilot.GUID)
                         {
-                            if ((string) kvp.Key == attackerPilot.GUID)
-                            {
-                                Traverse.Create(kvp.Value).Method("IncrementKillCount").GetValue();
-                            }
+                            Traverse.Create(kvp.Value).Method("IncrementKillCount").GetValue();
                         }
                     }
                 }
+
                 else if (modSettings.VehiclesCanPanic &&
                          defender is Vehicle)
                 {
-                    var value = statCollection.GetStatistic("VehiclesEjected")?.Value<int?>();
-                    if (statCollection.GetStatistic("VehiclesEjected") == null)
+                    var stat = statCollection.GetStatistic("VehiclesEjected");
+                    if (stat == null)
                     {
                         statCollection.AddStatistic("VehiclesEjected", 1);
+                        return;
                     }
-                    else
-                    {
-                        statCollection.Set("VehiclesEjected", value + 1);
-                    }
+
+                    var value = stat.Value<int>();
+                    statCollection.Set("VehiclesEjected", value + 1);
                 }
             }
             catch (Exception ex)

@@ -84,6 +84,7 @@
         <Compile Include="Patches\AAR_UnitStatusWidget.cs" />
         <Compile Include="Patches\AbstractActor.cs" />
         <Compile Include="Patches\AttackStackSequence.cs" />
+        <Compile Include="Patches\CombatGameState.cs" />
         <Compile Include="Patches\CombatHUDFloatieStack.cs" />
         <Compile Include="Patches\GameInstance.cs" />
         <Compile Include="Patches\GameInstanceSave.cs" />

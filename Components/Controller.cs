@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using BattleTech;
@@ -69,11 +70,11 @@ namespace PanicSystem.Components
             }
         }
 
-        //fired when player starts a new campaign
+        // fired when player starts a new campaign
         public static void SyncNewCampaign()
         {
             DeserializeStorageJson();
-            //we were unable to find a tracker, add our own
+            // we were unable to find a tracker, add our own
             if (metaTrackers != null)
             {
                 var tracker = new MetaTracker();
@@ -86,10 +87,17 @@ namespace PanicSystem.Components
 
         private static int FindTrackerByTime(DateTime previousSaveTime)
         {
-            if (metaTrackers == null) return -1;
+            if (metaTrackers == null)
+            {
+                return -1;
+            }
+
             for (var i = 0; i < metaTrackers.Count; i++)
             {
-                if (metaTrackers[i].SaveGameTimeStamp == previousSaveTime) return i;
+                if (metaTrackers[i].SaveGameTimeStamp == previousSaveTime)
+                {
+                    return i;
+                }
             }
 
             return -1;
@@ -149,9 +157,10 @@ namespace PanicSystem.Components
             {
                 trackers = JsonConvert.DeserializeObject<List<MetaTracker>>(File.ReadAllText(storageJsonPath));
             }
-            catch
+            catch (Exception ex)
             {
-                // ignored
+                LogDebug("DeserializeStorageJson");
+                LogDebug(ex);
             }
 
             if (trackers == null)
@@ -175,6 +184,7 @@ namespace PanicSystem.Components
             }
             catch (Exception ex)
             {
+                LogDebug("SaveTrackedPilots");
                 LogDebug(ex);
             }
         }
@@ -182,16 +192,21 @@ namespace PanicSystem.Components
         private static void DeserializeActiveJson()
         {
             // we only need to deserialize if we have nothing here: this way resets should work properly
-            if (TrackedActors != null) return;
+            if (TrackedActors != null)
+            {
+                return;
+            }
+
             List<PilotTracker> panicTrackers = null;
             try
             {
                 // read all text, then deserialize into an object
                 panicTrackers = JsonConvert.DeserializeObject<List<PilotTracker>>(File.ReadAllText(activeJsonPath));
             }
-            // ReSharper disable once EmptyGeneralCatchClause
-            catch
+            catch (Exception ex)
             {
+                LogDebug("DeserializeActiveJson");
+                LogDebug(ex);
             }
 
             if (panicTrackers == null)
@@ -218,6 +233,7 @@ namespace PanicSystem.Components
                     DeserializeActiveJson();
                 }
 
+                // Count could be 0...
                 for (var i = 0; i < TrackedActors?.Count; i++)
                 {
                     if (TrackedActors[i].Mech == actor.GUID)

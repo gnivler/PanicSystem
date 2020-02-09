@@ -10,9 +10,11 @@ namespace PanicSystem.Patches
     [HarmonyPatch(typeof(MechMeleeSequence), "FireWeapons")]
     public static class MechMeleeSequence_FireWeapons_Patch
     {
+        internal static bool meleeHasSupportWeapons;
+        
         public static void Postfix(MechMeleeSequence __instance)
         {
-            Helpers.meleeHasSupportWeapons =
+            meleeHasSupportWeapons =
                 Traverse.Create(__instance).Field("requestedWeapons").GetValue<List<Weapon>>().Count > 0;
         }
     }

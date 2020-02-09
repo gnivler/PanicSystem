@@ -23,7 +23,7 @@ namespace PanicSystem.Patches
         // throw away the return of GetPilotIndex because the method is just adding the missing mechs
         public static void Postfix(LanceSpawnerGameLogic __instance)
         {
-            LogDebug("Lance spawn - building pilot index");
+            //LogDebug("Lance spawn - building pilot index");
             __instance.Combat.AllMechs.ForEach(x => GetActorIndex(x));
         }
     }

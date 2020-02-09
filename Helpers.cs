@@ -24,7 +24,7 @@ namespace PanicSystem
         internal static float armorDamageMelee;
         internal static float structureDamageMelee;
         internal static bool hadMeleeAttack;
-        internal static bool meleeHasSupportWeapons;
+        internal static float damageIncludingHeatDamage;
 
         // used in strings
         internal static float ActorHealth(AbstractActor actor) =>
@@ -247,7 +247,7 @@ namespace PanicSystem
             }
 
             // Account for melee attacks so separate panics are not triggered.
-            if (attackSequence.isMelee && meleeHasSupportWeapons)
+            if (attackSequence.isMelee && MechMeleeSequence_FireWeapons_Patch.meleeHasSupportWeapons)
             {
                 initialArmorMelee = AttackStackSequence_OnAttackBegin_Patch.armorBeforeAttack;
                 initialStructureMelee = AttackStackSequence_OnAttackBegin_Patch.structureBeforeAttack;
@@ -271,10 +271,12 @@ namespace PanicSystem
             var armorDamage = attackSequence.GetArmorDamageDealt(id) + armorDamageMelee;
             var structureDamage = attackSequence.GetStructureDamageDealt(id) + structureDamageMelee;
             var heatDamage = Mech_AddExternalHeat_Patch.heatDamage * modSettings.HeatDamageFactor;
+            // used in SavingThrows.cs
+            damageIncludingHeatDamage = armorDamage + structureDamage + heatDamage;
             var percentDamageDone =
-                (attackSequence.GetArmorDamageDealt(id) + attackSequence.GetStructureDamageDealt(id) + heatDamage) / (previousArmor + previousStructure) * 100;
+                (damageIncludingHeatDamage) / (previousArmor + previousStructure) * 100;
 
-            // clear Melee values
+            // clear melee values
             initialArmorMelee = 0;
             initialStructureMelee = 0;
             armorDamageMelee = 0;

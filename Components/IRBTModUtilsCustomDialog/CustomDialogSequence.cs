@@ -52,10 +52,10 @@ namespace us.frostraptor.modUtils.CustomDialog {
            
             this.sideStack.PanelFrame.gameObject.SetActive(true);
             if (this.currentMessage.DialogueSource.team.IsLocalPlayer) {
-                LogDebug($"  Displaying pilot portrait");
+                //LogDebug($"  Displaying pilot portrait");
                 this.sideStack.ShowPortrait(this.currentMessage.DialogueSource.GetPilot().GetPortraitSpriteThumb());
             } else {
-                LogDebug($"  Displaying castDef portrait");
+                //LogDebug($"  Displaying castDef portrait");
                 this.sideStack.ShowPortrait(this.currentMessage.DialogueContent.CastDef.defaultEmotePortrait.LoadPortrait(false));
             }
 
@@ -63,7 +63,7 @@ namespace us.frostraptor.modUtils.CustomDialog {
                 Transform speakerNameFieldT = this.sideStack.gameObject.transform.Find("Representation/dialog-layout/Portrait/speakerNameField");
                 speakerNameFieldT.gameObject.SetActive(true);
 
-                LogDebug($" Setting SpeakerName to: '{this.currentMessage.DialogueContent.SpeakerName}' with callsign: '{this.currentMessage.DialogueContent.CastDef.callsign}'");
+                //LogDebug($" Setting SpeakerName to: '{this.currentMessage.DialogueContent.SpeakerName}' with callsign: '{this.currentMessage.DialogueContent.CastDef.callsign}'");
                 LocalizableText speakerNameLT = speakerNameFieldT.GetComponentInChildren<LocalizableText>();
                 speakerNameLT.SetText(this.currentMessage.DialogueContent.SpeakerName);
                 speakerNameLT.gameObject.SetActive(true);
@@ -77,7 +77,7 @@ namespace us.frostraptor.modUtils.CustomDialog {
             this.activeDialog = this.sideStack.GetNextItem();
             this.activeDialog.Init(this.currentMessage.ShowDuration, true, new Action(this.AfterDialogShow), new Action(this.AfterDialogHide));
 
-            LogDebug($"CDS - Showing dialog: words: '{this.currentMessage.DialogueContent.words}' color: '{this.currentMessage.DialogueContent.wordsColor}' speakerName: '{this.currentMessage.DialogueContent.SpeakerName}' timeout: {this.currentMessage.ShowDuration}");
+            //LogDebug($"CDS - Showing dialog: words: '{this.currentMessage.DialogueContent.words}' color: '{this.currentMessage.DialogueContent.wordsColor}' speakerName: '{this.currentMessage.DialogueContent.SpeakerName}' timeout: {this.currentMessage.ShowDuration}");
             this.activeDialog.Show(this.currentMessage.DialogueContent.words, this.currentMessage.DialogueContent.wordsColor, this.currentMessage.DialogueContent.SpeakerName);
         }
 

@@ -1,5 +1,8 @@
 using System;
+using System.Linq;
 using BattleTech;
+using Harmony;
+using TScript.Ops;
 using UnityEngine;
 using UnityEngine.UI;
 using static PanicSystem.Logger;
@@ -37,6 +40,17 @@ namespace PanicSystem.Components
                 var prefab = dm.PooledInstantiate(id, BattleTechResourceType.UIModulePrefabs, null, null, KillGridParent);
                 var image = prefab.GetComponent<Image>();
                 image.color = Color.red;
+                //var biggerDropsRunning =
+                //    AppDomain.CurrentDomain.GetAssemblies().Count(x => x.FullName.ToLower().Contains("biggerdrop")) == 1;
+                //if (biggerDropsRunning)
+                //{
+                //    LogDebug("Scaling stamps due to BiggerDrops");
+                //    prefab.transform.localScale = new Vector3(0.7f, 0.7f, 0.7f);
+                //}
+                //else
+                //{
+                //    AppDomain.CurrentDomain.GetAssemblies().Do(LogDebug);
+                //}
             }
             catch (Exception ex)
             {

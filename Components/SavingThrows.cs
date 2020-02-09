@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using BattleTech;
-using BattleTech.Save.Core;
 using PanicSystem.Patches;
 using static PanicSystem.PanicSystem;
 using static PanicSystem.Logger;
@@ -20,14 +19,23 @@ namespace PanicSystem.Components
             try
             {
                 AbstractActor defender = null;
-                if (modSettings.VehiclesCanPanic &&
-                    actor is Vehicle vehicle)
+                if (actor is Vehicle vehicle)
                 {
+                    if (!modSettings.VehiclesCanPanic)
+                    {
+                        return true;
+                    }
                     defender = vehicle;
                 }
                 else if (actor is Mech mech)
                 {
                     defender = mech;
+                }
+
+                if (defender == null)
+                {
+                    LogDebug($"defender null, passing save. actor {actor} is type {actor.GetType()}");
+                    return true;
                 }
 
                 if (modSettings.QuirksEnabled)
@@ -261,7 +269,7 @@ namespace PanicSystem.Components
                 defender is Vehicle)
             {
                 // total damage inflicted THIS ATTACK is the saving throw
-                totalMultiplier += damageWithHeatDamage;
+                totalMultiplier += damageIncludingHeatDamage;
             }
 
             var resolveModifier = modSettings.ResolveMaxModifier *
@@ -328,7 +336,7 @@ namespace PanicSystem.Components
             if (modSettings.VehiclesCanPanic &&
                 actor is Vehicle)
             {
-                savingThrow = damageWithHeatDamage;
+                savingThrow = damageIncludingHeatDamage;
             }
 
             savingThrow = (float) Math.Round(savingThrow);

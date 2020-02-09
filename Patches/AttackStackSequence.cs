@@ -137,7 +137,7 @@ namespace PanicSystem.Patches
             {
                 var ejectMessage = ejectPhraseList[Random.Range(1, ejectPhraseList.Count)];
                 // thank you IRBTModUtils
-                LogDebug($"defender {defender}");
+                //LogDebug($"defender {defender}");
                 var castDef = Coordinator.CreateCast(defender);
                 var content = new DialogueContent(
                     ejectMessage, Color.white, castDef.id, null, null, DialogCameraDistance.Medium, DialogCameraHeight.Default, 0
@@ -184,14 +184,14 @@ namespace PanicSystem.Patches
             }
 
             LogReport("Ejected");
-            LogDebug($"Runtime {stopwatch.Elapsed}");
+            //LogDebug($"Runtime {stopwatch.Elapsed}");
 
             if (!modSettings.CountAsKills)
             {
                 return;
             }
 
-            try
+            
             {
                 // this seems pretty convoluted
                 var attackerPilot = combat.AllMechs.Where(mech => mech.pilot.Team.IsLocalPlayer)
@@ -210,7 +210,7 @@ namespace PanicSystem.Patches
                     var value = statCollection.GetStatistic("MechsEjected")?.Value<int?>();
                     if (statCollection.GetStatistic("MechsEjected") == null)
                     {
-                        statCollection.AddStatistic("MechsEjected", 1);
+                        statCollection.AddStatistic<int?>("MechsEjected", 1);
                     }
                     else
                     {
@@ -240,7 +240,7 @@ namespace PanicSystem.Patches
                     var value = statCollection.GetStatistic("VehiclesEjected")?.Value<int?>();
                     if (statCollection.GetStatistic("VehiclesEjected") == null)
                     {
-                        statCollection.AddStatistic("VehiclesEjected", 1);
+                        statCollection.AddStatistic<int?>("VehiclesEjected", 1);
                     }
                     else
                     {

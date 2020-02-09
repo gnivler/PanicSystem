@@ -55,11 +55,11 @@ namespace PanicSystem.Components
                 LogReport($"{"Panic multiplier",-20} | {GetPanicModifier(TrackedActors[index].PanicStatus),10} | {savingThrow,10:F3}");
                 savingThrow = (float) Math.Max(0f, Math.Round(savingThrow));
 
-                if (!(savingThrow >= 1))
+                if (savingThrow < 1)
                 {
                     LogReport(new string('-', 46));
                     LogReport("Negative saving throw| skipping");
-                    return false;
+                    return true;
                 }
 
                 var roll = Random.Range(1, 100);
@@ -346,7 +346,7 @@ namespace PanicSystem.Components
             LogReport($"{"Saving throw",-20} | {savingThrow,-5:###}{roll,5} | {"Roll",10}");
             LogReport(new string('-', 46));
             if (!modSettings.AlwaysPanic &&
-                savingThrow <= 0)
+                savingThrow < 1)
             {
                 LogReport("Negative saving throw| skipping");
                 SaySpamFloatie(actor, "EJECT RESIST!");

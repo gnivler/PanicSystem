@@ -200,11 +200,6 @@ namespace PanicSystem
         // true implies a panic condition was met
         public static bool ShouldPanic(AbstractActor actor, AttackDirector.AttackSequence attackSequence)
         {
-            if (modSettings.AlwaysPanic)
-            {
-                return true;
-            }
-
             if (!CanPanic(actor, attackSequence))
             {
                 return false;
@@ -267,6 +262,11 @@ namespace PanicSystem
                 previousArmor = initialArmorMelee;
                 previousStructure = initialStructureMelee;
             }
+            else
+            {
+                armorDamageMelee = 0;
+                structureDamageMelee = 0;
+            }
 
             var armorDamage = attackSequence.GetArmorDamageDealt(id) + armorDamageMelee;
             var structureDamage = attackSequence.GetStructureDamageDealt(id) + structureDamageMelee;
@@ -285,6 +285,12 @@ namespace PanicSystem
 
             // have to check structure here AFTER armor, despite it being the priority, because we need to set the global
             LogReport($"Damage >>> A: {armorDamage:F3} S: {structureDamage:F3} ({percentDamageDone:F2}%) H: {Mech_AddExternalHeat_Patch.heatDamage}");
+            if (modSettings.AlwaysPanic)
+            {
+                LogReport("AlwaysPanic");
+                return true;
+            }
+
             if (attackSequence.chosenTarget is Mech &&
                 attackSequence.GetStructureDamageDealt(id) >= modSettings.MinimumMechStructureDamageRequired ||
                 modSettings.VehiclesCanPanic &&

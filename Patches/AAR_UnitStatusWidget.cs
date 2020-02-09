@@ -27,9 +27,9 @@ namespace PanicSystem.Patches
             {
                 // get the total and decrement it globally
                 mechEjections = ___UnitData.pilot.StatCollection.GetStatistic("MechsEjected")?.Value<int>();
-                LogDebug($"{___UnitData.pilot.Callsign} MechsEjected {mechEjections}");
+                //LogDebug($"{___UnitData.pilot.Callsign} MechsEjected {mechEjections}");
                 vehicleEjections = ___UnitData.pilot.StatCollection.GetStatistic("VehiclesEjected")?.Value<int>();
-                LogDebug($"{___UnitData.pilot.Callsign} vehicleEjections {vehicleEjections}");
+                //LogDebug($"{___UnitData.pilot.Callsign} vehicleEjections {vehicleEjections}");
             }
             catch (Exception ex)
             {

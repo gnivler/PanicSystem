@@ -191,7 +191,7 @@ namespace PanicSystem.Patches
                 return;
             }
 
-            
+            try
             {
                 // this seems pretty convoluted
                 var attackerPilot = combat.AllMechs.Where(mech => mech.pilot.Team.IsLocalPlayer)
@@ -206,46 +206,48 @@ namespace PanicSystem.Patches
                 if (defender is Mech)
                 {
                     // add UI icons.. and pilot history?   ... MechsKilled already incremented??
+                    // TODO count kills recorded on pilot history so it's not applied twice
                     statCollection.Set("MechsKilled", attackerPilot.MechsKilled + 1);
-                    var value = statCollection.GetStatistic("MechsEjected")?.Value<int?>();
-                    if (statCollection.GetStatistic("MechsEjected") == null)
+                    var stat = statCollection.GetStatistic("MechsEjected");
+                    if (stat == null)
                     {
-                        statCollection.AddStatistic<int?>("MechsEjected", 1);
-                    }
-                    else
-                    {
-                        statCollection.Set("MechsEjected", value + 1);
+                        statCollection.AddStatistic("MechsEjected", 1);
+                        return;
                     }
 
-                    // add achievement kill (more complicated)
-                    var combatProcessors = Traverse.Create(UnityGameInstance.BattleTechGame.Achievements).Field("combatProcessors").GetValue<AchievementProcessor[]>();
-                    var combatProcessor = combatProcessors.FirstOrDefault(x => x.GetType() == AccessTools.TypeByName("BattleTech.Achievements.CombatProcessor"));
+                    var value = stat.Value<int>();
+                    statCollection.Set("MechsEjected", value + 1);
+                }
 
-                    // field is of type Dictionary<string, CombatProcessor.MechCombatStats>
-                    var playerMechStats = Traverse.Create(combatProcessor).Field("playerMechStats").GetValue<IDictionary>();
-                    if (playerMechStats != null)
+                // add achievement kill (more complicated)
+                var combatProcessors = Traverse.Create(UnityGameInstance.BattleTechGame.Achievements).Field("combatProcessors").GetValue<AchievementProcessor[]>();
+                var combatProcessor = combatProcessors.FirstOrDefault(x => x.GetType() == AccessTools.TypeByName("BattleTech.Achievements.CombatProcessor"));
+
+                // field is of type Dictionary<string, CombatProcessor.MechCombatStats>
+                var playerMechStats = Traverse.Create(combatProcessor).Field("playerMechStats").GetValue<IDictionary>();
+                if (playerMechStats != null)
+                {
+                    foreach (DictionaryEntry kvp in playerMechStats)
                     {
-                        foreach (DictionaryEntry kvp in playerMechStats)
+                        if ((string) kvp.Key == attackerPilot.GUID)
                         {
-                            if ((string) kvp.Key == attackerPilot.GUID)
-                            {
-                                Traverse.Create(kvp.Value).Method("IncrementKillCount").GetValue();
-                            }
+                            Traverse.Create(kvp.Value).Method("IncrementKillCount").GetValue();
                         }
                     }
                 }
+
                 else if (modSettings.VehiclesCanPanic &&
                          defender is Vehicle)
                 {
-                    var value = statCollection.GetStatistic("VehiclesEjected")?.Value<int?>();
-                    if (statCollection.GetStatistic("VehiclesEjected") == null)
+                    var stat = statCollection.GetStatistic("VehiclesEjected");
+                    if (stat == null)
                     {
-                        statCollection.AddStatistic<int?>("VehiclesEjected", 1);
+                        statCollection.AddStatistic("VehiclesEjected", 1);
+                        return;
                     }
-                    else
-                    {
-                        statCollection.Set("VehiclesEjected", value + 1);
-                    }
+
+                    var value = stat.Value<int>();
+                    statCollection.Set("VehiclesEjected", value + 1);
                 }
             }
             catch (Exception ex)

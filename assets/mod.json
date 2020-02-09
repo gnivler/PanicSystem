@@ -17,8 +17,8 @@
     }
   ],
   "Settings": {
-    "Debug": true,
-    "CombatLog": true,
+    "Debug": false,
+    "CombatLog": false,
 
     /* reads phrases.txt file and displays one randomly at eject */
     "EnableEjectPhrases": true,

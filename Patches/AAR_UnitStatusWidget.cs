@@ -90,7 +90,7 @@ namespace PanicSystem.Patches
                 if (modSettings.VehiclesCanPanic)
                 {
                     // weird loop
-                    for (var x = 0; x < vehicleEjections--; x++)
+                    for (var x = 0; x < vehicleEjections; x++)
                     {
                         LogDebug("Adding vehicle stamp");
                         AARIcons.AddEjectedVehicle(___KillGridParent);
@@ -100,7 +100,7 @@ namespace PanicSystem.Patches
                 }
 
                 // weird loop
-                for (var x = 0; x < mechEjections--; x++)
+                for (var x = 0; x < mechEjections; x++)
                 {
                     LogDebug("Adding mech stamp");
                     AARIcons.AddEjectedMech(___KillGridParent);

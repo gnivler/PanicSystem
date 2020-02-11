@@ -1,11 +1,11 @@
-﻿using BattleTech;
+﻿using System;
+using BattleTech;
 using BattleTech.UI;
 using Harmony;
-using System;
 
 // thank you Frosty IRBTModUtils CustomDialog
 // https://github.com/IceRaptor/IRBTModUtils
-namespace us.frostraptor.modUtils.CustomDialog {
+namespace PanicSystem.Components.IRBTModUtilsCustomDialog {
 
     // Register listeners for our events, using the CombatHUD hook
     [HarmonyPatch(typeof(CombatHUD), "SubscribeToMessages")]

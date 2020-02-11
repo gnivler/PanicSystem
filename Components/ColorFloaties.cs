@@ -7,6 +7,7 @@ using TMPro;
 using UnityEngine;
 using static PanicSystem.Logger;
 
+// ReSharper disable ClassNeverInstantiated.Global
 // ReSharper disable InconsistentNaming
 
 namespace PanicSystem.Components
@@ -26,7 +27,7 @@ namespace PanicSystem.Components
                     traverse.Method("SetOutlineThickness", width).GetValue();
                 }
 
-               var floatieWording = text.text;
+                var floatieWording = text.text;
                 //var text = Traverse.Create(floatie).Field("Text").GetValue<TextMeshProUGUI>().text;
                 if (PanicSystem.ejectPhraseList.Any(x => x == floatieWording))
                 {

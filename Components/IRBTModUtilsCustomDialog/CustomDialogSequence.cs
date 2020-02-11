@@ -1,15 +1,14 @@
-﻿using BattleTech;
+﻿using System;
+using System.Collections.Generic;
+using BattleTech;
 using BattleTech.UI;
 using BattleTech.UI.TMProWrapper;
-using System;
-using System.Collections.Generic;
-using IRBTModUtils;
 using UnityEngine;
 using static PanicSystem.Logger;
 
 // thank you Frosty IRBTModUtils CustomDialog
 // https://github.com/IceRaptor/IRBTModUtils
-namespace us.frostraptor.modUtils.CustomDialog {
+namespace PanicSystem.Components.IRBTModUtilsCustomDialog {
     public class CustomDialogSequence : MultiSequence {
 
         public CustomDialogSequence(CombatGameState Combat, CombatHUDDialogSideStack sideStack, 

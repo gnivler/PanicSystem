@@ -4,13 +4,11 @@ using System.Linq;
 using BattleTech;
 using BattleTech.UI;
 using HBS.Data;
-using IRBTModUtils;
 using UnityEngine;
-using static PanicSystem.Logger;
 
 // thank you Frosty IRBTModUtils CustomDialog
 // https://github.com/IceRaptor/IRBTModUtils
-namespace us.frostraptor.modUtils.CustomDialog {
+namespace PanicSystem.Components.IRBTModUtilsCustomDialog {
     // This classes liberally borrows CWolf's amazing MissionControl mod, in particular 
     //  https://github.com/CWolfs/MissionControl/blob/master/src/Core/DataManager.cs
 
@@ -49,7 +47,7 @@ namespace us.frostraptor.modUtils.CustomDialog {
             SideStack = combatHUD.DialogSideStack;
 
             if (CallSigns == null) {
-                string filePath = Path.Combine(PanicSystem.PanicSystem.modDirectory, PanicSystem.PanicSystem.modSettings.Dialogue.CallsignsPath);
+                string filePath = Path.Combine(PanicSystem.modDirectory, PanicSystem.modSettings.Dialogue.CallsignsPath);
                 //LogDebug($"Reading files from {filePath}");
                 CallSigns = File.ReadAllLines(filePath).ToList();
             }
@@ -121,8 +119,8 @@ namespace us.frostraptor.modUtils.CustomDialog {
             return CallSigns[Random.Range(0, CallSigns.Count)];
         }
         private static string GetRandomPortraitPath() {
-            return PanicSystem.PanicSystem.modSettings.Dialogue.Portraits[Random
-                .Range(0, PanicSystem.PanicSystem.modSettings.Dialogue.Portraits.Length)];
+            return global::PanicSystem.PanicSystem.modSettings.Dialogue.Portraits[Random
+                .Range(0, global::PanicSystem.PanicSystem.modSettings.Dialogue.Portraits.Length)];
         }
 
     }

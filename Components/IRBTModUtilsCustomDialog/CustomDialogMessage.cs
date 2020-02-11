@@ -2,7 +2,7 @@
 
  // thank you Frosty IRBTModUtils CustomDialog
  // https://github.com/IceRaptor/IRBTModUtils
-namespace us.frostraptor.modUtils.CustomDialog {
+namespace PanicSystem.Components.IRBTModUtilsCustomDialog {
     public class CustomDialogMessage : MessageCenterMessage {
 
         // The message type to send dialog through

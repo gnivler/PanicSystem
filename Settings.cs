@@ -14,6 +14,12 @@ namespace PanicSystem
         public float EjectPhraseChance;
         public bool ColorizeFloaties;
         public bool CountAsKills;
+        
+        // strings
+        public string PanicCritSaveString;
+        public string PanicCritString;
+        public string PanicImprovedString;
+        public string[] PanicStates = new string[4];
 
         // panic
         public bool PlayersCanPanic;

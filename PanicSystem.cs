@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using Harmony;
 using Newtonsoft.Json;
+using PanicSystem.Components;
 using static PanicSystem.Logger;
 
 // ReSharper disable InconsistentNaming
@@ -19,6 +19,7 @@ namespace PanicSystem
         internal static string modDirectory;
         internal static List<string> ejectPhraseList = new List<string>();
         internal static HarmonyInstance harmony;
+        internal static readonly Dictionary<PanicStatus, string> panicStates = new Dictionary<PanicStatus, string>();
 
         public static void Init(string modDir, string settings)
         {
@@ -35,7 +36,11 @@ namespace PanicSystem
                 LogDebug(ex);
                 modSettings = new Settings();
             }
-            
+
+            panicStates.Add(PanicStatus.Confident, modSettings.PanicStates[0]);
+            panicStates.Add(PanicStatus.Unsettled, modSettings.PanicStates[1]);
+            panicStates.Add(PanicStatus.Stressed, modSettings.PanicStates[2]);
+            panicStates.Add(PanicStatus.Panicked, modSettings.PanicStates[3]);
             harmony.PatchAll();
             Helpers.SetupEjectPhrases(modDir);
         }

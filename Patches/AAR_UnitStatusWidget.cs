@@ -18,18 +18,27 @@ namespace PanicSystem.Patches
     [HarmonyPatch(typeof(AAR_UnitStatusWidget), "FillInData")]
     public static class AAR_UnitStatusWidget_FillInData_Patch
     {
-        private static int? mechEjections;
-        private static int? vehicleEjections;
+        private static int mechEjections;
+        private static int vehicleEjections;
 
         public static void Prefix(UnitResult ___UnitData)
         {
             try
             {
                 // get the total and decrement it globally
-                mechEjections = ___UnitData.pilot.StatCollection.GetStatistic("MechsEjected")?.Value<int>();
-                //LogDebug($"{___UnitData.pilot.Callsign} MechsEjected {mechEjections}");
-                vehicleEjections = ___UnitData.pilot.StatCollection.GetStatistic("VehiclesEjected")?.Value<int>();
-                //LogDebug($"{___UnitData.pilot.Callsign} vehicleEjections {vehicleEjections}");
+                var MechsEjected = ___UnitData.pilot.StatCollection.GetStatistic("MechsEjected");
+                if (MechsEjected != null)
+                {
+                    mechEjections = MechsEjected.Value<int>();
+                    //LogDebug($"{___UnitData.pilot.Callsign} MechsEjected {mechEjections}");
+                }
+
+                var VehiclesEjected = ___UnitData.pilot.StatCollection.GetStatistic("VehiclesEjected");
+                if (VehiclesEjected != null)
+                {
+                    vehicleEjections = VehiclesEjected.Value<int>();
+                    //LogDebug($"{___UnitData.pilot.Callsign} vehicleEjections {vehicleEjections}");
+                }
             }
             catch (Exception ex)
             {

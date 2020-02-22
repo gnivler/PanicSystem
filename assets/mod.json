@@ -1,14 +1,13 @@
 {
   "Name": "PanicSystem",
-
   "Enabled": true,
-
-  "Version": "3.7.2",
+  "Version": "3.7.5",
   "Description": "Simulates MechWarrior and vehicle crew panic, and automatic ejections",
   "Website": "https://github.com/gnivler/PanicSystem",
-
   "DLL": "PanicSystem.dll",
   "DLLEntryPoint": "PanicSystem.PanicSystem.Init",
+
+  /* ModTek manifest for custom icons */
   "Manifest": [
     {
       "Type": "SVGAsset",
@@ -25,7 +24,7 @@
       "CONFIDENT",
       "UNSETTLED",
       "STRESSED",
-      "PANICKED",
+      "PANICKED"
     ],
     "PanicCritString": "PANIC LEVEL CRITICAL!",
     "PanicImprovedString": "IMPROVED TO",

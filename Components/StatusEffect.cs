@@ -1,4 +1,6 @@
+using System;
 using System.Globalization;
+using System.Linq;
 using BattleTech;
 using Harmony;
 using SVGImporter;
@@ -11,23 +13,53 @@ namespace PanicSystem.Components
     // ReSharper disable once ClassNeverInstantiated.Global
     internal class StatusEffect
     {
-        private const string Icon = "uixSvgIcon_status_sensorsImpaired";
+        private const string Unsettled = "unsettled";
+        private const string Stressed = "stressed";
+        private const string Panicked = "panicked";
+        private const string SensorsImpaired = "uixSvgIcon_status_sensorsImpaired";
+        private static bool UsingModTek = true;
 
-        // TODO re-implement
         // thanks Denedan!
-        //[HarmonyPatch(typeof(CombatGameState), "_Init")]
-        //internal static class CombatGameState_LoadComplete_Patch
-        //{
-        //    internal static void Postfix()
-        //    {
-        //        var dm = UnityGameInstance.BattleTechGame.DataManager;
-        //        var loadRequest = dm.CreateLoadRequest();
-        //        loadRequest.AddLoadRequest<SVGAsset>(BattleTechResourceType.SVGAsset, Unsettled, null);
-        //        loadRequest.AddLoadRequest<SVGAsset>(BattleTechResourceType.SVGAsset, Stressed, null);
-        //        loadRequest.AddLoadRequest<SVGAsset>(BattleTechResourceType.SVGAsset, Panicked, null);
-        //        loadRequest.ProcessRequests();
-        //    }
-        //}
+        [HarmonyPatch(typeof(CombatGameState), "_Init")]
+        internal static class CombatGameState_LoadComplete_Patch
+        {
+            internal static void Postfix()
+            {
+                if (AppDomain.CurrentDomain.GetAssemblies().Any(x => x.FullName.Contains("ModTek")))
+                {
+                    var dm = UnityGameInstance.BattleTechGame.DataManager;
+                    var loadRequest = dm.CreateLoadRequest();
+                    loadRequest.AddLoadRequest<SVGAsset>(BattleTechResourceType.SVGAsset, Unsettled, null);
+                    loadRequest.AddLoadRequest<SVGAsset>(BattleTechResourceType.SVGAsset, Stressed, null);
+                    loadRequest.AddLoadRequest<SVGAsset>(BattleTechResourceType.SVGAsset, Panicked, null);
+                    loadRequest.ProcessRequests();
+                    Logger.LogDebug("Loaded custom icons");
+                }
+                else
+                {
+                    Logger.LogDebug("Not using ModTek - vanilla icon");
+                    UsingModTek = false;
+                }
+            }
+        }
+
+        private static string GetIconString(string status)
+        {
+            if (UsingModTek)
+            {
+                switch (status)
+                {
+                    case "Unsettled":
+                        return Unsettled;
+                    case "Stressed":
+                        return Stressed;
+                    case "Panicked":
+                        return Panicked;
+                }
+            }
+
+            return SensorsImpaired;
+        }
 
         // base settings for the EffectData members
         private static EffectDurationData Duration =>
@@ -72,7 +104,7 @@ namespace PanicSystem.Components
                 effectType = EffectType.StatisticEffect,
                 targetingData = Hide,
                 Description = new DescriptionDef("PanicSystemToBeHit", "Panicked", "",
-                    Icon, 0, 0, false, null, null, null),
+                    GetIconString("Panicked"), 0, 0, false, null, null, null),
                 durationData = Duration,
                 statisticData = new StatisticEffectData
                 {
@@ -91,7 +123,7 @@ namespace PanicSystem.Components
                 Description = new DescriptionDef("PanicSystemToBeHit", "Panicked",
                     modSettings.PanickedAimModifier + " Difficulty to all of this unit's attacks\n" +
                     modSettings.PanickedToHitModifier + " Difficulty to hit this unit",
-                    Icon, 0, 0, false, null, null, null),
+                    GetIconString("Panicked"), 0, 0, false, null, null, null),
                 durationData = Duration,
                 statisticData = new StatisticEffectData
                 {
@@ -108,7 +140,7 @@ namespace PanicSystem.Components
                 effectType = EffectType.StatisticEffect,
                 targetingData = Hide,
                 Description = new DescriptionDef("PanicSystemToBeHit", "Stressed", "",
-                    Icon, 0, 0, false, null, null, null),
+                    GetIconString("Stressed"), 0, 0, false, null, null, null),
                 durationData = Duration,
                 statisticData = new StatisticEffectData
                 {
@@ -126,7 +158,7 @@ namespace PanicSystem.Components
                 targetingData = Show,
                 Description = new DescriptionDef("PanicSystemToBeHit", "Stressed",
                     modSettings.StressedAimModifier + " Difficulty to all of this unit's attacks\n" + modSettings.StressedToHitModifier + " Difficulty to hit this unit",
-                    Icon, 0, 0, false, null, null, null),
+                    GetIconString("Stressed"), 0, 0, false, null, null, null),
                 durationData = Duration,
                 statisticData = new StatisticEffectData
                 {
@@ -144,7 +176,7 @@ namespace PanicSystem.Components
                 targetingData = Show,
                 Description = new DescriptionDef("PanicSystemToBeHit", "Unsettled",
                     modSettings.UnsettledAimModifier + " Difficulty to all of this unit's attacks",
-                    Icon, 0, 0, false, null, null, null),
+                    GetIconString("Unsettled"), 0, 0, false, null, null, null),
                 durationData = Duration,
                 statisticData = new StatisticEffectData
                 {

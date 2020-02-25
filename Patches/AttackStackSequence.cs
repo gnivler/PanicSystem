@@ -135,7 +135,7 @@ namespace PanicSystem.Patches
                 defender is Mech &&
                 Random.Range(1, 100) <= modSettings.EjectPhraseChance)
             {
-                var ejectMessage = ejectPhraseList[Random.Range(1, ejectPhraseList.Count)];
+                var ejectMessage = ejectPhraseList[Random.Range(0, ejectPhraseList.Count)];
                 // thank you IRBTModUtils
                 //LogDebug($"defender {defender}");
                 var castDef = Coordinator.CreateCast(defender);

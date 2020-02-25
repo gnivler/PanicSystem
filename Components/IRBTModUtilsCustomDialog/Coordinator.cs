@@ -18,7 +18,7 @@ namespace PanicSystem.Components.IRBTModUtilsCustomDialog {
         private static CombatGameState Combat;
         private static MessageCenter MessageCenter;
         private static CombatHUDDialogSideStack SideStack;
-        private static List<string> CallSigns;
+        internal static List<string> CallSigns;
 
         public static bool CombatIsActive {
             get { return Combat != null && SideStack != null; }

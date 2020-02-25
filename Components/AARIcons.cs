@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using BattleTech;
 using Harmony;
-using TScript.Ops;
 using UnityEngine;
 using UnityEngine.UI;
 using static PanicSystem.Logger;

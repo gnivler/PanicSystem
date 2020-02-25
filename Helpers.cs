@@ -182,14 +182,12 @@ namespace PanicSystem
         internal static void SayStatusFloatie(AbstractActor actor, bool buff)
         {
             var index = GetActorIndex(actor);
-
-            var floatieString = $"{TrackedActors[index].PanicStatus.ToString()}";
+            var floatieString = panicStates[TrackedActors[index].PanicStatus];
             if (buff)
             {
                 actor.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
                     new ShowActorInfoSequence(actor, floatieString, FloatieMessage.MessageNature.Inspiration, true)));
             }
-
             else
             {
                 actor.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
@@ -274,7 +272,7 @@ namespace PanicSystem
             // used in SavingThrows.cs
             damageIncludingHeatDamage = armorDamage + structureDamage + heatDamage;
             var percentDamageDone =
-                (damageIncludingHeatDamage) / (previousArmor + previousStructure) * 100;
+                damageIncludingHeatDamage / (previousArmor + previousStructure) * 100;
 
             // clear melee values
             initialArmorMelee = 0;

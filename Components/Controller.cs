@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using BattleTech;
@@ -104,7 +103,7 @@ namespace PanicSystem.Components
         }
 
         /// <summary>
-        ///   create or obtain tracker data and save it out
+        ///  create or obtain tracker data and save it out
         /// </summary>
         /// <param name="GUID"></param>
         /// <param name="dateTime"></param>

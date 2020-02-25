@@ -16,6 +16,12 @@ namespace PanicSystem
         public float EjectPhraseChance;
         public bool ColorizeFloaties;
         public bool CountAsKills;
+        
+        // strings
+        public string PanicCritSaveString;
+        public string PanicCritString;
+        public string PanicImprovedString;
+        public string[] PanicStates = new string[4];
         public bool LimitManualEjection = true;
         public PanicStatus LimitManualEjectionLevel = PanicStatus.Confident;
 
@@ -92,7 +98,7 @@ namespace PanicSystem
                 "sprites/Portraits/guiTxrPort_GenericMW_marik_utr.png",
                 "sprites/Portraits/guiTxrPort_GenericMW_steiner_utr.png",
             };
-            public string CallsignsPath = "../../BattleTech_Data/StreamingAssets/data/nameLists/name_callsign.txt";
+            public string CallsignsPath = "BattleTech_Data/StreamingAssets/data/nameLists/name_callsign.txt";
         }
         public DialogueOptions Dialogue = new DialogueOptions();
     }

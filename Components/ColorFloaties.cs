@@ -1,7 +1,5 @@
 using System;
-using System.Linq;
 using BattleTech.UI;
-using BattleTech.UI.TMProWrapper;
 using Harmony;
 using TMPro;
 using UnityEngine;
@@ -14,57 +12,6 @@ namespace PanicSystem.Components
 {
     public class ColorFloaties
     {
-        internal static void ColorizeFloatie(LocalizableText text)
-        {
-            try
-            {
-                // default outline width is zero.  have to plug a dummy value into outline colour though...
-                void SetStyle(Color32 inner, Color32 outline, float width = 0f)
-                {
-                    var traverse = Traverse.Create(text);
-                    traverse.Method("SetFaceColor", inner).GetValue();
-                    traverse.Method("SetOutlineColor", outline).GetValue();
-                    traverse.Method("SetOutlineThickness", width).GetValue();
-                }
-
-                var floatieWording = text.text;
-                //var text = Traverse.Create(floatie).Field("Text").GetValue<TextMeshProUGUI>().text;
-                if (PanicSystem.ejectPhraseList.Any(x => x == floatieWording))
-                {
-                    SetStyle(Color.white, Color.red, 0.1f);
-                }
-                else if (floatieWording.Contains("IMPROVED TO"))
-                {
-                    SetStyle(Color.white, Color.blue, 0.1f);
-                }
-                else if (floatieWording == "PANIC LEVEL CRITICAL!")
-                {
-                    SetStyle(Color.red, Color.yellow, 0.1f);
-                }
-                else if (floatieWording == "Panicked")
-                {
-                    SetStyle(Color.red / 1.25f, Color.black);
-                }
-                else if (floatieWording == "Stressed")
-                {
-                    SetStyle(Color.yellow / 1.25f, Color.red);
-                }
-                else if (floatieWording == "Unsettled")
-                {
-                    SetStyle(Color.gray / 1.35f, Color.black);
-                }
-                // need to do this because the game leaves some ... reused objects maybe??
-                else
-                {
-                    SetStyle(Color.white, Color.black);
-                }
-            }
-            catch (Exception ex)
-            {
-                LogDebug(ex);
-            }
-        }
-
         internal static void Colorize(CombatHUDFloatieStack __instance)
         {
             try
@@ -82,27 +29,23 @@ namespace PanicSystem.Components
                 foreach (var floatie in floaties)
                 {
                     var text = Traverse.Create(floatie).Field("Text").GetValue<TextMeshProUGUI>().text;
-                    if (PanicSystem.ejectPhraseList.Any(x => x == text))
-                    {
-                        SetStyle(floatie, Color.white, Color.red, 0.1f);
-                    }
-                    else if (text.Contains("IMPROVED TO"))
+                    if (text.Contains(PanicSystem.modSettings.PanicImprovedString))
                     {
                         SetStyle(floatie, Color.white, Color.blue, 0.1f);
                     }
-                    else if (text == "PANIC LEVEL CRITICAL!")
+                    else if (text == PanicSystem.modSettings.PanicCritString)
                     {
                         SetStyle(floatie, Color.red, Color.yellow, 0.1f);
                     }
-                    else if (text == "Panicked")
+                    else if (text == PanicSystem.modSettings.PanicStates[3])
                     {
                         SetStyle(floatie, Color.red / 1.25f, Color.black);
                     }
-                    else if (text == "Stressed")
+                    else if (text == PanicSystem.modSettings.PanicStates[2])
                     {
                         SetStyle(floatie, Color.yellow / 1.25f, Color.red);
                     }
-                    else if (text == "Unsettled")
+                    else if (text == PanicSystem.modSettings.PanicStates[1])
                     {
                         SetStyle(floatie, Color.gray / 1.35f, Color.black);
                     }

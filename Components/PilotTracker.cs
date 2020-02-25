@@ -15,9 +15,9 @@ namespace PanicSystem.Components
 
     public class PilotTracker
     {
-        public bool PanicWorsenedRecently;
-        public PanicStatus PanicStatus;
         public readonly string Mech;
+        public PanicStatus PanicStatus;
+        public bool PanicWorsenedRecently;
         public bool PreventEjection;
 
         public PilotTracker()

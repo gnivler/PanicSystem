@@ -3,7 +3,6 @@ using BattleTech.Save;
 using BattleTech.Save.SaveGameStructure;
 using Harmony;
 using static PanicSystem.Components.Controller;
-using static PanicSystem.Logger;
 
 // ReSharper disable UnusedMember.Local
 // ReSharper disable InconsistentNaming
@@ -23,7 +22,6 @@ namespace PanicSystem.Patches
         // throw away the return of GetPilotIndex because the method is just adding the missing mechs
         public static void Postfix(LanceSpawnerGameLogic __instance)
         {
-            //LogDebug("Lance spawn - building pilot index");
             __instance.Combat.AllMechs.ForEach(x => GetActorIndex(x));
         }
     }

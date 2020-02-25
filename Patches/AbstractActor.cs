@@ -116,18 +116,30 @@ namespace PanicSystem.Patches
                 {
                     case PanicStatus.Unsettled:
                         LogReport($"{mech.DisplayName} condition improved: Unsettled");
-                        message.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, "IMPROVED TO UNSETTLED!", FloatieMessage.MessageNature.Buff, false)));
+                        message.PublishMessage(new AddSequenceToStackMessage(
+                            new ShowActorInfoSequence(mech,
+                                $"{PanicSystem.modSettings.PanicImprovedString} {PanicSystem.modSettings.PanicStates[1]}!",
+                                FloatieMessage.MessageNature.Buff, 
+                                false)));
                         effectManager.CreateEffect(StatusEffect.UnsettledToHit, "PanicSystemToHit", Uid(), mech, mech, new WeaponHitInfo(), 0);
                         break;
                     case PanicStatus.Stressed:
                         LogReport($"{mech.DisplayName} condition improved: Stressed");
-                        message.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, "IMPROVED TO STRESSED!", FloatieMessage.MessageNature.Buff, false)));
+                        message.PublishMessage(new AddSequenceToStackMessage(
+                            new ShowActorInfoSequence(mech,
+                                $"{PanicSystem.modSettings.PanicImprovedString} {PanicSystem.modSettings.PanicStates[2]}!",
+                                FloatieMessage.MessageNature.Buff,
+                                false)));
                         effectManager.CreateEffect(StatusEffect.StressedToHit, "PanicSystemToHit", Uid(), mech, mech, new WeaponHitInfo(), 0);
                         effectManager.CreateEffect(StatusEffect.StressedToBeHit, "PanicSystemToBeHit", Uid(), mech, mech, new WeaponHitInfo(), 0);
                         break;
                     default:
                         LogReport($"{mech.DisplayName} condition improved: Confident");
-                        message.PublishMessage(new AddSequenceToStackMessage(new ShowActorInfoSequence(mech, "IMPROVED TO CONFIDENT!", FloatieMessage.MessageNature.Buff, false)));
+                        message.PublishMessage(new AddSequenceToStackMessage(
+                            new ShowActorInfoSequence(mech,
+                                $"{PanicSystem.modSettings.PanicImprovedString} {PanicSystem.modSettings.PanicStates[0]}!",
+                                FloatieMessage.MessageNature.Buff, 
+                                false)));
                         break;
                 }
             }

@@ -86,7 +86,7 @@ namespace PanicSystem.Components
                     {
                         defender.Combat.MessageCenter.PublishMessage(
                             new AddSequenceToStackMessage(
-                                new ShowActorInfoSequence(defender, "CRIT SUCCESS!", FloatieMessage.MessageNature.Inspiration, false)));
+                                new ShowActorInfoSequence(defender, modSettings.PanicCritSaveString, FloatieMessage.MessageNature.Inspiration, false)));
                         SayStatusFloatie(defender, false);
                     }
 
@@ -126,7 +126,7 @@ namespace PanicSystem.Components
 
                     defender.Combat.MessageCenter.PublishMessage(
                         new AddSequenceToStackMessage(
-                            new ShowActorInfoSequence(defender, "PANIC LEVEL CRITICAL!", FloatieMessage.MessageNature.CriticalHit, true)));
+                            new ShowActorInfoSequence(defender, modSettings.PanicCritString, FloatieMessage.MessageNature.CriticalHit, true)));
                 }
             }
             catch (Exception ex)
@@ -272,8 +272,8 @@ namespace PanicSystem.Components
                 totalMultiplier += damageIncludingHeatDamage;
             }
 
-            var resolveModifier = modSettings.ResolveMaxModifier *
-                                  (defender.Combat.LocalPlayerTeam.Morale - modSettings.MedianResolve) / modSettings.MedianResolve;
+            var resolveModifier = modSettings.ResolveMaxModifier * 
+                (defender.Combat.LocalPlayerTeam.Morale - modSettings.MedianResolve) / modSettings.MedianResolve;
 
             if (modSettings.VehiclesCanPanic &&
                 defender is Vehicle)

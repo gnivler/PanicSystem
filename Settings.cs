@@ -2,6 +2,8 @@
 // ReSharper disable ConvertToConstant.Global
 // ReSharper disable UnassignedField.Global
 
+using PanicSystem.Components;
+
 namespace PanicSystem
 {
     public class Settings
@@ -14,6 +16,8 @@ namespace PanicSystem
         public float EjectPhraseChance;
         public bool ColorizeFloaties;
         public bool CountAsKills;
+        public bool LimitManualEjection = true;
+        public PanicStatus LimitManualEjectionLevel = PanicStatus.Confident;
 
         // panic
         public bool PlayersCanPanic;

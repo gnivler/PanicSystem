@@ -77,7 +77,7 @@ namespace PanicSystem
         public static void ApplyPanicDebuff(AbstractActor actor)
         {
             var index = GetActorIndex(actor);
-            if (TrackedActors[index].Mech != actor.GUID)
+            if (TrackedActors[index].Guid != actor.GUID)
             {
                 LogDebug("Pilot and mech mismatch; no status to change");
                 return;

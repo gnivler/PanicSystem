@@ -15,21 +15,39 @@ namespace PanicSystem.Components
 
     public class PilotTracker
     {
-        public readonly string Mech;
-        public PanicStatus PanicStatus;
+        public readonly string Guid;
+
         public bool PanicWorsenedRecently;
         public bool PreventEjection;
+
+        private AbstractActor actor;
 
         public PilotTracker()
         {
             // do nothing here, if this is called, then JSON is deserializing us
         }
 
-        public PilotTracker(IGuid mech)
+        public PilotTracker(AbstractActor actor)
         {
-            Mech = mech.GUID;
-            PanicStatus = PanicStatus.Confident;
+            Guid = actor.GUID;
+            this.actor = actor;
             PanicWorsenedRecently = false;
+        }
+
+        private Statistic PanicStat()
+        {
+            if (actor.StatCollection.GetStatistic("PanicStatus") == null)
+            {
+                return actor.StatCollection.AddStatistic("PanicStatus", 0);
+            }
+
+            return actor.StatCollection.GetStatistic("PanicStatus");
+        }
+
+        public PanicStatus PanicStatus
+        {
+            get => (PanicStatus) PanicStat().Value<int>();
+            set => PanicStat().SetValue((int) value);
         }
     }
 
@@ -38,7 +56,7 @@ namespace PanicSystem.Components
         public List<PilotTracker> TrackedActors { get; set; }
         public DateTime SaveGameTimeStamp { get; set; }
         public string SimGameGuid { get; set; }
-        
+
         public void SetGameGuid(string guid)
         {
             SimGameGuid = guid;

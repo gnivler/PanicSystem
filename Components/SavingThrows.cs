@@ -301,7 +301,7 @@ namespace PanicSystem.Components
         {
             LogReport("Panic save failure requires eject save");
 
-            var pilotTracker = TrackedActors.First(tracker => tracker.Mech == actor.GUID);
+            var pilotTracker = TrackedActors.First(tracker => tracker.Guid == actor.GUID);
             if (pilotTracker.PreventEjection)
             {
                 LogReport("Ejection forbidden after crit unless already stressed or panicked");

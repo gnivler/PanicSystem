@@ -34,7 +34,7 @@ namespace PanicSystem.Patches
             }
 
             var index = GetActorIndex(mech);
-            if (TrackedActors[index].Mech != mech.GUID) return;
+            if (TrackedActors[index].Guid != mech.GUID) return;
 
             if (TrackedActors[index].PanicWorsenedRecently && modSettings.OneChangePerTurn) return;
 

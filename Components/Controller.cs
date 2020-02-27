@@ -31,14 +31,16 @@ namespace PanicSystem.Components
                 {
                     var pilot = mech.GetPilot();
                     var statCollection = pilot.StatCollection;
-                    statCollection.Set("MechsEjected", 0);
+                    statCollection.RemoveStatistic("MechsEjected");
+                    statCollection.RemoveStatistic("VehiclesEjected");
+                    statCollection.RemoveStatistic("PanicStatus");
                 }
 
                 TrackedActors = new List<PilotTracker>();
             }
             catch (Exception ex)
             {
-                LogDebug(ex.ToString());
+                LogDebug(ex);
             }
         }
 
@@ -235,7 +237,7 @@ namespace PanicSystem.Components
                 // Count could be 0...
                 for (var i = 0; i < TrackedActors?.Count; i++)
                 {
-                    if (TrackedActors[i].Mech == actor.GUID)
+                    if (TrackedActors[i].Guid == actor.GUID)
                     {
                         return i;
                     }

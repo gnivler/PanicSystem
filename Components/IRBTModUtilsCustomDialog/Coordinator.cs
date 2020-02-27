@@ -119,8 +119,8 @@ namespace PanicSystem.Components.IRBTModUtilsCustomDialog {
             return CallSigns[Random.Range(0, CallSigns.Count)];
         }
         private static string GetRandomPortraitPath() {
-            return global::PanicSystem.PanicSystem.modSettings.Dialogue.Portraits[Random
-                .Range(0, global::PanicSystem.PanicSystem.modSettings.Dialogue.Portraits.Length)];
+            return PanicSystem.modSettings.Dialogue.Portraits[Random
+                .Range(0, PanicSystem.modSettings.Dialogue.Portraits.Length)];
         }
 
     }

@@ -1,6 +1,5 @@
 using BattleTech;
 using Harmony;
-using PanicSystem.Components;
 using static PanicSystem.Components.Controller;
 
 // ReSharper disable InconsistentNaming
@@ -12,18 +11,19 @@ namespace PanicSystem.Patches
     {
         public static void Prefix(AbstractActor __instance)
         {
-            if (!(__instance is Mech mech) || mech.IsDead || mech.IsFlaggedForDeath && mech.HasHandledDeath)
+            if (__instance.IsDead || __instance.IsFlaggedForDeath && __instance.HasHandledDeath)
             {
                 return;
             }
 
-            var pilot = mech.GetPilot();
+            var pilot = __instance.GetPilot();
             if (pilot == null)
             {
+                Logger.LogDebug($"No pilot found for {__instance.Nickname}:{__instance.GUID}");
                 return;
             }
 
-            var index = GetActorIndex(mech);
+            var index = GetActorIndex(__instance);
 
             // reduce panic level
             if (!TrackedActors[index].PanicWorsenedRecently &&

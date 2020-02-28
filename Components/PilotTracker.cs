@@ -20,6 +20,7 @@ namespace PanicSystem.Components
         public bool PanicWorsenedRecently;
         public bool PreventEjection;
         private readonly AbstractActor actor;
+        private PanicStatus panicStatus;
 
         public PilotTracker()
         {
@@ -30,30 +31,21 @@ namespace PanicSystem.Components
         {
             Guid = actor.GUID;
             this.actor = actor;
-            Stat.SetValue(0);
-        }
-
-        private Statistic Stat
-        {
-            get
-            {
-                var sc = actor.StatCollection;
-                return sc.GetStatistic("PanicStatus") ?? sc.AddStatistic("PanicStatus", 0);
-            }
+            PanicStatus = PanicStatus.Confident;
         }
 
         internal PanicStatus PanicStatus
         {
-            get => (PanicStatus) Stat.Value<int>();
+            get => panicStatus;
             set
             {
                 try
                 {
                     if (PanicStatus != value)
                     {
-                        var clamped = Mathf.Clamp((int) value, 0, 3);
-                        Helpers.ApplyPanicStatus(actor, (PanicStatus) clamped, (PanicStatus) clamped > PanicStatus);
-                        Stat.SetValue(clamped);
+                        var clamped =(PanicStatus) Mathf.Clamp((int) value, 0, 3);
+                        Helpers.ApplyPanicStatus(actor, clamped, clamped > PanicStatus);
+                        panicStatus = value;
                     }
                 }
                 catch (Exception ex)

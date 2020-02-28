@@ -33,6 +33,7 @@ namespace PanicSystem.Patches
                 TrackedActors[index].PanicStatus--;
             }
 
+            TrackedActors[index].PanicWorsenedRecently = false;
             SaveTrackedPilots();
         }
     }

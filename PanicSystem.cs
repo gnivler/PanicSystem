@@ -22,7 +22,6 @@ namespace PanicSystem
         internal static string modDirectory;
         internal static List<string> ejectPhraseList = new List<string>();
         internal static HarmonyInstance harmony;
-        internal static readonly Dictionary<PanicStatus, string> panicStates = new Dictionary<PanicStatus, string>();
 
         public static void Init(string modDir, string settings)
         {
@@ -58,11 +57,7 @@ namespace PanicSystem
                 }
                 //LogDebug($"Callsign count is: {Coordinator.CallSigns.Count}");
             }
-            
-            panicStates.Add(PanicStatus.Confident, modSettings.PanicStates[0]);
-            panicStates.Add(PanicStatus.Unsettled, modSettings.PanicStates[1]);
-            panicStates.Add(PanicStatus.Stressed, modSettings.PanicStates[2]);
-            panicStates.Add(PanicStatus.Panicked, modSettings.PanicStates[3]);
+
             harmony.PatchAll();
             Helpers.SetupEjectPhrases(modDir);
         }

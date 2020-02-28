@@ -81,14 +81,28 @@ namespace PanicSystem.Patches
                 return;
             }
 
+            if (defender.IsDead ||
+                defender.IsFlaggedForDeath)
+            {
+                LogDebug($"{defender.Nickname} is dead or dying");
+            }
+            
             var attacker = director[0].attacker;
             var index = GetActorIndex(defender);
+
+            if (modSettings.OneChangePerTurn &&
+                TrackedActors[index].PanicWorsenedRecently)
+            {
+                LogDebug($"OneChangePerTurn {defender.Nickname} - abort");
+                return;
+            }
+
             if (!modSettings.AlwaysPanic &&
                 !ShouldPanic(defender, attackCompleteMessage.attackSequence))
             {
                 return;
             }
-            
+
             // automatically eject a klutzy pilot on knockdown with an additional roll failing on 13
             if (defender.IsFlaggedForKnockdown)
             {

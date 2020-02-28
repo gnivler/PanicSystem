@@ -2,8 +2,6 @@
 // ReSharper disable ConvertToConstant.Global
 // ReSharper disable UnassignedField.Global
 
-using PanicSystem.Components;
-
 namespace PanicSystem
 {
     public class Settings

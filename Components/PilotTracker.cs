@@ -43,7 +43,7 @@ namespace PanicSystem.Components
                 {
                     if (PanicStatus != value)
                     {
-                        var clamped =(PanicStatus) Mathf.Clamp((int) value, 0, 3);
+                        var clamped = (PanicStatus) Mathf.Clamp((int) value, 0, 3);
                         Helpers.ApplyPanicStatus(actor, clamped, clamped > PanicStatus);
                         panicStatus = value;
                     }

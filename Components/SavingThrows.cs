@@ -98,13 +98,11 @@ namespace PanicSystem.Components
                     roll < Convert.ToInt32(savingThrow) - modSettings.CritOver)
                 {
                     LogReport("Critical failure on panic save");
-                    // record status to see if it changes after
-                    TrackedActors[index].PreventEjection = status < PanicStatus.Stressed;
-                    TrackedActors[index].PanicStatus = PanicStatus.Panicked;
-
                     defender.Combat.MessageCenter.PublishMessage(
                         new AddSequenceToStackMessage(
                             new ShowActorInfoSequence(defender, modSettings.PanicCritFailString, FloatieMessage.MessageNature.CriticalHit, true)));
+                    TrackedActors[index].PreventEjection = status < PanicStatus.Stressed;
+                    TrackedActors[index].PanicStatus = PanicStatus.Panicked;
                 }
             }
             catch (Exception ex)

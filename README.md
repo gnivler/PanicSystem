@@ -20,8 +20,9 @@ All downloads now at Nexus Mods https://www.nexusmods.com/battletech/mods/461/
 
 ## General Details
 
-The mod.json is extremely configurable, now including strings for lazy "localization" or custom phrases
-Manual ejection can be optionally blocked, either by pilot tag(s) or by panic status (eg, no manual ejection at Confident)
+The mod.json is extremely configurable, now including strings for lazy "localization" or custom phrases.
+
+Manual ejection can be optionally blocked, either by pilot tag(s) or by panic status (eg, no manual ejection at Confident).
 
 Optional Vehicle Panic
 Enable it in the mod.json if you want to use this.

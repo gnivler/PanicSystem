@@ -19,11 +19,11 @@ namespace PanicSystem
     public class Helpers
     {
         // values for combining melee with support weapon fire
-        internal static float initialArmorMelee;
-        internal static float initialStructureMelee;
-        internal static float armorDamageMelee;
-        internal static float structureDamageMelee;
-        internal static bool hadMeleeAttack;
+        private static float initialArmorMelee;
+        private static float initialStructureMelee;
+        private static float armorDamageMelee;
+        private static float structureDamageMelee;
+        private static bool hadMeleeAttack;
         internal static float damageIncludingHeatDamage;
 
         // used in strings
@@ -73,64 +73,6 @@ namespace PanicSystem
             (mech.MaxStructureForLocation((int) ChassisLocations.Head) +
              mech.MaxArmorForLocation((int) ArmorLocation.Head));
 
-        // applies combat modifiers to tracked mechs based on panic status
-        public static void ApplyPanicDebuff(AbstractActor actor)
-        {
-            var index = GetActorIndex(actor);
-            if (TrackedActors[index].Guid != actor.GUID)
-            {
-                LogDebug("Pilot and mech mismatch; no status to change");
-                return;
-            }
-
-            // remove existing panic debuffs first
-            int Uid() => Random.Range(1, int.MaxValue);
-            var effectManager = UnityGameInstance.BattleTechGame.Combat.EffectManager;
-            var effects = Traverse.Create(effectManager).Field("effects").GetValue<List<Effect>>();
-            for (var i = 0; i < effects.Count; i++)
-            {
-                if (effects[i].id.StartsWith("PanicSystem") && Traverse.Create(effects[i]).Field("target").GetValue<object>() == actor)
-                {
-                    effectManager.CancelEffect(effects[i]);
-                }
-            }
-
-            if (modSettings.VehiclesCanPanic &&
-                actor is Vehicle)
-            {
-                LogReport($"{actor.DisplayName} condition worsened: Panicked");
-                TrackedActors[index].PanicStatus = PanicStatus.Panicked;
-                TrackedActors[index].PreventEjection = true;
-                effectManager.CreateEffect(StatusEffect.PanickedToHit, "PanicSystemToHit", Uid(), actor, actor, new WeaponHitInfo(), 0);
-                effectManager.CreateEffect(StatusEffect.PanickedToBeHit, "PanicSystemToBeHit", Uid(), actor, actor, new WeaponHitInfo(), 0);
-            }
-            else
-            {
-                switch (TrackedActors[index].PanicStatus)
-                {
-                    case PanicStatus.Confident:
-                        LogReport($"{actor.DisplayName} condition worsened: Unsettled");
-                        TrackedActors[index].PanicStatus = PanicStatus.Unsettled;
-                        effectManager.CreateEffect(StatusEffect.UnsettledToHit, "PanicSystemToHit", Uid(), actor, actor, new WeaponHitInfo(), 0);
-                        break;
-                    case PanicStatus.Unsettled:
-                        LogReport($"{actor.DisplayName} condition worsened: Stressed");
-                        TrackedActors[index].PanicStatus = PanicStatus.Stressed;
-                        effectManager.CreateEffect(StatusEffect.StressedToHit, "PanicSystemToHit", Uid(), actor, actor, new WeaponHitInfo(), 0);
-                        effectManager.CreateEffect(StatusEffect.StressedToBeHit, "PanicSystemToBeHit", Uid(), actor, actor, new WeaponHitInfo(), 0);
-                        break;
-                    default:
-                        LogReport($"{actor.DisplayName} condition worsened: Panicked");
-                        TrackedActors[index].PanicStatus = PanicStatus.Panicked;
-                        effectManager.CreateEffect(StatusEffect.PanickedToHit, "PanicSystemToHit", Uid(), actor, actor, new WeaponHitInfo(), 0);
-                        effectManager.CreateEffect(StatusEffect.PanickedToBeHit, "PanicSystemToBeHit", Uid(), actor, actor, new WeaponHitInfo(), 0);
-                        break;
-                }
-            }
-
-            TrackedActors[index].PanicWorsenedRecently = true;
-        }
-
         // check if panic roll is possible
         private static bool CanPanic(AbstractActor actor, AttackDirector.AttackSequence attackSequence)
         {
@@ -170,29 +112,11 @@ namespace PanicSystem
             LogReport(new string('-', 46));
         }
 
-        // method is called despite the setting, so it can be controlled in one place
         internal static void SaySpamFloatie(AbstractActor actor, string message)
         {
             if (!modSettings.FloatieSpam) return;
             actor.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
                 new ShowActorInfoSequence(actor, message, FloatieMessage.MessageNature.Neutral, false)));
-        }
-
-        // bool controls whether to display as buff or debuff
-        internal static void SayStatusFloatie(AbstractActor actor, bool buff)
-        {
-            var index = GetActorIndex(actor);
-            var floatieString = panicStates[TrackedActors[index].PanicStatus];
-            if (buff)
-            {
-                actor.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
-                    new ShowActorInfoSequence(actor, floatieString, FloatieMessage.MessageNature.Inspiration, true)));
-            }
-            else
-            {
-                actor.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
-                    new ShowActorInfoSequence(actor, floatieString, FloatieMessage.MessageNature.Debuff, true)));
-            }
         }
 
         // true implies a panic condition was met
@@ -328,6 +252,62 @@ namespace PanicSystem
                 LogDebug(ex);
                 // in case the file is missing but the setting is enabled
                 modSettings.EnableEjectPhrases = false;
+            }
+        }
+
+        internal static void ApplyPanicStatus(AbstractActor __instance, PanicStatus panicStatus, bool worsened)
+        {
+            var actor = __instance;
+            int Uid() => Random.Range(1, int.MaxValue);
+            var effectManager = UnityGameInstance.BattleTechGame.Combat.EffectManager;
+            // remove all PanicSystem effects first
+            ClearPanicEffects(actor, effectManager);
+
+            // re-apply effects
+            var messageNature = worsened ? FloatieMessage.MessageNature.Debuff : FloatieMessage.MessageNature.Buff;
+            var verb = worsened ? modSettings.PanicWorsenedString : modSettings.PanicImprovedString;
+            var message = actor.Combat.MessageCenter;
+            switch (panicStatus)
+            {
+                case PanicStatus.Unsettled:
+                    LogReport($"{actor.DisplayName} {verb}: {modSettings.PanicStates[1]}");
+                    message.PublishMessage(new AddSequenceToStackMessage(
+                        new ShowActorInfoSequence(actor,
+                            $"{verb} {modSettings.PanicStates[1]}",
+                            messageNature,
+                            false)));
+                    effectManager.CreateEffect(StatusEffect.UnsettledToHit, "PanicSystemToHit", Uid(), actor, actor, new WeaponHitInfo(), 0);
+                    break;
+                case PanicStatus.Stressed:
+                    LogReport($"{actor.DisplayName} {verb}: {modSettings.PanicStates[2]}");
+                    message.PublishMessage(new AddSequenceToStackMessage(
+                        new ShowActorInfoSequence(actor,
+                            $"{verb} {modSettings.PanicStates[2]}",
+                            messageNature,
+                            false)));
+                    effectManager.CreateEffect(StatusEffect.StressedToHit, "PanicSystemToHit", Uid(), actor, actor, new WeaponHitInfo(), 0);
+                    effectManager.CreateEffect(StatusEffect.StressedToBeHit, "PanicSystemToBeHit", Uid(), actor, actor, new WeaponHitInfo(), 0);
+                    break;
+                default:
+                    LogReport($"{actor.DisplayName} {verb}: {modSettings.PanicStates[0]}");
+                    message.PublishMessage(new AddSequenceToStackMessage(
+                        new ShowActorInfoSequence(actor,
+                            $"{verb} {modSettings.PanicStates[0]}",
+                            messageNature,
+                            false)));
+                    break;
+            }
+        }
+
+        private static void ClearPanicEffects(AbstractActor actor, EffectManager effectManager)
+        {
+            var effects = Traverse.Create(effectManager).Field("effects").GetValue<List<Effect>>();
+            for (var i = 0; i < effects.Count; i++)
+            {
+                if (effects[i].id.StartsWith("PanicSystem") && Traverse.Create(effects[i]).Field("target").GetValue<object>() == actor)
+                {
+                    effectManager.CancelEffect(effects[i]);
+                }
             }
         }
     }

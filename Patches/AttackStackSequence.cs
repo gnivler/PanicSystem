@@ -88,7 +88,7 @@ namespace PanicSystem.Patches
             {
                 return;
             }
-
+            
             // automatically eject a klutzy pilot on knockdown with an additional roll failing on 13
             if (defender.IsFlaggedForKnockdown)
             {

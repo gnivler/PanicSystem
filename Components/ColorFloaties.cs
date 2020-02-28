@@ -33,19 +33,19 @@ namespace PanicSystem.Components
                     {
                         SetStyle(floatie, Color.white, Color.blue, 0.1f);
                     }
-                    else if (text == PanicSystem.modSettings.PanicCritString)
+                    else if (text == PanicSystem.modSettings.PanicCritFailString)
                     {
                         SetStyle(floatie, Color.red, Color.yellow, 0.1f);
                     }
-                    else if (text == PanicSystem.modSettings.PanicStates[3])
+                    else if (text.Contains(PanicSystem.modSettings.PanicStates[3]))
                     {
                         SetStyle(floatie, Color.red / 1.25f, Color.black);
                     }
-                    else if (text == PanicSystem.modSettings.PanicStates[2])
+                    else if (text.Contains(PanicSystem.modSettings.PanicStates[2]))
                     {
                         SetStyle(floatie, Color.yellow / 1.25f, Color.red);
                     }
-                    else if (text == PanicSystem.modSettings.PanicStates[1])
+                    else if (text.Contains(PanicSystem.modSettings.PanicStates[1]))
                     {
                         SetStyle(floatie, Color.gray / 1.35f, Color.black);
                     }

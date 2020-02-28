@@ -13,7 +13,7 @@ namespace PanicSystem.Components
     public static class Controller
     {
         internal static List<PilotTracker> TrackedActors;
-        private static List<MetaTracker> metaTrackers;
+        private static List<PilotTracker.MetaTracker> metaTrackers;
         private static int currentIndex = -1;
 
         public static void Reset()
@@ -62,7 +62,7 @@ namespace PanicSystem.Components
             // we were unable to find a tracker, add our own
             else if (metaTrackers != null)
             {
-                var tracker = new MetaTracker();
+                var tracker = new PilotTracker.MetaTracker();
 
                 tracker.SetTrackedActors(TrackedActors);
                 metaTrackers.Add(tracker);
@@ -78,7 +78,7 @@ namespace PanicSystem.Components
             // we were unable to find a tracker, add our own
             if (metaTrackers != null)
             {
-                var tracker = new MetaTracker();
+                var tracker = new PilotTracker.MetaTracker();
                 tracker.SetTrackedActors(TrackedActors);
                 metaTrackers.Add(tracker);
                 // -1 due to zero-based arrays
@@ -114,7 +114,7 @@ namespace PanicSystem.Components
         {
             if (metaTrackers == null)
             {
-                metaTrackers = new List<MetaTracker>();
+                metaTrackers = new List<PilotTracker.MetaTracker>();
             }
             else if (currentIndex > -1)
             {
@@ -153,20 +153,20 @@ namespace PanicSystem.Components
         //fired when we're close to using the json data
         private static void DeserializeStorageJson()
         {
-            List<MetaTracker> trackers = null;
+            List<PilotTracker.MetaTracker> trackers = null;
             try
             {
-                trackers = JsonConvert.DeserializeObject<List<MetaTracker>>(File.ReadAllText(storageJsonPath));
+                trackers = JsonConvert.DeserializeObject<List<PilotTracker.MetaTracker>>(File.ReadAllText(storageJsonPath));
             }
             catch (Exception ex)
             {
-                LogDebug("DeserializeStorageJson");
-                LogDebug(ex);
+                //LogDebug("DeserializeStorageJson");
+                LogDebug(ex.Message);
             }
 
             if (trackers == null)
             {
-                metaTrackers = new List<MetaTracker>();
+                metaTrackers = new List<PilotTracker.MetaTracker>();
             }
             else
             {
@@ -226,11 +226,13 @@ namespace PanicSystem.Components
             {
                 if (actor == null)
                 {
+                    LogDebug("actor is null");
                     return -1;
                 }
 
                 if (TrackedActors == null)
                 {
+                    LogDebug("DeserializeActiveJson");
                     DeserializeActiveJson();
                 }
 

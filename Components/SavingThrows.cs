@@ -25,6 +25,7 @@ namespace PanicSystem.Components
                     {
                         return true;
                     }
+
                     defender = vehicle;
                 }
                 else if (actor is Mech mech)
@@ -66,67 +67,44 @@ namespace PanicSystem.Components
                 LogReport(new string('-', 46));
                 LogReport($"{"Saving throw",-20} | {savingThrow,-5}{roll,5} | {"Roll",10}");
                 LogReport(new string('-', 46));
-                SaySpamFloatie(defender, $"{$"SAVE:{savingThrow}",-6} {$"ROLL {roll}!",3}");
-
-                var status = TrackedActors[index].PanicStatus;
-                // lower panic level
+                SaySpamFloatie(defender, $"{$"{modSettings.PanicSpamSaveString}:{savingThrow}",-6} {$"{modSettings.PanicSpamRollString}:{roll}!",3}");
+                
+                // lower panic level on crit success
                 if (roll == 100)
                 {
                     LogReport("Critical success");
-                    LogDebug($"{status} {(int) status}");
-                    // don't lower below floor
-                    if ((int) status > 0)
-                    {
-                        status--;
-                        TrackedActors[index].PanicStatus = status;
-                    }
-
-                    // prevent floatie if already at Confident
-                    if ((int) TrackedActors[index].PanicStatus > 0)
-                    {
-                        defender.Combat.MessageCenter.PublishMessage(
-                            new AddSequenceToStackMessage(
-                                new ShowActorInfoSequence(defender, modSettings.PanicCritSaveString, FloatieMessage.MessageNature.Inspiration, false)));
-                        SayStatusFloatie(defender, false);
-                    }
-
+                    SaySpamFloatie(defender, $"{modSettings.PanicSpamCritSaveString}");
+                    TrackedActors[index].PanicStatus--;
                     return true;
                 }
 
-                // continue if roll wasn't 100
                 if (!modSettings.AlwaysPanic &&
                     roll >= savingThrow)
                 {
-                    SaySpamFloatie(defender, "PANIC SAVE!");
                     LogReport("Successful panic save");
+                    SaySpamFloatie(defender, $"{modSettings.PanicSpamSaveString}!");
                     return true;
                 }
 
                 LogReport("Failed panic save");
-                SaySpamFloatie(defender, "SAVE FAIL!");
-                ApplyPanicDebuff(defender);
-                SayStatusFloatie(defender, false);
+                SaySpamFloatie(defender, $"{modSettings.PanicSpamFailString}!");
+                TrackedActors[index].PanicStatus++;
+                TrackedActors[index].PanicWorsenedRecently = true;
 
-                status = TrackedActors[index].PanicStatus;
-                // check for crit
-                if (ActorHealth(defender) <= modSettings.MechHealthForCrit &&
-                    (roll < (int) savingThrow - modSettings.CritOver || roll == 1))
+                var status = TrackedActors[index].PanicStatus;
+                // check for panic crit
+                if (roll == 1 ||
+                    ActorHealth(defender) <= modSettings.MechHealthForCrit &&
+                    roll < Convert.ToInt32(savingThrow) - modSettings.CritOver)
                 {
                     LogReport("Critical failure on panic save");
                     // record status to see if it changes after
-
                     TrackedActors[index].PreventEjection = status < PanicStatus.Stressed;
                     TrackedActors[index].PanicStatus = PanicStatus.Panicked;
-                    ApplyPanicDebuff(defender);
-                    // show both floaties on a panic crit unless panicked already
-                    if (status != PanicStatus.Panicked)
-                    {
-                        SayStatusFloatie(defender, false);
-                    }
 
                     defender.Combat.MessageCenter.PublishMessage(
                         new AddSequenceToStackMessage(
-                            new ShowActorInfoSequence(defender, modSettings.PanicCritString, FloatieMessage.MessageNature.CriticalHit, true)));
+                            new ShowActorInfoSequence(defender, modSettings.PanicCritFailString, FloatieMessage.MessageNature.CriticalHit, true)));
                 }
             }
             catch (Exception ex)
@@ -237,7 +215,7 @@ namespace PanicSystem.Components
                     {
                         if (Random.Range(1, 5) == 0) // 20% chance of appearing
                         {
-                            SaySpamFloatie(defendingMech, "NO ALLIES!");
+                            SaySpamFloatie(defendingMech, $"{modSettings.PanicSpamAloneString}");
                         }
 
                         totalMultiplier += modSettings.AloneModifier;
@@ -257,7 +235,7 @@ namespace PanicSystem.Components
             {
                 if (Random.Range(1, 5) == 1) // 20% chance of appearing
                 {
-                    SaySpamFloatie(defender, "NO WEAPONS!");
+                    SaySpamFloatie(defender, $"{modSettings.PanicSpamNoWeaponsString}");
                 }
 
                 totalMultiplier += modSettings.WeaponlessModifier;
@@ -272,7 +250,7 @@ namespace PanicSystem.Components
                 totalMultiplier += damageIncludingHeatDamage;
             }
 
-            var resolveModifier = modSettings.ResolveMaxModifier * 
+            var resolveModifier = modSettings.ResolveMaxModifier *
                 (defender.Combat.LocalPlayerTeam.Morale - modSettings.MedianResolve) / modSettings.MedianResolve;
 
             if (modSettings.VehiclesCanPanic &&
@@ -349,19 +327,19 @@ namespace PanicSystem.Components
                 savingThrow < 1)
             {
                 LogReport("Negative saving throw| skipping");
-                SaySpamFloatie(actor, "EJECT RESIST!");
+                SaySpamFloatie(actor, $"{modSettings.PanicSpamEjectResistString}");
                 return true;
             }
 
             // cap the saving throw by the setting
             savingThrow = (int) Math.Min(savingThrow, modSettings.MaxEjectChance);
 
-            SaySpamFloatie(actor, $"SAVE: {savingThrow}  ROLL: {roll}!");
+            SaySpamFloatie(actor, $"{modSettings.PanicSpamSaveString}:{savingThrow}  {modSettings.PanicSpamRollString}:{roll}!");
             if (!modSettings.AlwaysPanic &&
                 roll >= savingThrow)
             {
                 LogReport("Successful ejection save");
-                SaySpamFloatie(actor, $"EJECT SAVE! HEALTH: {ActorHealth(actor):#.#}%");
+                SaySpamFloatie(actor, $"{modSettings.PanicSpamSaveString}!  {ActorHealth(actor):#.#}%");
                 return true;
             }
 

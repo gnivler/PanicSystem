@@ -20,9 +20,16 @@ namespace PanicSystem
         public float LimitManualEjectionLevel;
         
         // strings
-        public string PanicCritSaveString;
-        public string PanicCritString;
+        public string PanicSpamSaveString;
+        public string PanicSpamFailString;
+        public string PanicSpamRollString;
+        public string PanicSpamCritSaveString;
+        public string PanicSpamNoWeaponsString;
+        public string PanicSpamAloneString;
+        public string PanicSpamEjectResistString;
+        public string PanicCritFailString;
         public string PanicImprovedString;
+        public string PanicWorsenedString;
         public string[] PanicStates = new string[4];
         public string[] LimitManualEjectionTags;
 

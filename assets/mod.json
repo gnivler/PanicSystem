@@ -26,8 +26,16 @@
       "STRESSED",
       "PANICKED"
     ],
-    "PanicCritString": "PANIC LEVEL CRITICAL!",
+    "PanicSpamSaveString": "SAVE",
+    "PanicSpamFailString": "FAIL",
+    "PanicSpamRollString": "ROLL",
+    "PanicSpamCritSaveString": "CRIT SAVE!",
+    "PanicSpamNoWeaponsString": "NO WEAPONS!",
+    "PanicSpamAloneString": "ALONE!",
+    "PanicSpamEjectResistString": "EJECT RESIST!",
+    "PanicCritFailString": "PANIC LEVEL CRITICAL!",
     "PanicImprovedString": "IMPROVED TO",
+    "PanicWorsenedString": "",
     "PanicCritSaveString": "CRIT SAVE!",
     
     /* 0 is Confident.  Prevent manual ejection at this threshold status */

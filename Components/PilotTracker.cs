@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using BattleTech;
+using UnityEngine;
 
 // HUGE thanks to RealityMachina and mpstark for their work, outstanding.
 namespace PanicSystem.Components
@@ -16,11 +17,9 @@ namespace PanicSystem.Components
     public class PilotTracker
     {
         public readonly string Guid;
-
         public bool PanicWorsenedRecently;
         public bool PreventEjection;
-
-        private AbstractActor actor;
+        private readonly AbstractActor actor;
 
         public PilotTracker()
         {
@@ -31,45 +30,59 @@ namespace PanicSystem.Components
         {
             Guid = actor.GUID;
             this.actor = actor;
-            PanicWorsenedRecently = false;
+            Stat.SetValue(0);
         }
 
-        private Statistic PanicStat()
+        private Statistic Stat
         {
-            if (actor.StatCollection.GetStatistic("PanicStatus") == null)
+            get
             {
-                return actor.StatCollection.AddStatistic("PanicStatus", 0);
+                var sc = actor.StatCollection;
+                return sc.GetStatistic("PanicStatus") ?? sc.AddStatistic("PanicStatus", 0);
+            }
+        }
+
+        internal PanicStatus PanicStatus
+        {
+            get => (PanicStatus) Stat.Value<int>();
+            set
+            {
+                try
+                {
+                    if (PanicStatus != value)
+                    {
+                        var clamped = Mathf.Clamp((int) value, 0, 3);
+                        Helpers.ApplyPanicStatus(actor, (PanicStatus) clamped, (PanicStatus) clamped > PanicStatus);
+                        Stat.SetValue(clamped);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogDebug(ex);
+                }
+            }
+        }
+
+        public class MetaTracker
+        {
+            public List<PilotTracker> TrackedActors { get; set; }
+            public DateTime SaveGameTimeStamp { get; set; }
+            public string SimGameGuid { get; set; }
+
+            public void SetGameGuid(string guid)
+            {
+                SimGameGuid = guid;
             }
 
-            return actor.StatCollection.GetStatistic("PanicStatus");
-        }
+            public void SetSaveGameTime(DateTime savedate)
+            {
+                SaveGameTimeStamp = savedate;
+            }
 
-        public PanicStatus PanicStatus
-        {
-            get => (PanicStatus) PanicStat().Value<int>();
-            set => PanicStat().SetValue((int) value);
-        }
-    }
-
-    public class MetaTracker
-    {
-        public List<PilotTracker> TrackedActors { get; set; }
-        public DateTime SaveGameTimeStamp { get; set; }
-        public string SimGameGuid { get; set; }
-
-        public void SetGameGuid(string guid)
-        {
-            SimGameGuid = guid;
-        }
-
-        public void SetSaveGameTime(DateTime savedate)
-        {
-            SaveGameTimeStamp = savedate;
-        }
-
-        public void SetTrackedActors(List<PilotTracker> trackers)
-        {
-            TrackedActors = trackers;
+            public void SetTrackedActors(List<PilotTracker> trackers)
+            {
+                TrackedActors = trackers;
+            }
         }
     }
 }

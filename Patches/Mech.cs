@@ -2,7 +2,6 @@ using BattleTech;
 using Harmony;
 using static PanicSystem.PanicSystem;
 using static PanicSystem.Components.Controller;
-using static PanicSystem.Helpers;
 
 // ReSharper disable UnusedMember.Local
 // ReSharper disable ClassNeverInstantiated.Global
@@ -34,11 +33,17 @@ namespace PanicSystem.Patches
             }
 
             var index = GetActorIndex(mech);
-            if (TrackedActors[index].Guid != mech.GUID) return;
+            if (TrackedActors[index].Guid != mech.GUID)
+            {
+                return;
+            }
 
-            if (TrackedActors[index].PanicWorsenedRecently && modSettings.OneChangePerTurn) return;
+            if (TrackedActors[index].PanicWorsenedRecently && modSettings.OneChangePerTurn)
+            {
+                return;
+            }
 
-            ApplyPanicDebuff(mech);
+            TrackedActors[index].PanicStatus++;
         }
     }
 }

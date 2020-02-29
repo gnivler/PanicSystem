@@ -112,7 +112,6 @@
     <PropertyGroup>
         <PostBuildEvent>
             xcopy "$(TargetPath)" N:\SteamLibrary\steamapps\common\BATTLETECH\Mods\PanicSystem /Y
-            xcopy "$(ProjectDir)"assets\* N:\SteamLibrary\steamapps\common\BATTLETECH\Mods\PanicSystem /y
             
         </PostBuildEvent>
     </PropertyGroup>

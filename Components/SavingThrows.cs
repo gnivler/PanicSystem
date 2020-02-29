@@ -68,13 +68,15 @@ namespace PanicSystem.Components
                 LogReport($"{"Saving throw",-20} | {savingThrow,-5}{roll,5} | {"Roll",10}");
                 LogReport(new string('-', 46));
                 SaySpamFloatie(defender, $"{$"{modSettings.PanicSpamSaveString}:{savingThrow}",-6} {$"{modSettings.PanicSpamRollString}:{roll}!",3}");
-                
+
                 // lower panic level on crit success
                 if (roll == 100)
                 {
                     LogReport("Critical success");
                     SaySpamFloatie(defender, $"{modSettings.PanicSpamCritSaveString}");
                     TrackedActors[index].PanicStatus--;
+                    // just in case the status went down then back up on a crit save in the same round
+                    TrackedActors[index].PanicWorsenedRecently = false;
                     return true;
                 }
 
@@ -88,7 +90,16 @@ namespace PanicSystem.Components
 
                 LogReport("Failed panic save");
                 SaySpamFloatie(defender, $"{modSettings.PanicSpamFailString}!");
-                TrackedActors[index].PanicStatus++;
+
+                if (defender is Vehicle)
+                {
+                    TrackedActors[index].PanicStatus = PanicStatus.Panicked;
+                }
+                else
+                {
+                    TrackedActors[index].PanicStatus++;
+                }
+
                 TrackedActors[index].PanicWorsenedRecently = true;
 
                 var status = TrackedActors[index].PanicStatus;

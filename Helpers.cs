@@ -114,7 +114,12 @@ namespace PanicSystem
 
         internal static void SaySpamFloatie(AbstractActor actor, string message)
         {
-            if (!modSettings.FloatieSpam) return;
+            if (!modSettings.FloatieSpam ||
+                string.IsNullOrEmpty(message))
+            {
+                return;
+            }
+
             actor.Combat.MessageCenter.PublishMessage(new AddSequenceToStackMessage(
                 new ShowActorInfoSequence(actor, message, FloatieMessage.MessageNature.Neutral, false)));
         }
@@ -266,6 +271,11 @@ namespace PanicSystem
             // re-apply effects
             var messageNature = worsened ? FloatieMessage.MessageNature.Debuff : FloatieMessage.MessageNature.Buff;
             var verb = worsened ? modSettings.PanicWorsenedString : modSettings.PanicImprovedString;
+            // account for the space, append it when the verb is defined
+            if (!string.IsNullOrEmpty(verb))
+            {
+                verb += " ";
+            }
             var message = actor.Combat.MessageCenter;
             switch (panicStatus)
             {
@@ -273,7 +283,7 @@ namespace PanicSystem
                     LogReport($"{actor.DisplayName} {verb}: {modSettings.PanicStates[1]}");
                     message.PublishMessage(new AddSequenceToStackMessage(
                         new ShowActorInfoSequence(actor,
-                            $"{verb} {modSettings.PanicStates[1]}",
+                            $"{verb}{modSettings.PanicStates[1]}",
                             messageNature,
                             false)));
                     effectManager.CreateEffect(StatusEffect.UnsettledToHit, "PanicSystemToHit", Uid(), actor, actor, new WeaponHitInfo(), 0);
@@ -282,7 +292,7 @@ namespace PanicSystem
                     LogReport($"{actor.DisplayName} {verb}: {modSettings.PanicStates[2]}");
                     message.PublishMessage(new AddSequenceToStackMessage(
                         new ShowActorInfoSequence(actor,
-                            $"{verb} {modSettings.PanicStates[2]}",
+                            $"{verb}{modSettings.PanicStates[2]}",
                             messageNature,
                             false)));
                     effectManager.CreateEffect(StatusEffect.StressedToHit, "PanicSystemToHit", Uid(), actor, actor, new WeaponHitInfo(), 0);
@@ -292,7 +302,7 @@ namespace PanicSystem
                     LogReport($"{actor.DisplayName} {verb}: {modSettings.PanicStates[0]}");
                     message.PublishMessage(new AddSequenceToStackMessage(
                         new ShowActorInfoSequence(actor,
-                            $"{verb} {modSettings.PanicStates[0]}",
+                            $"{verb}{modSettings.PanicStates[0]}",
                             messageNature,
                             false)));
                     break;

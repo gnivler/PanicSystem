@@ -81,10 +81,9 @@ namespace PanicSystem.Patches
                 return;
             }
 
-            if (defender.IsDead ||
-                defender.IsFlaggedForDeath)
+            if (defender.IsDead || defender.IsFlaggedForDeath)
             {
-                LogDebug($"{defender.Nickname} is dead or dying");
+                return;
             }
             
             var attacker = director[0].attacker;

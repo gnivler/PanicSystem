@@ -34,7 +34,7 @@ namespace PanicSystem.Components
             PanicStatus = PanicStatus.Confident;
         }
 
-        internal PanicStatus PanicStatus
+        public PanicStatus PanicStatus
         {
             get => panicStatus;
             set

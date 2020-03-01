@@ -91,6 +91,7 @@ namespace PanicSystem.Components
                 LogReport("Failed panic save");
                 SaySpamFloatie(defender, $"{modSettings.PanicSpamFailString}!");
 
+                var originalStatus = TrackedActors[index].PanicStatus;
                 if (defender is Vehicle)
                 {
                     TrackedActors[index].PanicStatus = PanicStatus.Panicked;
@@ -102,7 +103,6 @@ namespace PanicSystem.Components
 
                 TrackedActors[index].PanicWorsenedRecently = true;
 
-                var status = TrackedActors[index].PanicStatus;
                 // check for panic crit
                 if (roll == 1 ||
                     ActorHealth(defender) <= modSettings.MechHealthForCrit &&
@@ -112,7 +112,9 @@ namespace PanicSystem.Components
                     defender.Combat.MessageCenter.PublishMessage(
                         new AddSequenceToStackMessage(
                             new ShowActorInfoSequence(defender, modSettings.PanicCritFailString, FloatieMessage.MessageNature.CriticalHit, true)));
-                    TrackedActors[index].PreventEjection = status < PanicStatus.Stressed;
+                    // ejection can only occur from a stressed or panicked state where panicked requirement is achieved regardless
+                    // no crit going from confident to panicked then ejection
+                    TrackedActors[index].PreventEjection = originalStatus < PanicStatus.Stressed;
                     TrackedActors[index].PanicStatus = PanicStatus.Panicked;
                 }
             }

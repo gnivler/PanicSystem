@@ -41,12 +41,16 @@ namespace PanicSystem.Components
             {
                 try
                 {
-                    if (PanicStatus != value)
+                    //Logger.LogDebug($"Set {actor.Nickname} to {value}");
+                    if (PanicStatus == value)
                     {
-                        var clamped = (PanicStatus) Mathf.Clamp((int) value, 0, 3);
-                        Helpers.ApplyPanicStatus(actor, clamped, clamped > PanicStatus);
-                        panicStatus = value;
+                        return;
                     }
+
+                    var clamped = (PanicStatus) Mathf.Clamp((int) value, 0, 3);
+                    //Logger.LogDebug($"clamped {clamped}");
+                    Helpers.ApplyPanicStatus(actor, clamped, clamped > PanicStatus);
+                    panicStatus = clamped;
                 }
                 catch (Exception ex)
                 {

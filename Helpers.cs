@@ -277,29 +277,41 @@ namespace PanicSystem
                 verb += " ";
             }
             var message = actor.Combat.MessageCenter;
+            var dummyWeapon = new WeaponHitInfo();
             switch (panicStatus)
             {
                 case PanicStatus.Unsettled:
-                    LogReport($"{actor.DisplayName} {verb}: {modSettings.PanicStates[1]}");
+                    LogReport($"{actor.DisplayName} {verb}{modSettings.PanicStates[1]}");
                     message.PublishMessage(new AddSequenceToStackMessage(
                         new ShowActorInfoSequence(actor,
                             $"{verb}{modSettings.PanicStates[1]}",
                             messageNature,
                             false)));
-                    effectManager.CreateEffect(StatusEffect.UnsettledToHit, "PanicSystemToHit", Uid(), actor, actor, new WeaponHitInfo(), 0);
+                    effectManager.CreateEffect(StatusEffect.UnsettledToHit, "PanicSystemToHit", Uid(), actor, actor, dummyWeapon, 0);
                     break;
                 case PanicStatus.Stressed:
-                    LogReport($"{actor.DisplayName} {verb}: {modSettings.PanicStates[2]}");
+                    LogReport($"{actor.DisplayName} {verb}{modSettings.PanicStates[2]}");
                     message.PublishMessage(new AddSequenceToStackMessage(
                         new ShowActorInfoSequence(actor,
                             $"{verb}{modSettings.PanicStates[2]}",
                             messageNature,
                             false)));
-                    effectManager.CreateEffect(StatusEffect.StressedToHit, "PanicSystemToHit", Uid(), actor, actor, new WeaponHitInfo(), 0);
-                    effectManager.CreateEffect(StatusEffect.StressedToBeHit, "PanicSystemToBeHit", Uid(), actor, actor, new WeaponHitInfo(), 0);
+                    effectManager.CreateEffect(StatusEffect.StressedToHit, "PanicSystemToHit", Uid(), actor, actor, dummyWeapon, 0);
+                    effectManager.CreateEffect(StatusEffect.StressedToBeHit, "PanicSystemToBeHit", Uid(), actor, actor, dummyWeapon, 0);
                     break;
+                case PanicStatus.Panicked:
+                    LogReport($"{actor.DisplayName} {verb}{modSettings.PanicStates[3]}");
+                    message.PublishMessage(new AddSequenceToStackMessage(
+                        new ShowActorInfoSequence(actor,
+                            $"{verb}{modSettings.PanicStates[3]}",
+                            messageNature,
+                            false)));
+                    effectManager.CreateEffect(StatusEffect.PanickedToHit, "PanicSystemToHit", Uid(), actor, actor, dummyWeapon, 0);
+                    effectManager.CreateEffect(StatusEffect.PanickedToBeHit, "PanicSystemToBeHit", Uid(), actor, actor, dummyWeapon, 0);
+                    break;
+
                 default:
-                    LogReport($"{actor.DisplayName} {verb}: {modSettings.PanicStates[0]}");
+                    LogReport($"{actor.DisplayName} {verb}{modSettings.PanicStates[0]}");
                     message.PublishMessage(new AddSequenceToStackMessage(
                         new ShowActorInfoSequence(actor,
                             $"{verb}{modSettings.PanicStates[0]}",

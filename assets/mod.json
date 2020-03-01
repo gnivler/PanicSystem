@@ -1,7 +1,7 @@
 {
   "Name": "PanicSystem",
   "Enabled": true,
-  "Version": "3.7.7",
+  "Version": "3.7.8",
   "Description": "Simulates MechWarrior and vehicle crew panic, and automatic ejections",
   "Website": "https://github.com/gnivler/PanicSystem",
   "DLL": "PanicSystem.dll",
@@ -40,7 +40,7 @@
     
     /* 0 is Confident.  Prevent manual ejection at this threshold status */
     "LimitManualEjection": false,
-    "LimitManualEjectionLevel:": 0,
+    "LimitManualEjectionLevel": 0,
     
     /* prevent manual ejection with these pilot tags */
     "LimitManualEjectionTags": [

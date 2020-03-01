@@ -19,7 +19,6 @@ namespace PanicSystem.Components
         public readonly string Guid;
         public bool PanicWorsenedRecently;
         public bool PreventEjection;
-        private readonly AbstractActor actor;
         private PanicStatus panicStatus;
 
         public PilotTracker()
@@ -30,7 +29,6 @@ namespace PanicSystem.Components
         public PilotTracker(AbstractActor actor)
         {
             Guid = actor.GUID;
-            this.actor = actor;
             PanicStatus = PanicStatus.Confident;
         }
 
@@ -41,15 +39,14 @@ namespace PanicSystem.Components
             {
                 try
                 {
-                    //Logger.LogDebug($"Set {actor.Nickname} to {value}");
                     if (PanicStatus == value)
                     {
                         return;
                     }
 
                     var clamped = (PanicStatus) Mathf.Clamp((int) value, 0, 3);
-                    //Logger.LogDebug($"clamped {clamped}");
-                    Helpers.ApplyPanicStatus(actor, clamped, clamped > PanicStatus);
+                    var actor = UnityGameInstance.BattleTechGame.Combat.FindActorByGUID(Guid);
+                    Helpers.ApplyPanicStatus(actor, clamped, clamped > panicStatus);
                     panicStatus = clamped;
                 }
                 catch (Exception ex)

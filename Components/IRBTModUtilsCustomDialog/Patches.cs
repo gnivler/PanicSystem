@@ -2,6 +2,7 @@
 using BattleTech;
 using BattleTech.UI;
 using Harmony;
+// ReSharper disable All
 
 // thank you Frosty IRBTModUtils CustomDialog
 // https://github.com/IceRaptor/IRBTModUtils

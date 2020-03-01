@@ -9,6 +9,7 @@ using UnityEngine;
 using static PanicSystem.PanicSystem;
 using static PanicSystem.Logger;
 using static PanicSystem.Components.Controller;
+// ReSharper disable InconsistentNaming
 
 namespace PanicSystem.Components
 {

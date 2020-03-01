@@ -5,6 +5,7 @@ using BattleTech.UI;
 using BattleTech.UI.TMProWrapper;
 using UnityEngine;
 using static PanicSystem.Logger;
+// ReSharper disable All
 
 // thank you Frosty IRBTModUtils CustomDialog
 // https://github.com/IceRaptor/IRBTModUtils

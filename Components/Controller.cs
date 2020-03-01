@@ -27,13 +27,13 @@ namespace PanicSystem.Components
                     return;
                 }
 
+                // prevent stat history build-up
                 foreach (var mech in group)
                 {
                     var pilot = mech.GetPilot();
                     var statCollection = pilot.StatCollection;
                     statCollection.RemoveStatistic("MechsEjected");
                     statCollection.RemoveStatistic("VehiclesEjected");
-                    statCollection.RemoveStatistic("PanicStatus");
                 }
 
                 TrackedActors = new List<PilotTracker>();

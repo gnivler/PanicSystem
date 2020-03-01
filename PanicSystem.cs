@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using Harmony;
 using Newtonsoft.Json;
-using PanicSystem.Components;
 using PanicSystem.Components.IRBTModUtilsCustomDialog;
 using static PanicSystem.Logger;
 

@@ -5,6 +5,7 @@ using BattleTech;
 using BattleTech.UI;
 using HBS.Data;
 using UnityEngine;
+// ReSharper disable All
 
 // thank you Frosty IRBTModUtils CustomDialog
 // https://github.com/IceRaptor/IRBTModUtils

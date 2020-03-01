@@ -1,4 +1,5 @@
 ﻿﻿using System.Collections;
+// ReSharper disable All
 
  // thank you Frosty IRBTModUtils CustomDialog
  // https://github.com/IceRaptor/IRBTModUtils

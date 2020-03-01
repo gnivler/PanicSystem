@@ -114,9 +114,10 @@ namespace PanicSystem.Components
                             new ShowActorInfoSequence(defender, modSettings.PanicCritFailString, FloatieMessage.MessageNature.CriticalHit, true)));
                     // ejection can only occur from a stressed or panicked state where panicked requirement is achieved regardless
                     // no crit going from confident to panicked then ejection
-                    TrackedActors[index].PreventEjection = originalStatus < PanicStatus.Stressed;
                     TrackedActors[index].PanicStatus = PanicStatus.Panicked;
                 }
+
+                TrackedActors[index].PreventEjection = originalStatus < PanicStatus.Stressed;
             }
             catch (Exception ex)
             {

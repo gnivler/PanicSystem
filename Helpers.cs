@@ -7,7 +7,6 @@ using Harmony;
 using PanicSystem.Components;
 using PanicSystem.Patches;
 using static PanicSystem.Logger;
-using static PanicSystem.Components.Controller;
 using static PanicSystem.PanicSystem;
 using Random = UnityEngine.Random;
 

@@ -33,11 +33,9 @@ namespace PanicSystem.Components
                     loadRequest.AddLoadRequest<SVGAsset>(BattleTechResourceType.SVGAsset, Stressed, null);
                     loadRequest.AddLoadRequest<SVGAsset>(BattleTechResourceType.SVGAsset, Panicked, null);
                     loadRequest.ProcessRequests();
-                    Logger.LogDebug("Loaded custom icons");
                 }
                 else
                 {
-                    Logger.LogDebug("Not using ModTek - vanilla icon");
                     UsingModTek = false;
                 }
             }

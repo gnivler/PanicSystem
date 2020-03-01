@@ -39,14 +39,15 @@ namespace PanicSystem.Components
             {
                 try
                 {
-                    if (PanicStatus == value)
+                    if (UnityGameInstance.BattleTechGame.Combat == null ||
+                        panicStatus == value)
                     {
                         return;
                     }
 
                     var clamped = (PanicStatus) Mathf.Clamp((int) value, 0, 3);
                     var actor = UnityGameInstance.BattleTechGame.Combat.FindActorByGUID(Guid);
-                    Helpers.ApplyPanicStatus(actor, clamped, clamped > panicStatus);
+                    Helpers.ApplyPanicStatus(actor, clamped, clamped >= panicStatus);
                     panicStatus = clamped;
                 }
                 catch (Exception ex)

@@ -29,7 +29,6 @@ namespace PanicSystem.Patches
             if (!TrackedActors[index].PanicWorsenedRecently &&
                 TrackedActors[index].PanicStatus > 0)
             {
-                Logger.LogDebug($"No panic failures for {__instance.Nickname} last turn - improving to {(TrackedActors[index].PanicStatus - 1)}");
                 TrackedActors[index].PanicStatus--;
             }
 

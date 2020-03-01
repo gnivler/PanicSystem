@@ -15,7 +15,6 @@ namespace PanicSystem.Components
     {
         internal static int GetMechEjectionCount(UnitResult unitResult)
         {
-            LogDebug("GetMechEjectionCount");
             return unitResult.pilot.StatCollection.GetStatistic("MechsEjected") == null
                 ? 0
                 : unitResult.pilot.StatCollection.GetStatistic("MechsEjected").Value<int>();
@@ -23,7 +22,6 @@ namespace PanicSystem.Components
 
         internal static int GetVehicleEjectionCount(UnitResult unitResult)
         {
-            LogDebug("GetVehicleEjectionCount");
             return unitResult.pilot.StatCollection.GetStatistic("VehiclesEjected") == null
                 ? 0
                 : unitResult.pilot.StatCollection.GetStatistic("VehiclesEjected").Value<int>();
@@ -40,15 +38,10 @@ namespace PanicSystem.Components
                 var image = prefab.GetComponent<Image>();
                 image.color = Color.red;
                 var biggerDropsRunning =
-                    AppDomain.CurrentDomain.GetAssemblies().Count(x => x.FullName.ToLower().Contains("biggerdrop")) == 1;
+                    AppDomain.CurrentDomain.GetAssemblies().Count(x => x.FullName.ToLower().Contains("biggerdrop")) > 0;
                 if (biggerDropsRunning)
                 {
-                    LogDebug("Scaling stamps due to BiggerDrops");
                     prefab.transform.localScale = Vector3.one;
-                }
-                else
-                {
-                    AppDomain.CurrentDomain.GetAssemblies().Do(LogDebug);
                 }
             }
             catch (Exception ex)

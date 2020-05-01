@@ -1,118 +1,116 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-    <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
-    <PropertyGroup>
-        <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-        <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-        <ProjectGuid>{D8483027-7E80-4E31-B5B7-F7C4A1A78600}</ProjectGuid>
-        <OutputType>Library</OutputType>
-        <AppDesignerFolder>Properties</AppDesignerFolder>
-        <RootNamespace>PanicSystem</RootNamespace>
-        <AssemblyName>PanicSystem</AssemblyName>
-        <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
-        <FileAlignment>512</FileAlignment>
-        <LangVersion>default</LangVersion>
-    </PropertyGroup>
-    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-        <DebugSymbols>true</DebugSymbols>
-        <DebugType>full</DebugType>
-        <Optimize>false</Optimize>
-        <OutputPath>bin\Debug\</OutputPath>
-        <DefineConstants>DEBUG;TRACE</DefineConstants>
-        <ErrorReport>prompt</ErrorReport>
-        <WarningLevel>4</WarningLevel>
-        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    </PropertyGroup>
-    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-        <DebugType>pdbonly</DebugType>
-        <Optimize>true</Optimize>
-        <OutputPath>bin\Release\</OutputPath>
-        <DefineConstants>TRACE</DefineConstants>
-        <ErrorReport>prompt</ErrorReport>
-        <WarningLevel>4</WarningLevel>
-        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-        <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
-    </PropertyGroup>
-    <ItemGroup>
-        <Reference Include="0Harmony, Version=1.2.0.1, Culture=neutral, PublicKeyToken=null">
-            <HintPath>C:\References\0Harmony.dll</HintPath>
-        </Reference>
-        <Reference Include="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>..\..\SteamLibrary\steamapps\common\BATTLETECH\BattleTech_Data\Managed\Assembly-CSharp.dll</HintPath>
-        </Reference>
-        <Reference Include="Assembly-CSharp-firstpass, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>..\..\SteamLibrary\steamapps\common\BATTLETECH\BattleTech_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
-        </Reference>
-        <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
-          <HintPath>..\..\SteamLibrary\steamapps\common\BATTLETECH\BattleTech_Data\Managed\Newtonsoft.Json.dll</HintPath>
-        </Reference>
-        <Reference Include="System" />
-        <Reference Include="System.Core" />
-        <Reference Include="System.Xml.Linq" />
-        <Reference Include="System.Data.DataSetExtensions" />
-        <Reference Include="System.Data" />
-        <Reference Include="System.Xml" />
-        <Reference Include="Unity.TextMeshPro, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>..\..\SteamLibrary\steamapps\common\BATTLETECH\BattleTech_Data\Managed\Unity.TextMeshPro.dll</HintPath>
-        </Reference>
-        <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>..\..\SteamLibrary\steamapps\common\BATTLETECH\BattleTech_Data\Managed\UnityEngine.dll</HintPath>
-        </Reference>
-        <Reference Include="UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>..\..\SteamLibrary\steamapps\common\BATTLETECH\BattleTech_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
-        </Reference>
-        <Reference Include="UnityEngine.UI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>..\..\SteamLibrary\steamapps\common\BATTLETECH\BattleTech_Data\Managed\UnityEngine.UI.dll</HintPath>
-        </Reference>
-    </ItemGroup>
-    <ItemGroup>
-        <Compile Include="Components\AARIcons.cs" />
-        <Compile Include="Components\ColorFloaties.cs" />
-        <Compile Include="Components\Controller.cs" />
-        <Compile Include="Components\IRBTModUtilsCustomDialog\Coordinator.cs" />
-        <Compile Include="Components\IRBTModUtilsCustomDialog\CustomDialogMessage.cs" />
-        <Compile Include="Components\IRBTModUtilsCustomDialog\CustomDialogSequence.cs" />
-        <Compile Include="Components\IRBTModUtilsCustomDialog\MessageTypes.cs" />
-        <Compile Include="Components\IRBTModUtilsCustomDialog\ModState.cs" />
-        <Compile Include="Components\IRBTModUtilsCustomDialog\Patches.cs" />
-        <Compile Include="Components\LimitManualEjection.cs" />
-        <Compile Include="Components\PilotTracker.cs" />
-        <Compile Include="Components\SavingThrows.cs" />
-        <Compile Include="Components\StatusEffect.cs" />
-        <Compile Include="Helpers.cs" />
-        <Compile Include="Logger.cs" />
-        <Compile Include="PanicSystem.cs" />
-        <Compile Include="Patches\AAR_UnitStatusWidget.cs" />
-        <Compile Include="Patches\AbstractActor.cs" />
-        <Compile Include="Patches\AttackStackSequence.cs" />
-        <Compile Include="Patches\CombatGameState.cs" />
-        <Compile Include="Patches\CombatHUDFloatieStack.cs" />
-        <Compile Include="Patches\GameInstance.cs" />
-        <Compile Include="Patches\GameInstanceSave.cs" />
-        <Compile Include="Patches\Mech.cs" />
-        <Compile Include="Patches\MechMeleeSequence.cs" />
-        <Compile Include="Patches\SimGameState.cs" />
-        <Compile Include="Patches\VehicleRepresentation.cs" />
-        <Compile Include="Properties\AssemblyInfo.cs" />
-        <Compile Include="Settings.cs" />
-    </ItemGroup>
-    <ItemGroup>
-        <None Include="assets\mod.json" />
-    </ItemGroup>
-    <ItemGroup>
-        <Content Include="assets\icons\LICENSE.txt" />
-        <Content Include="assets\icons\panicked.svg" />
-        <Content Include="assets\icons\stressed.svg" />
-        <Content Include="assets\icons\unsettled.svg" />
-        <Content Include="assets\phrases.txt" />
-        <Content Include="README.md" />
-        <Content Include="Unlicense" />
-    </ItemGroup>
-    <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-    <PropertyGroup>
-        <PostBuildEvent>
-            xcopy "$(TargetPath)" N:\SteamLibrary\steamapps\common\BATTLETECH\Mods\PanicSystem /Y
-            
-        </PostBuildEvent>
-    </PropertyGroup>
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{D8483027-7E80-4E31-B5B7-F7C4A1A78600}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>PanicSystem</RootNamespace>
+    <AssemblyName>PanicSystem</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <LangVersion>default</LangVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="0Harmony, Version=1.2.0.1, Culture=neutral, PublicKeyToken=null">
+      <HintPath>C:\References\0Harmony.dll</HintPath>
+    </Reference>
+    <Reference Include="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\BATTLETECH\BattleTech_Data\Managed\Assembly-CSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="Assembly-CSharp-firstpass, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\BATTLETECH\BattleTech_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\BATTLETECH\BattleTech_Data\Managed\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+    <Reference Include="Unity.TextMeshPro, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\BATTLETECH\BattleTech_Data\Managed\Unity.TextMeshPro.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\BATTLETECH\BattleTech_Data\Managed\UnityEngine.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\BATTLETECH\BattleTech_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\BATTLETECH\BattleTech_Data\Managed\UnityEngine.UI.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Components\AARIcons.cs" />
+    <Compile Include="Components\ColorFloaties.cs" />
+    <Compile Include="Components\Controller.cs" />
+    <Compile Include="Components\IRBTModUtilsCustomDialog\Coordinator.cs" />
+    <Compile Include="Components\IRBTModUtilsCustomDialog\CustomDialogMessage.cs" />
+    <Compile Include="Components\IRBTModUtilsCustomDialog\CustomDialogSequence.cs" />
+    <Compile Include="Components\IRBTModUtilsCustomDialog\MessageTypes.cs" />
+    <Compile Include="Components\IRBTModUtilsCustomDialog\ModState.cs" />
+    <Compile Include="Components\IRBTModUtilsCustomDialog\Patches.cs" />
+    <Compile Include="Components\LimitManualEjection.cs" />
+    <Compile Include="Components\PilotTracker.cs" />
+    <Compile Include="Components\SavingThrows.cs" />
+    <Compile Include="Components\StatusEffect.cs" />
+    <Compile Include="Helpers.cs" />
+    <Compile Include="Logger.cs" />
+    <Compile Include="PanicSystem.cs" />
+    <Compile Include="Patches\AAR_UnitStatusWidget.cs" />
+    <Compile Include="Patches\AbstractActor.cs" />
+    <Compile Include="Patches\AttackStackSequence.cs" />
+    <Compile Include="Patches\CombatGameState.cs" />
+    <Compile Include="Patches\CombatHUDFloatieStack.cs" />
+    <Compile Include="Patches\GameInstance.cs" />
+    <Compile Include="Patches\GameInstanceSave.cs" />
+    <Compile Include="Patches\Mech.cs" />
+    <Compile Include="Patches\MechMeleeSequence.cs" />
+    <Compile Include="Patches\SimGameState.cs" />
+    <Compile Include="Patches\VehicleRepresentation.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Settings.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="assets\mod.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="assets\icons\LICENSE.txt" />
+    <Content Include="assets\icons\panicked.svg" />
+    <Content Include="assets\icons\stressed.svg" />
+    <Content Include="assets\icons\unsettled.svg" />
+    <Content Include="assets\phrases.txt" />
+    <Content Include="README.md" />
+    <Content Include="Unlicense" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>
+    </PostBuildEvent>
+  </PropertyGroup>
 </Project>

@@ -1,41 +1,31 @@
-﻿using System;
-using System.IO;
-using System.Reflection;
+﻿using System.IO;
+using Harmony;
 using static PanicSystem.PanicSystem;
+
+// ReSharper disable ClassNeverInstantiated.Global
 
 namespace PanicSystem
 {
-    public static class Logger
+    public class Logger
     {
         private static string LogFilePath => Path.Combine(modDirectory, "log.txt");
 
-        private static readonly string Version = ((AssemblyFileVersionAttribute) Attribute.GetCustomAttribute(
-            Assembly.GetExecutingAssembly(), typeof(AssemblyFileVersionAttribute), false)).Version;
-
-        public static void LogError(Exception ex)
+        public static void LogReport(object line)
         {
-            using (var writer = new StreamWriter(LogFilePath, true))
+            if (modSettings.CombatLog)
             {
-                writer.WriteLine(new string(c: '=', count: 80));
-                writer.WriteLine($"Message: {ex.Message}");
-                writer.WriteLine($"StackTrace: {ex.StackTrace}");
+                using (var writer = new StreamWriter(LogFilePath, true))
+                {
+                    writer.WriteLine($"{line}");
+                }
             }
         }
 
-        public static void LogDebug(string line)
+        internal static void LogDebug(object input)
         {
-            if (!modSettings.Debug) return;
-            using (var writer = new StreamWriter(LogFilePath, true))
+            if (modSettings.Debug)
             {
-                writer.WriteLine(line);
-            }
-        }
-
-        public static void LogClear()
-        {
-            using (var writer = new StreamWriter(LogFilePath, false))
-            {
-                writer.WriteLine($"{DateTime.Now.ToLongTimeString()} PanicSystem v{Version}");
+                FileLog.Log($"[PanicSystem] {input ?? "null"}");
             }
         }
     }

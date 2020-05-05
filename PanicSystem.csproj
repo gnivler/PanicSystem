@@ -74,7 +74,7 @@
     <Compile Include="Components\ColorFloaties.cs" />
     <Compile Include="Components\Controller.cs" />
     <Compile Include="Components\IRBTModUtilsCustomDialog\Coordinator.cs" />
-    <Compile Include="Components\IRBTModUtilsCustomDialog\CustomDialogMessage.cs" />
+    <Compile Include="Components\IRBTModUtilsCustomDialog\PanicSystemDialogMessage.cs" />
     <Compile Include="Components\IRBTModUtilsCustomDialog\CustomDialogSequence.cs" />
     <Compile Include="Components\IRBTModUtilsCustomDialog\MessageTypes.cs" />
     <Compile Include="Components\IRBTModUtilsCustomDialog\ModState.cs" />
@@ -95,7 +95,6 @@
     <Compile Include="Patches\GameInstanceSave.cs" />
     <Compile Include="Patches\Mech.cs" />
     <Compile Include="Patches\MechMeleeSequence.cs" />
-    <Compile Include="Patches\Patches.cs" />
     <Compile Include="Patches\SimGameState.cs" />
     <Compile Include="Patches\VehicleRepresentation.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -116,7 +115,6 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>
-    </PostBuildEvent>
+    <PostBuildEvent>xcopy "$(TargetDir)$(TargetFileName)" "$(BattleTechGame)\Mods\PanicSystem" /y</PostBuildEvent>
   </PropertyGroup>
 </Project>

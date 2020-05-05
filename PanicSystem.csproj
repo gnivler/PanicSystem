@@ -102,7 +102,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\mod.json" />
-    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="assets\icons\LICENSE.txt" />

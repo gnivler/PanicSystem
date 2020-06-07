@@ -227,7 +227,7 @@ namespace PanicSystem
                 return true;
             }
 
-            if (armorDamage + structureDamage + heatDamage <= modSettings.MinimumDamagePercentageRequired)
+            if (percentDamageDone <= modSettings.MinimumDamagePercentageRequired)
             {
                 LogReport("Not enough damage");
                 Mech_AddExternalHeat_Patch.heatDamage = 0;

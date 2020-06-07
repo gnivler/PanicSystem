@@ -92,7 +92,7 @@ namespace PanicSystem.Components.IRBTModUtilsCustomDialog {
             speakerNameFieldT.gameObject.SetActive(false);
 
             if (ModState.DialogueQueue.Count > 0) {
-                this.currentMessage = (CustomDialogMessage)ModState.DialogueQueue.Dequeue();
+                this.currentMessage = (PanicSystemDialogMessage)ModState.DialogueQueue.Dequeue();
                 this.SetState(DialogState.Talking);
                 return;
             }
@@ -104,7 +104,7 @@ namespace PanicSystem.Components.IRBTModUtilsCustomDialog {
 
         public override void OnAdded() {
             base.OnAdded();
-            this.currentMessage = (CustomDialogMessage)ModState.DialogueQueue.Dequeue();
+            this.currentMessage = (PanicSystemDialogMessage)ModState.DialogueQueue.Dequeue();
             this.SetState(DialogState.Talking);
         }
 
@@ -184,7 +184,7 @@ namespace PanicSystem.Components.IRBTModUtilsCustomDialog {
 
         private CombatHUDDialogItem activeDialog;
 
-        private CustomDialogMessage currentMessage;
+        private PanicSystemDialogMessage currentMessage;
 
     }
 }

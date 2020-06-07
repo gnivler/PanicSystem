@@ -156,7 +156,7 @@ namespace PanicSystem.Patches
                     ejectMessage, Color.white, castDef.id, null, null, DialogCameraDistance.Medium, DialogCameraHeight.Default, 0
                 );
                 content.ContractInitialize(defender.Combat);
-                defender.Combat.MessageCenter.PublishMessage(new CustomDialogMessage(defender, content, 6));
+                defender.Combat.MessageCenter.PublishMessage(new PanicSystemDialogMessage(defender, content, 6));
             }
 
             // remove effects, to prevent exceptions that occur for unknown reasons
@@ -189,7 +189,7 @@ namespace PanicSystem.Patches
                     "Destroy the tech, let's get outta here!", Color.white, castDef.id, null, null, DialogCameraDistance.Medium, DialogCameraHeight.Default, 0
                 );
                 content.ContractInitialize(defender.Combat);
-                defender.Combat.MessageCenter.PublishMessage(new CustomDialogMessage(defender, content, 5));
+                defender.Combat.MessageCenter.PublishMessage(new PanicSystemDialogMessage(defender, content, 5));
             }
             else
             {

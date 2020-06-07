@@ -33,44 +33,59 @@ namespace PanicSystem
         // used in calculations
         internal static float PercentPilot(Pilot pilot) => 1 - (float) pilot.Injuries / pilot.Health;
 
+	internal static float MaxArmorForLocation(Mech mech, int Location)
+	{
+		if (mech != null)
+		{
+			Statistic stat = mech.StatCollection.GetStatistic(mech.GetStringForArmorLocation((ArmorLocation)Location));
+			if(stat == null) {
+            			Log.TWL(0, "Can't get armor stat " + new Text(mech.DisplayName).ToString() + " location:" +Location, true);
+            			return 0;
+          		}
+
+			return stat.DefaultValue<float>();
+		}
+		return 0;
+	}
+
         internal static float PercentRightTorso(Mech mech) =>
             (mech.RightTorsoStructure +
              mech.RightTorsoFrontArmor +
              mech.RightTorsoRearArmor) /
             (mech.MaxStructureForLocation((int) ChassisLocations.RightTorso) +
-             mech.MaxArmorForLocation((int) ArmorLocation.RightTorso) +
-             mech.MaxArmorForLocation((int) ArmorLocation.RightTorsoRear));
+             MaxArmorForLocation(mech, (int) ArmorLocation.RightTorso) +
+             MaxArmorForLocation(mech, (int) ArmorLocation.RightTorsoRear));
 
         internal static float PercentLeftTorso(Mech mech) =>
             (mech.LeftTorsoStructure +
              mech.LeftTorsoFrontArmor +
              mech.LeftTorsoRearArmor) /
             (mech.MaxStructureForLocation((int) ChassisLocations.LeftTorso) +
-             mech.MaxArmorForLocation((int) ArmorLocation.LeftTorso) +
-             mech.MaxArmorForLocation((int) ArmorLocation.LeftTorsoRear));
+             MaxArmorForLocation(mech, (int) ArmorLocation.LeftTorso) +
+             MaxArmorForLocation(mech, (int) ArmorLocation.LeftTorsoRear));
 
         internal static float PercentCenterTorso(Mech mech) =>
             (mech.CenterTorsoStructure +
              mech.CenterTorsoFrontArmor +
              mech.CenterTorsoRearArmor) /
             (mech.MaxStructureForLocation((int) ChassisLocations.CenterTorso) +
-             mech.MaxArmorForLocation((int) ArmorLocation.CenterTorso) +
-             mech.MaxArmorForLocation((int) ArmorLocation.CenterTorsoRear));
+             MaxArmorForLocation(mech, (int) ArmorLocation.CenterTorso) +
+             MaxArmorForLocation(mech, (int) ArmorLocation.CenterTorsoRear));
 
         internal static float PercentLeftLeg(Mech mech) =>
             (mech.LeftLegStructure + mech.LeftLegArmor) /
-            (mech.MaxStructureForLocation((int) ChassisLocations.LeftLeg) +
-             mech.MaxArmorForLocation((int) ArmorLocation.LeftLeg));
+            (MaxStructureForLocation((int) ChassisLocations.LeftLeg) +
+             MaxArmorForLocation(mech, (int) ArmorLocation.LeftLeg));
 
         internal static float PercentRightLeg(Mech mech) =>
             (mech.RightLegStructure + mech.RightLegArmor) /
-            (mech.MaxStructureForLocation((int) ChassisLocations.RightLeg) +
-             mech.MaxArmorForLocation((int) ArmorLocation.RightLeg));
+            (MaxStructureForLocation((int) ChassisLocations.RightLeg) +
+             MaxArmorForLocation(mech, (int) ArmorLocation.RightLeg));
 
         internal static float PercentHead(Mech mech) =>
             (mech.HeadStructure + mech.HeadArmor) /
-            (mech.MaxStructureForLocation((int) ChassisLocations.Head) +
-             mech.MaxArmorForLocation((int) ArmorLocation.Head));
+            (MaxStructureForLocation((int) ChassisLocations.Head) +
+             MaxArmorForLocation(mech, (int) ArmorLocation.Head));
 
         // check if panic roll is possible
         private static bool CanPanic(AbstractActor actor, AttackDirector.AttackSequence attackSequence)
@@ -227,7 +242,7 @@ namespace PanicSystem
                 return true;
             }
 
-            if (armorDamage + structureDamage + heatDamage <= modSettings.MinimumDamagePercentageRequired)
+            if (percentDamageDone <= modSettings.MinimumDamagePercentageRequired)
             {
                 LogReport("Not enough damage");
                 Mech_AddExternalHeat_Patch.heatDamage = 0;

@@ -1,4 +1,4 @@
-# PanicSystem
+# PanicSystem - BARELY MAINTAINED.  CODE NOT COMPILED TO NEXUS YMMV
 Forked from RealityMachina's fork (https://github.com/RealityMachina/Basic-Panic-System) of mpstark's PunchinOut mod (https://github.com/Mpstark/PunchinOut).
 
 Design improvements by don Zappo, balancing and testing by ganimal, and coding by gnivler.

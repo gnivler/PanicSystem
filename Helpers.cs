@@ -33,8 +33,13 @@ namespace PanicSystem
         // used in calculations
         internal static float PercentPilot(Pilot pilot) => 1 - (float) pilot.Injuries / pilot.Health;
 
-	internal static float MaxArmorForLocation(Mech mech, int Location)
+	internal static float PercentForArmorLocation(Mech mech, int Location)
 	{
+		// Invalid locations are always 100%
+		// This helps makes the functions generic for the missing leg back armor, for example
+		if (Location == 0)
+			return 1;
+
 		if (mech != null)
 		{
 			Statistic stat = mech.StatCollection.GetStatistic(mech.GetStringForArmorLocation((ArmorLocation)Location));
@@ -43,49 +48,117 @@ namespace PanicSystem
             			return 0;
           		}
 
-			return stat.DefaultValue<float>();
+			float maxArmor = stat.DefaultValue<float>();
+
+			// Limit the max armor to 100 and the percent value to 1 (100%)
+			// This helps reduce panic effects for heavier, well-armored mechs
+			// Losing 30% of your armor isn't as distressing when you have 300 max as when you have 60
+			// Heavily armored mechs should brush this off until they're seriously damaged
+			// Make this a setting in the json file
+			if (maxArmor > 100)
+				maxArmor = 100;
+
+			float percentArmor = stat.Value<float>() / maxArmor;
+			if (percentArmor > 1)
+				percentArmor = 1;
+
+			return percentArmor;
+		}
+		return 0;
+	}
+
+	internal static float PercentForStructureLocation(Mech mech, int Location)
+	{
+		// Invalid locations are always 100%
+		// This helps makes the functions generic for the missing leg back armor, for example
+		if (Location == 0)
+			return 1;
+
+		if (mech != null)
+		{
+			Statistic stat = mech.StatCollection.GetStatistic(mech.GetStringForStructureLocation((StructureLocation)Location));
+			if(stat == null) {
+            			Log.TWL(0, "Can't get structure stat " + new Text(mech.DisplayName).ToString() + " location:" +Location, true);
+            			return 0;
+          		}
+
+			return (stat.Value<float>() / stat.DefaultValue<float>());
+		}
+		return 0;
+	}
+
+	internal static float PercentForLocation(Mech mech, int LocationFront, int LocationBack, int LocationStructure)
+	{
+		if (mech != null)
+		{
+			float percentFront = PercentForArmorLocation(mech, LocationFront);
+			float percentBack = PercentForArmorLocation(mech, LocationBack);
+			float percentStructure = PercentForStructureLocation(mech, LocationStructure);
+
+			float percentLocation = percentStructure;
+			float numAdditions = 1;
+
+			// If the structure is damaged, then use that over any armor values
+			// If an armor value is lower than the structure percent, then factor it in too
+			// This emphasizes internal damage from a blow through (back armor gone or tandem weapons)
+			if (percentStructure < 1)
+			{
+				if (percentFront < percentStructure)
+				{
+					percentLocation += percentFront;
+					numAdditions++;
+				}
+
+				if (LocationBack != 0)
+				{
+					if (percentBack < percentStructure)
+					{
+						percentLocation += percentBack;
+						numAdditions++;
+					}
+				}
+			}
+			else
+			{
+				percentLocation += percentFront;
+				numAdditions++;
+
+				if (LocationBack != 0)
+				{
+					percentLocation += percentBack;
+					numAdditions++;
+				}
+			}
+
+			percentLocation /= numAdditions;
+			return percentLocation;
 		}
 		return 0;
 	}
 
         internal static float PercentRightTorso(Mech mech) =>
-            (mech.RightTorsoStructure +
-             mech.RightTorsoFrontArmor +
-             mech.RightTorsoRearArmor) /
-            (mech.MaxStructureForLocation((int) ChassisLocations.RightTorso) +
-             MaxArmorForLocation(mech, (int) ArmorLocation.RightTorso) +
-             MaxArmorForLocation(mech, (int) ArmorLocation.RightTorsoRear));
+            (PercentForLocation(mech, (int) ArmorLocation.RightTorso, (int) ArmorLocation.RightTorsoRear, 
+			(int) ChassisLocations.RightTorso));
 
         internal static float PercentLeftTorso(Mech mech) =>
-            (mech.LeftTorsoStructure +
-             mech.LeftTorsoFrontArmor +
-             mech.LeftTorsoRearArmor) /
-            (mech.MaxStructureForLocation((int) ChassisLocations.LeftTorso) +
-             MaxArmorForLocation(mech, (int) ArmorLocation.LeftTorso) +
-             MaxArmorForLocation(mech, (int) ArmorLocation.LeftTorsoRear));
+            (PercentForLocation(mech, (int) ArmorLocation.LeftTorso, (int) ArmorLocation.LeftTorsoRear, 
+			(int) ChassisLocations.LeftTorso));
 
         internal static float PercentCenterTorso(Mech mech) =>
-            (mech.CenterTorsoStructure +
-             mech.CenterTorsoFrontArmor +
-             mech.CenterTorsoRearArmor) /
-            (mech.MaxStructureForLocation((int) ChassisLocations.CenterTorso) +
-             MaxArmorForLocation(mech, (int) ArmorLocation.CenterTorso) +
-             MaxArmorForLocation(mech, (int) ArmorLocation.CenterTorsoRear));
+            (PercentForLocation(mech, (int) ArmorLocation.CenterTorso, (int) ArmorLocation.CenterTorsoRear, 
+			(int) ChassisLocations.CenterTorso));
 
         internal static float PercentLeftLeg(Mech mech) =>
-            (mech.LeftLegStructure + mech.LeftLegArmor) /
-            (MaxStructureForLocation((int) ChassisLocations.LeftLeg) +
-             MaxArmorForLocation(mech, (int) ArmorLocation.LeftLeg));
+            (PercentForLocation(mech, (int) ArmorLocation.LeftLeg, 0, 
+			(int) ChassisLocations.LeftTorso));
 
         internal static float PercentRightLeg(Mech mech) =>
-            (mech.RightLegStructure + mech.RightLegArmor) /
-            (MaxStructureForLocation((int) ChassisLocations.RightLeg) +
-             MaxArmorForLocation(mech, (int) ArmorLocation.RightLeg));
+            (PercentForLocation(mech, (int) ArmorLocation.RightLeg, 0, 
+			(int) ChassisLocations.RightLeg));
 
         internal static float PercentHead(Mech mech) =>
-            (mech.HeadStructure + mech.HeadArmor) /
-            (MaxStructureForLocation((int) ChassisLocations.Head) +
-             MaxArmorForLocation(mech, (int) ArmorLocation.Head));
+            (PercentForLocation(mech, (int) ArmorLocation.Head, 0, 
+			(int) ChassisLocations.Head));
 
         // check if panic roll is possible
         private static bool CanPanic(AbstractActor actor, AttackDirector.AttackSequence attackSequence)

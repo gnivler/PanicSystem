@@ -55,8 +55,8 @@ namespace PanicSystem
 			// Losing 30% of your armor isn't as distressing when you have 300 max as when you have 60
 			// Heavily armored mechs should brush this off until they're seriously damaged
 			// Make this a setting in the json file
-			if (maxArmor > 100)
-				maxArmor = 100;
+			// if (maxArmor > 100)
+			//	maxArmor = 100;
 
 			float percentArmor = stat.Value<float>() / maxArmor;
 			if (percentArmor > 1)

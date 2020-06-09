@@ -193,7 +193,7 @@ namespace PanicSystem
             }
 
             var id = attackSequence.chosenTarget.GUID;
-            if (!attackSequence.GetAttackDidDamage(id))
+            if (!attackSequence.GetAttackDidDamage(id) && !hadMeleeAttack)
             {
                 LogReport("No damage");
                 return false;

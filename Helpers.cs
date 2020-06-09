@@ -39,20 +39,37 @@ namespace PanicSystem
 		{
 			Statistic stat = mech.StatCollection.GetStatistic(mech.GetStringForArmorLocation((ArmorLocation)Location));
 			if(stat == null) {
-            			Log.TWL(0, "Can't get armor stat " + new Text(mech.DisplayName).ToString() + " location:" +Location, true);
+                        LogDebug($"Can't get armor stat  { mech.DisplayName } location:{ Location}");
             			return 0;
           		}
-
-			return stat.DefaultValue<float>();
+                LogDebug($"armor stat  { mech.DisplayName } location:{ Location} :{stat.DefaultValue<float>()}");
+                return stat.DefaultValue<float>();
 		}
-		return 0;
+            LogDebug($"Mech null");
+            return 0;
 	}
+    internal static float MaxStructureForLocation(Mech mech, int Location)
+    {
+        if (mech != null)
+        {
+            Statistic stat = mech.StatCollection.GetStatistic(mech.GetStringForStructureLocation((ChassisLocations) Location));
+            if (stat == null)
+            {
+                LogDebug($"Can't get structure stat  { mech.DisplayName } location:{ Location}");
+                return 0;
+            }
+                LogDebug($"structure stat  { mech.DisplayName } location:{ Location}:{stat.DefaultValue<float>()}");
+                return stat.DefaultValue<float>();
+        }
+            LogDebug($"Mech null");
+            return 0;
+    }
 
         internal static float PercentRightTorso(Mech mech) =>
             (mech.RightTorsoStructure +
              mech.RightTorsoFrontArmor +
              mech.RightTorsoRearArmor) /
-            (mech.MaxStructureForLocation((int) ChassisLocations.RightTorso) +
+            (MaxStructureForLocation(mech,(int) ChassisLocations.RightTorso) +
              MaxArmorForLocation(mech, (int) ArmorLocation.RightTorso) +
              MaxArmorForLocation(mech, (int) ArmorLocation.RightTorsoRear));
 
@@ -60,7 +77,7 @@ namespace PanicSystem
             (mech.LeftTorsoStructure +
              mech.LeftTorsoFrontArmor +
              mech.LeftTorsoRearArmor) /
-            (mech.MaxStructureForLocation((int) ChassisLocations.LeftTorso) +
+            (MaxStructureForLocation(mech,(int) ChassisLocations.LeftTorso) +
              MaxArmorForLocation(mech, (int) ArmorLocation.LeftTorso) +
              MaxArmorForLocation(mech, (int) ArmorLocation.LeftTorsoRear));
 
@@ -68,23 +85,23 @@ namespace PanicSystem
             (mech.CenterTorsoStructure +
              mech.CenterTorsoFrontArmor +
              mech.CenterTorsoRearArmor) /
-            (mech.MaxStructureForLocation((int) ChassisLocations.CenterTorso) +
+            (MaxStructureForLocation(mech,(int) ChassisLocations.CenterTorso) +
              MaxArmorForLocation(mech, (int) ArmorLocation.CenterTorso) +
              MaxArmorForLocation(mech, (int) ArmorLocation.CenterTorsoRear));
 
         internal static float PercentLeftLeg(Mech mech) =>
             (mech.LeftLegStructure + mech.LeftLegArmor) /
-            (MaxStructureForLocation((int) ChassisLocations.LeftLeg) +
+            (MaxStructureForLocation(mech, (int) ChassisLocations.LeftLeg) +
              MaxArmorForLocation(mech, (int) ArmorLocation.LeftLeg));
 
         internal static float PercentRightLeg(Mech mech) =>
             (mech.RightLegStructure + mech.RightLegArmor) /
-            (MaxStructureForLocation((int) ChassisLocations.RightLeg) +
+            (MaxStructureForLocation(mech, (int) ChassisLocations.RightLeg) +
              MaxArmorForLocation(mech, (int) ArmorLocation.RightLeg));
 
         internal static float PercentHead(Mech mech) =>
             (mech.HeadStructure + mech.HeadArmor) /
-            (MaxStructureForLocation((int) ChassisLocations.Head) +
+            (MaxStructureForLocation(mech, (int) ChassisLocations.Head) +
              MaxArmorForLocation(mech, (int) ArmorLocation.Head));
 
         // check if panic roll is possible

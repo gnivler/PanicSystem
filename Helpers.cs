@@ -44,10 +44,12 @@ namespace PanicSystem
 		{
 			Statistic stat = mech.StatCollection.GetStatistic(mech.GetStringForArmorLocation((ArmorLocation)Location));
 			if(stat == null) {
-            			Log.TWL(0, "Can't get armor stat " + new Text(mech.DisplayName).ToString() + " location:" +Location, true);
+            			LogDebug($"Can't get armor stat  { mech.DisplayName } location:{ Location}");
             			return 0;
           		}
 
+			LogDebug($"Armor stat  { mech.DisplayName } location:{ Location} cur:{stat.Value<float>()} max:{stat.DefaultValue<float>()}");
+			
 			float maxArmor = stat.DefaultValue<float>();
 
 			// Limit the max armor to 100 and the percent value to 1 (100%)
@@ -64,6 +66,7 @@ namespace PanicSystem
 
 			return percentArmor;
 		}
+		LogDebug($"Mech null");
 		return 0;
 	}
 
@@ -76,14 +79,17 @@ namespace PanicSystem
 
 		if (mech != null)
 		{
-			Statistic stat = mech.StatCollection.GetStatistic(mech.GetStringForStructureLocation((StructureLocation)Location));
-			if(stat == null) {
-            			Log.TWL(0, "Can't get structure stat " + new Text(mech.DisplayName).ToString() + " location:" +Location, true);
+			Statistic stat = mech.StatCollection.GetStatistic(mech.GetStringForStructureLocation((ChassisLocations)Location));
+			if(stat == null)
+			{
+            			LogDebug($"Can't get structure stat  { mech.DisplayName } location:{ Location}");
             			return 0;
           		}
 
+			LogDebug($"Structure stat  { mech.DisplayName } location:{ Location} cur:{stat.Value<float>()} max:{stat.DefaultValue<float>()}");
 			return (stat.Value<float>() / stat.DefaultValue<float>());
 		}
+		LogDebug($"Mech null");
 		return 0;
 	}
 
@@ -133,6 +139,7 @@ namespace PanicSystem
 			percentLocation /= numAdditions;
 			return percentLocation;
 		}
+		LogDebug($"Mech null");
 		return 0;
 	}
 

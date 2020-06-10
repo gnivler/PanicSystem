@@ -52,8 +52,9 @@ namespace PanicSystem.Components
                 }
 
                 var index = GetActorIndex(defender);
-                savingThrow *= GetPanicModifier(TrackedActors[index].PanicStatus);
-                LogReport($"{"Panic multiplier",-20} | {GetPanicModifier(TrackedActors[index].PanicStatus),10} | {savingThrow,10:F3}");
+                float panicModifier = GetPanicModifier(TrackedActors[index].PanicStatus);
+                savingThrow *= panicModifier;
+                LogReport($"{"Panic multiplier",-20} | {panicModifier,10} | {savingThrow,10:F3}");
                 savingThrow = (float) Math.Max(0f, Math.Round(savingThrow));
 
                 if (savingThrow < 1)
@@ -156,10 +157,11 @@ namespace PanicSystem.Components
                         LogReport($"{$"Heat damage {Mech_AddExternalHeat_Patch.heatDamage}",-20} | {modSettings.HeatDamageFactor * Mech_AddExternalHeat_Patch.heatDamage,10:F3} | {totalMultiplier,10:F3}");
                     }
 
-                    if (PercentPilot(pilot) < 1)
+                    float percentPilot = PercentPilot(pilot);
+                    if (percentPilot < 1)
                     {
-                        totalMultiplier += modSettings.PilotHealthMaxModifier * PercentPilot(pilot);
-                        LogReport($"{"Pilot injuries",-20} | {modSettings.PilotHealthMaxModifier * PercentPilot(pilot),10:F3} | {totalMultiplier,10:F3}");
+                        totalMultiplier += modSettings.PilotHealthMaxModifier * percentPilot;
+                        LogReport($"{"Pilot injuries",-20} | {modSettings.PilotHealthMaxModifier * percentPilot,10:F3} | {totalMultiplier,10:F3}");
                     }
 
                     if (defendingMech.IsUnsteady)
@@ -186,40 +188,46 @@ namespace PanicSystem.Components
                         LogReport($"{"Shutdown",-20} | {modSettings.ShutdownModifier,10:F3} | {totalMultiplier,10:F3}");
                     }
 
-                    if (PercentHead(defendingMech) < 1)
+                    float percentHead = PercentHead(defendingMech);
+                    if (percentHead < 1)
                     {
-                        totalMultiplier += modSettings.HeadMaxModifier * PercentHead(defendingMech);
-                        LogReport($"{"Head",-20} | {modSettings.HeadMaxModifier * PercentHead(defendingMech),10:F3} | {totalMultiplier,10:F3}");
+                        totalMultiplier += modSettings.HeadMaxModifier * (1 - percentHead);
+                        LogReport($"{"Head",-20} | {modSettings.HeadMaxModifier * (1 - percentHead),10:F3} | {totalMultiplier,10:F3}");
                     }
 
-                    if (PercentCenterTorso(defendingMech) < 1)
+                    float percentCenterTorso = PercentCenterTorso(defendingMech);
+                    if (percentCenterTorso < 1)
                     {
-                        totalMultiplier += modSettings.CenterTorsoMaxModifier * (1 - PercentCenterTorso(defendingMech));
-                        LogReport($"{"CT",-20} | {modSettings.CenterTorsoMaxModifier * (1 - PercentCenterTorso(defendingMech)),10:F3} | {totalMultiplier,10:F3}");
+                        totalMultiplier += modSettings.CenterTorsoMaxModifier * (1 - percentCenterTorso);
+                        LogReport($"{"CT",-20} | {modSettings.CenterTorsoMaxModifier * (1 - percentCenterTorso),10:F3} | {totalMultiplier,10:F3}");
                     }
 
-                    if (PercentLeftTorso(defendingMech) < 1)
+                    float percentLeftTorso = PercentLeftTorso(defendingMech);
+                    if (percentLeftTorso < 1)
                     {
-                        totalMultiplier += modSettings.SideTorsoMaxModifier * (1 - PercentLeftTorso(defendingMech));
-                        LogReport($"{"LT",-20} | {modSettings.SideTorsoMaxModifier * (1 - PercentLeftTorso(defendingMech)),10:F3} | {totalMultiplier,10:F3}");
+                        totalMultiplier += modSettings.SideTorsoMaxModifier * (1 - percentLeftTorso);
+                        LogReport($"{"LT",-20} | {modSettings.SideTorsoMaxModifier * (1 - percentLeftTorso),10:F3} | {totalMultiplier,10:F3}");
                     }
 
-                    if (PercentRightTorso(defendingMech) < 1)
+                    float percentRightTorso = PercentRightTorso(defendingMech);
+                    if (percentRightTorso < 1)
                     {
-                        totalMultiplier += modSettings.SideTorsoMaxModifier * (1 - PercentRightTorso(defendingMech));
-                        LogReport($"{"RT",-20} | {modSettings.SideTorsoMaxModifier * (1 - PercentRightTorso(defendingMech)),10:F3} | {totalMultiplier,10:F3}");
+                        totalMultiplier += modSettings.SideTorsoMaxModifier * (1 - percentRightTorso);
+                        LogReport($"{"RT",-20} | {modSettings.SideTorsoMaxModifier * (1 - percentRightTorso),10:F3} | {totalMultiplier,10:F3}");
                     }
 
-                    if (PercentLeftLeg(defendingMech) < 1)
+                    float percentLeftLeg = PercentLeftLeg(defendingMech);
+                    if (percentLeftLeg < 1)
                     {
-                        totalMultiplier += modSettings.LeggedMaxModifier * (1 - PercentLeftLeg(defendingMech));
-                        LogReport($"{"LL",-20} | {modSettings.LeggedMaxModifier * (1 - PercentLeftLeg(defendingMech)),10:F3} | {totalMultiplier,10:F3}");
+                        totalMultiplier += modSettings.LeggedMaxModifier * (1 - percentLeftLeg);
+                        LogReport($"{"LL",-20} | {modSettings.LeggedMaxModifier * (1 - percentLeftLeg),10:F3} | {totalMultiplier,10:F3}");
                     }
 
-                    if (PercentRightLeg(defendingMech) < 1)
+                    float percentRightLeg = PercentRightLeg(defendingMech);
+                    if (percentRightLeg < 1)
                     {
-                        totalMultiplier += modSettings.LeggedMaxModifier * (1 - PercentRightLeg(defendingMech));
-                        LogReport($"{"RL",-20} | {modSettings.LeggedMaxModifier * (1 - PercentRightLeg(defendingMech)),10:F3} | {totalMultiplier,10:F3}");
+                        totalMultiplier += modSettings.LeggedMaxModifier * (1 - percentRightLeg);
+                        LogReport($"{"RL",-20} | {modSettings.LeggedMaxModifier * (1 - percentRightLeg),10:F3} | {totalMultiplier,10:F3}");
                     }
 
                     // alone
@@ -256,10 +264,20 @@ namespace PanicSystem.Components
 
             // directly override the multiplier for vehicles
             if (modSettings.VehiclesCanPanic &&
-                defender is Vehicle)
+                defender is Vehicle defendingVehicle)
             {
-                // total damage inflicted THIS ATTACK is the saving throw
-                totalMultiplier += damageIncludingHeatDamage;
+                float percentArmor = (defendingVehicle.SummaryArmorCurrent / defendingVehicle.SummaryArmorMax);
+                float percentStructure = (defendingVehicle.SummaryStructureCurrent / defendingVehicle.SummaryStructureMax);
+                float percentCur = percentStructure;
+
+                if (percentStructure > percentArmor)
+                {
+                    percentCur += percentArmor;
+                    percentCur /= 2;
+                }
+
+                totalMultiplier += (percentCur * modSettings.VehicleDamageFactor);
+                LogReport($"{"Vehicle base panic",-20} | { defendingVehicle.DisplayName } | {modSettings.VehicleDamageFactor,10} | {totalMultiplier,10:F3}");
             }
 
             var resolveModifier = modSettings.ResolveMaxModifier *
@@ -321,12 +339,6 @@ namespace PanicSystem.Components
             {
                 savingThrow = Math.Max(0f, savingThrow - modSettings.BaseEjectionResist);
                 LogReport($"{"Base ejection resist",-20} | {modSettings.BaseEjectionResist,10} | {savingThrow,10:F3}");
-            }
-
-            if (modSettings.VehiclesCanPanic &&
-                actor is Vehicle)
-            {
-                savingThrow = damageIncludingHeatDamage;
             }
 
             savingThrow = (float) Math.Round(savingThrow);

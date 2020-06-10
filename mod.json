@@ -1,7 +1,7 @@
 {
   "Name": "PanicSystem",
   "Enabled": true,
-  "Version": "3.7.10",
+  "Version": "3.7.11",
   "Description": "Simulates MechWarrior and vehicle crew panic, and automatic ejections",
   "Website": "https://github.com/gnivler/PanicSystem",
   "DLL": "PanicSystem.dll",
@@ -71,7 +71,7 @@
     "MinimumDamagePercentageRequired": 10,
 
     /* integer number of cumulative structure damage required to cause a panic save */
-    "MinimumStructureDamageRequired": 5,
+    "MinimumMechStructureDamageRequired": 5,
     "MinimumVehicleStructureDamageRequired": 0,
 
     /* Effect Modifiers */
@@ -87,6 +87,8 @@
     "OverheatedModifier": 0,
     "ShutdownModifier": 0,
     "HeatDamageFactor": 0,
+    "VehicleDamageFactor": 50,
+    "ArmorDamageThreshold": 0,
 
     /* AI Resolve goes to 50 */
     "MedianResolve": 50,

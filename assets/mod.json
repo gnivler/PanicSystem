@@ -1,7 +1,7 @@
 {
   "Name": "PanicSystem",
   "Enabled": true,
-  "Version": "3.7.9",
+  "Version": "3.7.11",
   "Description": "Simulates MechWarrior and vehicle crew panic, and automatic ejections",
   "Website": "https://github.com/gnivler/PanicSystem",
   "DLL": "PanicSystem.dll",
@@ -87,6 +87,8 @@
     "OverheatedModifier": 0,
     "ShutdownModifier": 0,
     "HeatDamageFactor": 0,
+    "VehicleDamageFactor": 50,
+    "ArmorDamageThreshold": 0,
 
     /* AI Resolve goes to 50 */
     "MedianResolve": 50,

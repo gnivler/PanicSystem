@@ -49,16 +49,17 @@ namespace PanicSystem
           		}
 
 			LogDebug($"Armor stat  { mech.DisplayName } location:{ Location} cur:{stat.Value<float>()} max:{stat.DefaultValue<float>()}");
-			
-			float maxArmor = stat.DefaultValue<float>();
+//			if (mech.team.IsLocalPlayer)
+//                  LogReport($"Armor stat  { mech.DisplayName } location:{ Location} cur:{stat.Value<float>()} max:{stat.DefaultValue<float>()}");
 
-			// Limit the max armor to 100 and the percent value to 1 (100%)
-			// This helps reduce panic effects for heavier, well-armored mechs
-			// Losing 30% of your armor isn't as distressing when you have 300 max as when you have 60
-			// Heavily armored mechs should brush this off until they're seriously damaged
-			// Make this a setting in the json file
-			// if (maxArmor > 100)
-			//	maxArmor = 100;
+                float maxArmor = stat.DefaultValue<float>();
+
+            // Limit the max armor to ArmorDamageThreshold and the percent value to 1 (100%)
+            // This helps reduce panic effects for heavier, well-armored mechs
+            // Losing 30% of your armor isn't as distressing when you have 300 max as when you have 60
+            // Heavily armored mechs should brush this off until they're seriously damaged
+            if (maxArmor > modSettings.ArmorDamageThreshold && modSettings.ArmorDamageThreshold > 0)
+				maxArmor = modSettings.ArmorDamageThreshold;
 
 			float percentArmor = stat.Value<float>() / maxArmor;
 			if (percentArmor > 1)
@@ -177,8 +178,9 @@ namespace PanicSystem
             }
 
             if (attackSequence == null ||
-                actor.team.IsLocalPlayer && !modSettings.PlayersCanPanic ||
-                !actor.team.IsLocalPlayer && !modSettings.EnemiesCanPanic)
+                (actor.team.IsLocalPlayer && !modSettings.PlayersCanPanic) ||
+                (!actor.team.IsLocalPlayer && !modSettings.EnemiesCanPanic) ||
+                (actor is Vehicle && !modSettings.VehiclesCanPanic))
             {
                 return false;
             }
@@ -313,10 +315,10 @@ namespace PanicSystem
             }
 
             if (attackSequence.chosenTarget is Mech &&
-                attackSequence.GetStructureDamageDealt(id) >= modSettings.MinimumMechStructureDamageRequired ||
+                attackSequence.GetStructureDamageDealt(id) > modSettings.MinimumMechStructureDamageRequired ||
                 modSettings.VehiclesCanPanic &&
                 attackSequence.chosenTarget is Vehicle &&
-                attackSequence.GetStructureDamageDealt(id) >= modSettings.MinimumVehicleStructureDamageRequired)
+                attackSequence.GetStructureDamageDealt(id) > modSettings.MinimumVehicleStructureDamageRequired)
             {
                 LogReport("Structure damage requires panic save");
                 return true;

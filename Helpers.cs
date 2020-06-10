@@ -39,10 +39,10 @@ namespace PanicSystem
 		{
 			Statistic stat = mech.StatCollection.GetStatistic(mech.GetStringForArmorLocation((ArmorLocation)Location));
 			if(stat == null) {
-                        LogDebug($"Can't get armor stat  { mech.DisplayName } location:{ Location}");
+                        LogDebug($"Can't get armor stat  { mech.DisplayName } location:{ Location.ToString()}");
             			return 0;
           		}
-                LogDebug($"armor stat  { mech.DisplayName } location:{ Location} :{stat.DefaultValue<float>()}");
+                LogDebug($"armor stat  { mech.DisplayName } location:{ Location.ToString()} :{stat.DefaultValue<float>()}");
                 return stat.DefaultValue<float>();
 		}
             LogDebug($"Mech null");
@@ -55,10 +55,10 @@ namespace PanicSystem
             Statistic stat = mech.StatCollection.GetStatistic(mech.GetStringForStructureLocation((ChassisLocations) Location));
             if (stat == null)
             {
-                LogDebug($"Can't get structure stat  { mech.DisplayName } location:{ Location}");
+                LogDebug($"Can't get structure stat  { mech.DisplayName } location:{ Location.ToString()}");
                 return 0;
             }
-                LogDebug($"structure stat  { mech.DisplayName } location:{ Location}:{stat.DefaultValue<float>()}");
+                LogDebug($"structure stat  { mech.DisplayName } location:{ Location.ToString()}:{stat.DefaultValue<float>()}");
                 return stat.DefaultValue<float>();
         }
             LogDebug($"Mech null");

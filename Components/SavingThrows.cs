@@ -276,8 +276,9 @@ namespace PanicSystem.Components
                     percentCur /= 2;
                 }
 
-                totalMultiplier += (percentCur * modSettings.VehicleDamageFactor);
-                LogReport($"{"Vehicle base panic",-20} | { defendingVehicle.DisplayName } | {modSettings.VehicleDamageFactor,10} | {totalMultiplier,10:F3}");
+                totalMultiplier += ((1 - percentCur) * modSettings.VehicleDamageFactor);
+                LogReport($"{"Vehicle percents",-20} | {percentArmor * 100,10} | {percentStructure * 100,10:F3}");
+                LogReport($"{"Vehicle state",-20} | {modSettings.VehicleDamageFactor,10} | {totalMultiplier,10:F3}");
             }
 
             var resolveModifier = modSettings.ResolveMaxModifier *

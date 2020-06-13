@@ -134,7 +134,7 @@ namespace PanicSystem
              MaxArmorForLocation(mech, (int) ArmorLocation.Head));
 
         // check if panic roll is possible
-        private static bool CanPanic(AbstractActor actor, AbstractActor attacker, float damage, float directStructureDamage, int heatdamage)
+        private static bool CanPanic(AbstractActor actor, AbstractActor attacker)
         {
             if (actor == null || actor.IsDead || actor.IsFlaggedForDeath && actor.HasHandledDeath)
             {
@@ -184,15 +184,16 @@ namespace PanicSystem
         }
 
         // true implies a panic condition was met
-        public static bool ShouldPanic(AbstractActor actor, AbstractActor attacker, float damage, float directStructureDamage, ref int heatdamage, out float damageIncludingHeatDamage)
+        public static bool ShouldPanic(AbstractActor actor, AbstractActor attacker,out int heatdamage, out float damageIncludingHeatDamage)
         {
-            if (!CanPanic(actor,attacker,damage, directStructureDamage,heatdamage))
+            if (!CanPanic(actor,attacker))
             {
                 damageIncludingHeatDamage = 0;
+                heatdamage = 0;
                 return false;
             }
 
-            return SufficientDamageWasDone(actor, damage, directStructureDamage,ref heatdamage,out damageIncludingHeatDamage);
+            return SufficientDamageWasDone(actor, out heatdamage,out damageIncludingHeatDamage);
         }
 
         public static bool ShouldSkipProcessing(AbstractActor actor)
@@ -209,11 +210,12 @@ namespace PanicSystem
         }
 
         // returns true if enough damage was inflicted to trigger a panic save
-        private static bool SufficientDamageWasDone(AbstractActor actor, float damage, float directStructureDamage,ref int heatdamage, out float damageIncludingHeatDamage)
+        private static bool SufficientDamageWasDone(AbstractActor actor, out int heatdamage, out float damageIncludingHeatDamage)
         {
             if (actor == null)
             {
                 damageIncludingHeatDamage = 0;
+                heatdamage = 0;
                 return false;
             }
 
@@ -222,7 +224,7 @@ namespace PanicSystem
             float previousArmor;
             float previousStructure;
             //don't need the damage numbers as we can check the actor itself.
-            TurnDamageTracker.DamageDuringTurn(actor,out armorDamage,out structureDamage,out previousArmor,out previousStructure,ref heatdamage);
+            TurnDamageTracker.DamageDuringTurn(actor,out armorDamage,out structureDamage,out previousArmor,out previousStructure,out heatdamage);
             
             // used in SavingThrows.cs
             damageIncludingHeatDamage =armorDamage+structureDamage;
@@ -234,7 +236,7 @@ namespace PanicSystem
 
             if (damageIncludingHeatDamage <= 0)//potentially negative if repairs happened.
             {
-                LogReport($"Damage >>> D: {damage:F3} DS: {directStructureDamage:F3} A: {armorDamage:F3}/{previousArmor:F3} S: {structureDamage:F3}/{previousStructure:F3} NA%) H: {heatdamage}");
+                LogReport($"Damage >>> A: {armorDamage:F3}/{previousArmor:F3} S: {structureDamage:F3}/{previousStructure:F3} NA%) H: {heatdamage}");
                 LogReport("No damage");
                 return false;
             }
@@ -243,7 +245,7 @@ namespace PanicSystem
             var percentDamageDone =
                 damageIncludingHeatDamage / (previousArmor + previousStructure) * 100;
 
-            LogReport($"Damage >>> D: {damage:F3} DS: {directStructureDamage:F3} A: {armorDamage:F3}/{previousArmor:F3} S: {structureDamage:F3}/{previousStructure:F3} ({percentDamageDone:F2}%) H: {heatdamage}");
+            LogReport($"Damage >>> A: {armorDamage:F3}/{previousArmor:F3} S: {structureDamage:F3}/{previousStructure:F3} ({percentDamageDone:F2}%) H: {heatdamage}");
             if (modSettings.AlwaysPanic)
             {
                 LogReport("AlwaysPanic");

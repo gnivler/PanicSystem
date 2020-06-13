@@ -19,8 +19,48 @@ namespace PanicSystem.Components
 {
     public static class DamageHandler
     {
-        public static void ProcessDamage(AbstractActor actor,float damage, float directStructureDamage,int heatdamage)
+        public static void ProcessDamage(AbstractActor actor, float damage, float directStructureDamage, int heatdamage)
         {
+            if (ShouldSkipProcessing(actor))
+            {
+                return;
+            }
+
+            AbstractActor attacker = TurnDamageTracker.attackActor();//just for logging
+            LogReport(new string('═', 46));
+            LogReport($"Damage to {actor.DisplayName}/{actor.Nickname}/{actor.GUID}");
+            LogReport($"Damage by {attacker.DisplayName}/{attacker.Nickname}/{attacker.GUID}");
+
+            AbstractActor defender = null;
+            switch (actor)
+            {
+                case Vehicle _:
+                    defender = (Vehicle)actor;
+                    break;
+                case Mech _:
+                    defender = (Mech)actor;
+                    break;
+            }
+
+            // a building or turret?
+            if (defender == null)
+            {
+                LogDebug("Not a mech or vehicle");
+                return;
+            }
+
+            if (defender.IsDead || defender.IsFlaggedForDeath)
+            {
+                return;
+            }
+            LogReport($"Damage >>> D: {damage:F3} DS: {directStructureDamage:F3} H: {heatdamage}");
+            TurnDamageTracker.batchDamageDuringActivation(actor, damage, directStructureDamage, heatdamage);
+        }
+
+        public static void ProcessBatchedTurnDamage(AbstractActor actor)
+        {
+            int heatdamage = 0;
+
             if (ShouldSkipProcessing(actor))
             {
                 return;
@@ -67,7 +107,7 @@ namespace PanicSystem.Components
             float damageIncludingHeatDamage=0;
             
             if (!modSettings.AlwaysPanic &&
-                !ShouldPanic(defender, attacker, damage, directStructureDamage,ref heatdamage ,out damageIncludingHeatDamage))
+                !ShouldPanic(defender, attacker,out heatdamage ,out damageIncludingHeatDamage))
             {
                 return;
             }

@@ -15,12 +15,13 @@ namespace PanicSystem.Components
         private static Dictionary<string, float> turnStartArmor = new Dictionary<string, float>();
         private static Dictionary<string, float> turnStartStructure = new Dictionary<string, float>();
         private static Dictionary<string, int> turnExternalHeatAccumulator = new Dictionary<string, int>();
+        private static List<AbstractActor> activationVictims=new List<AbstractActor>();
         private static AbstractActor attacker=null;
         internal static void newTurnFor(AbstractActor actor)
         {
-            LogReport($"new Turn for {actor.Nickname} - {actor.DisplayName} - {actor.GUID}");
+            LogReport($"new Turn Activation for {actor.Nickname} - {actor.DisplayName} - {actor.GUID}");
             attacker = actor;
-            turnExternalHeatAccumulator[actor.GUID]=0;//external heat 0 start of turn
+            turnExternalHeatAccumulator[actor.GUID]=0;//external heat 0 start of activation
             if (actor is Mech mech)
             {
                 turnStartStructure[actor.GUID]=mech.RightTorsoStructure + mech.LeftTorsoStructure + mech.CenterTorsoStructure + mech.LeftLegStructure + mech.RightLegStructure + mech.HeadStructure;
@@ -42,11 +43,34 @@ namespace PanicSystem.Components
 
         }
 
+        internal static void batchDamageDuringActivation(AbstractActor actor, float damage, float directStructureDamage, int heatdamage)
+        {
+            if (!(actor is Mech) && !(actor is Vehicle))
+                return;
+            if (!activationVictims.Contains(actor))
+            {
+                activationVictims.Add(actor);
+                LogReport($"{actor.DisplayName}|{actor.Nickname}|{actor.GUID} added to victims");
+            }
+            if (!turnExternalHeatAccumulator.ContainsKey(actor.GUID))
+            {//got here without a new turn for defender use max values for struc/armor
+                firstTurnFor(actor);
+            }
+            //acumulate heat
+            turnExternalHeatAccumulator[actor.GUID] = turnExternalHeatAccumulator[actor.GUID] + heatdamage;
+            //no need to accumulate armor/structure, we noted values on turn activation start
+        }
+
         internal static void completedTurnFor(AbstractActor instance)
         {
             if (attacker != null)
             {
-                LogReport($"completed Turn for {instance.Nickname} - {instance.DisplayName} - {instance.GUID}");
+                LogReport($"completed Turn Activation for {instance.Nickname} - {instance.DisplayName} - {instance.GUID}");
+                foreach(AbstractActor actor in activationVictims)
+                {
+                    DamageHandler.ProcessBatchedTurnDamage(actor);
+                }
+                activationVictims.Clear();
             }
             attacker = null;
         }
@@ -94,16 +118,16 @@ namespace PanicSystem.Components
             turnStartStructure = new Dictionary<string, float>();
             turnExternalHeatAccumulator = new Dictionary<string, int>();
             attacker = null;
+            activationVictims = new List<AbstractActor>();
         }
 
-        internal static void DamageDuringTurn(AbstractActor actor,out float armorDamage,out float structureDamage,out float previousArmor,out float previousStructure,ref int heatdamage)
+        internal static void DamageDuringTurn(AbstractActor actor,out float armorDamage,out float structureDamage,out float previousArmor,out float previousStructure,out int heatdamage)
         {
             if (!turnExternalHeatAccumulator.ContainsKey(actor.GUID))
             {//got here without a new turn for actor use max values for struc/armor
                 firstTurnFor(actor);
             }
-            //acumulate heat
-            turnExternalHeatAccumulator[actor.GUID]=turnExternalHeatAccumulator[actor.GUID] + heatdamage;
+
             //return accumulated heat
             heatdamage = turnExternalHeatAccumulator[actor.GUID];
             //return armor/structure at start of turn

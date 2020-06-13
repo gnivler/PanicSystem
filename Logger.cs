@@ -23,13 +23,13 @@ namespace PanicSystem
 
         internal static void LogDebug(object input)
         {
-            if (modSettings.CombatLog)
+            /*if (modSettings.CombatLog)
             {
                 using (var writer = new StreamWriter(LogFilePath, true))
                 {
                     writer.WriteLine($" {input ?? "null"}");
                 }
-            }
+            }*/
 
             if (modSettings.Debug)
             {

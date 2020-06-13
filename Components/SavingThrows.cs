@@ -7,6 +7,7 @@ using static PanicSystem.Logger;
 using static PanicSystem.Components.Controller;
 using static PanicSystem.Helpers;
 using Random = UnityEngine.Random;
+using CustomAmmoCategoriesPatches;
 
 // ReSharper disable ClassNeverInstantiated.Global
 
@@ -127,7 +128,7 @@ namespace PanicSystem.Components
             return false;
         }
 
-        public static float GetSavingThrow(AbstractActor defender, AbstractActor attacker)
+        public static float GetSavingThrow(AbstractActor defender, AbstractActor attacker,int heatDamage,float damageIncludingHeatDamage)
         {
             var pilot = defender.GetPilot();
             var weapons = defender.Weapons;
@@ -142,7 +143,7 @@ namespace PanicSystem.Components
             {
                 try
                 {
-                    if (modSettings.QuirksEnabled &&
+                    if (modSettings.QuirksEnabled && attacker!=null &&
                         attacker is Mech mech &&
                         mech.MechDef.Chassis.ChassisTags.Contains("mech_quirk_distracting"))
                     {
@@ -150,10 +151,10 @@ namespace PanicSystem.Components
                         LogReport($"{"Distracting mech",-20} | {modSettings.DistractingModifier,10:F3} | {totalMultiplier,10:F3}");
                     }
 
-                    if (modSettings.HeatDamageFactor > 0)
+                    if (modSettings.HeatDamageFactor > 0 && defender.isHasHeat())
                     {
-                        totalMultiplier += modSettings.HeatDamageFactor * Mech_AddExternalHeat_Patch.heatDamage;
-                        LogReport($"{$"Heat damage {Mech_AddExternalHeat_Patch.heatDamage}",-20} | {modSettings.HeatDamageFactor * Mech_AddExternalHeat_Patch.heatDamage,10:F3} | {totalMultiplier,10:F3}");
+                        totalMultiplier += modSettings.HeatDamageFactor * heatDamage;
+                        LogReport($"{$"Heat damage {heatDamage}",-20} | {modSettings.HeatDamageFactor * heatDamage,10:F3} | {totalMultiplier,10:F3}");
                     }
 
                     if (PercentPilot(pilot) < 1)
@@ -287,7 +288,7 @@ namespace PanicSystem.Components
         }
 
         // false is punchin' out
-        public static bool SavedVsEject(AbstractActor actor, float savingThrow)
+        public static bool SavedVsEject(AbstractActor actor, float savingThrow,int heatDamage,float damageIncludingHeatDamage)
         {
             LogReport("Panic save failure requires eject save");
 

@@ -3,12 +3,15 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using BattleTech;
+using FluffyUnderware.DevTools;
 using Harmony;
 using PanicSystem.Components;
 using PanicSystem.Patches;
 using static PanicSystem.Logger;
 using static PanicSystem.PanicSystem;
 using Random = UnityEngine.Random;
+using CustomAmmoCategoriesPatches;
+using UnityEngine;
 
 // ReSharper disable ClassNeverInstantiated.Global
 // ReSharper disable InconsistentNaming
@@ -17,13 +20,6 @@ namespace PanicSystem
 {
     public class Helpers
     {
-        // values for combining melee with support weapon fire
-        private static float initialArmorMelee;
-        private static float initialStructureMelee;
-        private static float armorDamageMelee;
-        private static float structureDamageMelee;
-        private static bool hadMeleeAttack;
-        internal static float damageIncludingHeatDamage;
 
         // used in strings
         internal static float ActorHealth(AbstractActor actor) =>
@@ -33,7 +29,7 @@ namespace PanicSystem
         // used in calculations
         internal static float PercentPilot(Pilot pilot) => 1 - (float) pilot.Injuries / pilot.Health;
 
-	internal static float MaxArmorForLocation(Mech mech, int Location)
+	public static float MaxArmorForLocation(Mech mech, int Location)
 	{
 		if (mech != null)
 		{
@@ -42,13 +38,13 @@ namespace PanicSystem
                         LogDebug($"Can't get armor stat  { mech.DisplayName } location:{ Location.ToString()}");
             			return 0;
           		}
-                LogDebug($"armor stat  { mech.DisplayName } location:{ Location.ToString()} :{stat.DefaultValue<float>()}");
+                //LogDebug($"armor stat  { mech.DisplayName } location:{ Location.ToString()} :{stat.DefaultValue<float>()}");
                 return stat.DefaultValue<float>();
 		}
             LogDebug($"Mech null");
             return 0;
 	}
-    internal static float MaxStructureForLocation(Mech mech, int Location)
+    public static float MaxStructureForLocation(Mech mech, int Location)
     {
         if (mech != null)
         {
@@ -58,12 +54,45 @@ namespace PanicSystem
                 LogDebug($"Can't get structure stat  { mech.DisplayName } location:{ Location.ToString()}");
                 return 0;
             }
-                LogDebug($"structure stat  { mech.DisplayName } location:{ Location.ToString()}:{stat.DefaultValue<float>()}");
+                //LogDebug($"structure stat  { mech.DisplayName } location:{ Location.ToString()}:{stat.DefaultValue<float>()}");
                 return stat.DefaultValue<float>();
         }
             LogDebug($"Mech null");
             return 0;
     }
+
+        public static float MaxArmorForLocation(Vehicle v, int Location)
+        {
+            if (v != null)
+            {
+                Statistic stat = v.StatCollection.GetStatistic(v.GetStringForArmorLocation((VehicleChassisLocations)Location));
+                if (stat == null)
+                {
+                    LogDebug($"Can't get armor stat  { v.DisplayName } location:{ Location.ToString()}");
+                    return 0;
+                }
+                //LogDebug($"armor stat  { v.DisplayName } location:{ Location.ToString()} :{stat.DefaultValue<float>()}");
+                return stat.DefaultValue<float>();
+            }
+            LogDebug($"Vehicle null");
+            return 0;
+        }
+        public static float MaxStructureForLocation(Vehicle v, int Location)
+        {
+            if (v != null)
+            {
+                Statistic stat = v.StatCollection.GetStatistic(v.GetStringForStructureLocation((VehicleChassisLocations)Location));
+                if (stat == null)
+                {
+                    LogDebug($"Can't get structure stat  { v.DisplayName } location:{ Location.ToString()}");
+                    return 0;
+                }
+                //LogDebug($"structure stat  { mech.DisplayName } location:{ Location.ToString()}:{stat.DefaultValue<float>()}");
+                return stat.DefaultValue<float>();
+            }
+            LogDebug($"Vehicle null");
+            return 0;
+        }
 
         internal static float PercentRightTorso(Mech mech) =>
             (mech.RightTorsoStructure +
@@ -105,16 +134,15 @@ namespace PanicSystem
              MaxArmorForLocation(mech, (int) ArmorLocation.Head));
 
         // check if panic roll is possible
-        private static bool CanPanic(AbstractActor actor, AttackDirector.AttackSequence attackSequence)
+        private static bool CanPanic(AbstractActor actor, AbstractActor attacker, float damage, float directStructureDamage, int heatdamage)
         {
             if (actor == null || actor.IsDead || actor.IsFlaggedForDeath && actor.HasHandledDeath)
             {
-                LogReport($"{attackSequence?.attacker?.DisplayName} incapacitated {actor?.DisplayName}");
+                LogReport($"{attacker?.DisplayName} incapacitated {actor?.DisplayName}");
                 return false;
             }
 
-            if (attackSequence == null ||
-                actor.team.IsLocalPlayer && !modSettings.PlayersCanPanic ||
+            if (actor.team.IsLocalPlayer && !modSettings.PlayersCanPanic ||
                 !actor.team.IsLocalPlayer && !modSettings.EnemiesCanPanic)
             {
                 return false;
@@ -156,104 +184,77 @@ namespace PanicSystem
         }
 
         // true implies a panic condition was met
-        public static bool ShouldPanic(AbstractActor actor, AttackDirector.AttackSequence attackSequence)
+        public static bool ShouldPanic(AbstractActor actor, AbstractActor attacker, float damage, float directStructureDamage, ref int heatdamage, out float damageIncludingHeatDamage)
         {
-            if (!CanPanic(actor, attackSequence))
+            if (!CanPanic(actor,attacker,damage, directStructureDamage,heatdamage))
             {
+                damageIncludingHeatDamage = 0;
                 return false;
             }
 
-            return SufficientDamageWasDone(attackSequence);
+            return SufficientDamageWasDone(actor, damage, directStructureDamage,ref heatdamage,out damageIncludingHeatDamage);
         }
 
-        public static bool ShouldSkipProcessing(AttackStackSequence __instance, MessageCenterMessage message)
+        public static bool ShouldSkipProcessing(AbstractActor actor)
         {
-            var attackCompleteMessage = (AttackCompleteMessage) message;
-            if (attackCompleteMessage == null || attackCompleteMessage.stackItemUID != __instance.SequenceGUID)
-            {
-                return true;
-            }
 
             // can't do stuff with buildings
-            if (!(__instance.directorSequences[0].chosenTarget is Vehicle) &&
-                !(__instance.directorSequences[0].chosenTarget is Mech))
+            if (!(actor is Vehicle) &&
+                !(actor is Mech))
             {
                 return true;
             }
 
-            return __instance.directorSequences[0].chosenTarget?.GUID == null;
+            return actor?.GUID == null;
         }
 
         // returns true if enough damage was inflicted to trigger a panic save
-        private static bool SufficientDamageWasDone(AttackDirector.AttackSequence attackSequence)
+        private static bool SufficientDamageWasDone(AbstractActor actor, float damage, float directStructureDamage,ref int heatdamage, out float damageIncludingHeatDamage)
         {
-            if (attackSequence == null)
+            if (actor == null)
             {
+                damageIncludingHeatDamage = 0;
                 return false;
             }
 
-            var id = attackSequence.chosenTarget.GUID;
-            if (!attackSequence.GetAttackDidDamage(id) && !hadMeleeAttack)
+            float armorDamage;
+            float structureDamage;
+            float previousArmor;
+            float previousStructure;
+            //don't need the damage numbers as we can check the actor itself.
+            TurnDamageTracker.DamageDuringTurn(actor,out armorDamage,out structureDamage,out previousArmor,out previousStructure,ref heatdamage);
+            
+            // used in SavingThrows.cs
+            damageIncludingHeatDamage =armorDamage+structureDamage;
+
+            if (!(actor is Mech) ||actor.isHasHeat())
+            {//Battle Armor doesn't have heat
+                damageIncludingHeatDamage = damageIncludingHeatDamage + (heatdamage * modSettings.HeatDamageFactor);
+            }
+
+            if (damageIncludingHeatDamage <= 0)//potentially negative if repairs happened.
             {
+                LogReport($"Damage >>> D: {damage:F3} DS: {directStructureDamage:F3} A: {armorDamage:F3}/{previousArmor:F3} S: {structureDamage:F3}/{previousStructure:F3} NA%) H: {heatdamage}");
                 LogReport("No damage");
                 return false;
             }
 
-            // Account for melee attacks so separate panics are not triggered.
-            if (attackSequence.isMelee && MechMeleeSequence_FireWeapons_Patch.meleeHasSupportWeapons)
-            {
-                initialArmorMelee = AttackStackSequence_OnAttackBegin_Patch.armorBeforeAttack;
-                initialStructureMelee = AttackStackSequence_OnAttackBegin_Patch.structureBeforeAttack;
-                armorDamageMelee = attackSequence.GetArmorDamageDealt(id);
-                structureDamageMelee = attackSequence.GetStructureDamageDealt(id);
-                hadMeleeAttack = true;
-                LogReport("Stashing melee damage for support weapon firing");
-                return false;
-            }
 
-            var previousArmor = AttackStackSequence_OnAttackBegin_Patch.armorBeforeAttack;
-            var previousStructure = AttackStackSequence_OnAttackBegin_Patch.structureBeforeAttack;
-
-            if (hadMeleeAttack)
-            {
-                LogReport("Adding stashed melee damage");
-                previousArmor = initialArmorMelee;
-                previousStructure = initialStructureMelee;
-            }
-            else
-            {
-                armorDamageMelee = 0;
-                structureDamageMelee = 0;
-            }
-
-            var armorDamage = attackSequence.GetArmorDamageDealt(id) + armorDamageMelee;
-            var structureDamage = attackSequence.GetStructureDamageDealt(id) + structureDamageMelee;
-            var heatDamage = Mech_AddExternalHeat_Patch.heatDamage * modSettings.HeatDamageFactor;
-            // used in SavingThrows.cs
-            damageIncludingHeatDamage = armorDamage + structureDamage + heatDamage;
             var percentDamageDone =
                 damageIncludingHeatDamage / (previousArmor + previousStructure) * 100;
 
-            // clear melee values
-            initialArmorMelee = 0;
-            initialStructureMelee = 0;
-            armorDamageMelee = 0;
-            structureDamageMelee = 0;
-            hadMeleeAttack = false;
-
-            // have to check structure here AFTER armor, despite it being the priority, because we need to set the global
-            LogReport($"Damage >>> A: {armorDamage:F3} S: {structureDamage:F3} ({percentDamageDone:F2}%) H: {Mech_AddExternalHeat_Patch.heatDamage}");
+            LogReport($"Damage >>> D: {damage:F3} DS: {directStructureDamage:F3} A: {armorDamage:F3}/{previousArmor:F3} S: {structureDamage:F3}/{previousStructure:F3} ({percentDamageDone:F2}%) H: {heatdamage}");
             if (modSettings.AlwaysPanic)
             {
                 LogReport("AlwaysPanic");
                 return true;
             }
 
-            if (attackSequence.chosenTarget is Mech &&
-                attackSequence.GetStructureDamageDealt(id) >= modSettings.MinimumMechStructureDamageRequired ||
-                modSettings.VehiclesCanPanic &&
-                attackSequence.chosenTarget is Vehicle &&
-                attackSequence.GetStructureDamageDealt(id) >= modSettings.MinimumVehicleStructureDamageRequired)
+            if ((actor is Mech &&
+                structureDamage >= modSettings.MinimumMechStructureDamageRequired) ||
+                (modSettings.VehiclesCanPanic &&
+                actor is Vehicle &&
+                structureDamage >= modSettings.MinimumVehicleStructureDamageRequired))
             {
                 LogReport("Structure damage requires panic save");
                 return true;
@@ -262,7 +263,6 @@ namespace PanicSystem
             if (percentDamageDone <= modSettings.MinimumDamagePercentageRequired)
             {
                 LogReport("Not enough damage");
-                Mech_AddExternalHeat_Patch.heatDamage = 0;
                 return false;
             }
 

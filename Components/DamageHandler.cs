@@ -12,65 +12,34 @@ using static PanicSystem.Logger;
 using static PanicSystem.PanicSystem;
 using static PanicSystem.Components.Controller;
 using static PanicSystem.Helpers;
+using PanicSystem.Patches;
 using Random = UnityEngine.Random;
 
-// ReSharper disable InconsistentNaming
-
-namespace PanicSystem.Patches
+namespace PanicSystem.Components
 {
-    // save the pre-attack condition
-    [HarmonyPatch(typeof(AttackStackSequence), "OnAttackBegin")]
-    public static class AttackStackSequence_OnAttackBegin_Patch
+    public static class DamageHandler
     {
-        internal static float armorBeforeAttack;
-        internal static float structureBeforeAttack;
-
-        public static void Prefix(AttackStackSequence __instance)
+        public static void ProcessDamage(AbstractActor actor,float damage, float directStructureDamage,int heatdamage)
         {
-            if (__instance.directorSequences == null || __instance.directorSequences.Count == 0)
+            if (ShouldSkipProcessing(actor))
             {
                 return;
             }
 
-            var target = __instance.directorSequences[0].chosenTarget;
-            armorBeforeAttack = target.SummaryArmorCurrent;
-            structureBeforeAttack = target.SummaryStructureCurrent;
-        }
-    }
-
-    [HarmonyPatch(typeof(AttackStackSequence), "OnAttackComplete")]
-    public static class AttackStackSequence_OnAttackComplete_Patch
-    {
-        private static readonly Stopwatch stopwatch = new Stopwatch();
-
-        public static void Prefix(AttackStackSequence __instance, MessageCenterMessage message)
-        {
-            stopwatch.Restart();
-            if (ShouldSkipProcessing(__instance, message))
-            {
-                return;
-            }
-
-            if (!(message is AttackCompleteMessage attackCompleteMessage))
-            {
-                return;
-            }
-
-            var director = __instance.directorSequences;
-            if (director == null) return;
-
+            AbstractActor attacker = TurnDamageTracker.attackActor();
             LogReport(new string('═', 46));
-            LogReport($"{director[0].attacker.DisplayName} attacks {director[0].chosenTarget.DisplayName}");
+            LogReport($"Damage to {actor.DisplayName}/{actor.Nickname}/{actor.GUID}");
+            LogReport($"Damage by {attacker.DisplayName}/{attacker.Nickname}/{attacker.GUID}");
 
             // get the attacker in case they have mech quirks
             AbstractActor defender = null;
-            switch (director[0]?.chosenTarget)
+            switch (actor)
             {
                 case Vehicle _:
-                    defender = (Vehicle) director[0]?.chosenTarget;
+                    defender = (Vehicle) actor;
                     break;
                 case Mech _:
-                    defender = (Mech) director[0]?.chosenTarget;
+                    defender = (Mech) actor;
                     break;
             }
 
@@ -86,7 +55,6 @@ namespace PanicSystem.Patches
                 return;
             }
             
-            var attacker = director[0].attacker;
             var index = GetActorIndex(defender);
 
             if (modSettings.OneChangePerTurn &&
@@ -96,8 +64,10 @@ namespace PanicSystem.Patches
                 return;
             }
 
+            float damageIncludingHeatDamage=0;
+            
             if (!modSettings.AlwaysPanic &&
-                !ShouldPanic(defender, attackCompleteMessage.attackSequence))
+                !ShouldPanic(defender, attacker, damage, directStructureDamage,ref heatdamage ,out damageIncludingHeatDamage))
             {
                 return;
             }
@@ -121,8 +91,7 @@ namespace PanicSystem.Patches
             // store saving throw
             // check it against panic
             // check it again ejection
-            var savingThrow = SavingThrows.GetSavingThrow(defender, attacker);
-            Mech_AddExternalHeat_Patch.heatDamage = 0;
+            var savingThrow = SavingThrows.GetSavingThrow(defender, attacker,heatdamage,damageIncludingHeatDamage);
             // panic saving throw
             if (SavingThrows.SavedVsPanic(defender, savingThrow))
             {
@@ -137,7 +106,7 @@ namespace PanicSystem.Patches
 
             // eject saving throw
             if (!modSettings.AlwaysPanic &&
-                SavingThrows.SavedVsEject(defender, savingThrow))
+                SavingThrows.SavedVsEject(defender, savingThrow, heatdamage, damageIncludingHeatDamage))
             {
                 return;
             }
@@ -176,13 +145,13 @@ namespace PanicSystem.Patches
             }
 
             if (modSettings.VehiclesCanPanic &&
-                defender is Vehicle)
+                defender is Vehicle v)
             {
                 // make the regular Pilot Ejected floatie not appear, for this ejection
                 var original = AccessTools.Method(typeof(BattleTech.VehicleRepresentation), "PlayDeathFloatie");
-                var prefix = AccessTools.Method(typeof(VehicleRepresentation), nameof(VehicleRepresentation.PrefixDeathFloatie));
+                var prefix = AccessTools.Method(typeof(BattleTech.VehicleRepresentation), nameof(Patches.VehicleRepresentation.PrefixDeathFloatie));
                 harmony.Patch(original, new HarmonyMethod(prefix));
-                defender.EjectPilot(defender.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, true);
+                defender.EjectPilot(defender.GUID, -1, DeathMethod.PilotEjection, true);
                 harmony.Unpatch(original, HarmonyPatchType.Prefix);
                 CastDef castDef = Coordinator.CreateCast(defender);
                 DialogueContent content = new DialogueContent(
@@ -193,7 +162,7 @@ namespace PanicSystem.Patches
             }
             else
             {
-                defender.EjectPilot(defender.GUID, attackCompleteMessage.stackItemUID, DeathMethod.PilotEjection, false);
+                defender.EjectPilot(defender.GUID, -1, DeathMethod.PilotEjection, false);
             }
 
             LogReport("Ejected");

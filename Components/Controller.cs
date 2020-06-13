@@ -37,6 +37,7 @@ namespace PanicSystem.Components
                 }
 
                 TrackedActors = new List<PilotTracker>();
+                TurnDamageTracker.Reset();
             }
             catch (Exception ex)
             {

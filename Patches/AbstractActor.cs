@@ -1,5 +1,6 @@
 using BattleTech;
 using Harmony;
+using PanicSystem.Components;
 using static PanicSystem.Components.Controller;
 
 // ReSharper disable InconsistentNaming
@@ -11,6 +12,9 @@ namespace PanicSystem.Patches
     {
         public static void Prefix(AbstractActor __instance)
         {
+
+            
+
             if (__instance.IsDead || __instance.IsFlaggedForDeath && __instance.HasHandledDeath)
             {
                 return;
@@ -34,6 +38,22 @@ namespace PanicSystem.Patches
 
             TrackedActors[index].PanicWorsenedRecently = false;
             SaveTrackedPilots();
+        }
+    }
+    [HarmonyPatch(typeof(AbstractActor), "OnActivationBegin")]
+    public static class AbstractActor_OnActivationBegin_Patch
+    {
+        public static void Prefix(AbstractActor __instance)
+        {
+            TurnDamageTracker.newTurnFor(__instance);
+        }
+    }
+    [HarmonyPatch(typeof(AbstractActor), "OnActivationEnd")]
+    public static class AbstractActor_OnActivationEnd_Patch
+    {
+        public static void Prefix(AbstractActor __instance)
+        {
+            TurnDamageTracker.completedTurnFor(__instance);
         }
     }
 }

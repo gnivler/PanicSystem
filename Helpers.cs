@@ -109,7 +109,7 @@ namespace PanicSystem
             			return 0;
           		}
 
-			LogDebug($"Armor stat  { mech.DisplayName } location:{ Location} cur:{stat.Value<float>()} max:{stat.DefaultValue<float>()}");
+			//LogDebug($"Armor stat  { mech.DisplayName } location:{ Location} cur:{stat.Value<float>()} max:{stat.DefaultValue<float>()}");
 //			if (mech.team.IsLocalPlayer)
 //                  LogReport($"Armor stat  { mech.DisplayName } location:{ Location} cur:{stat.Value<float>()} max:{stat.DefaultValue<float>()}");
 
@@ -148,7 +148,7 @@ namespace PanicSystem
             			return 0;
           		}
 
-			LogDebug($"Structure stat  { mech.DisplayName } location:{ Location} cur:{stat.Value<float>()} max:{stat.DefaultValue<float>()}");
+			//LogDebug($"Structure stat  { mech.DisplayName } location:{ Location} cur:{stat.Value<float>()} max:{stat.DefaultValue<float>()}");
 			return (stat.Value<float>() / stat.DefaultValue<float>());
 		}
 		LogDebug($"Mech null");

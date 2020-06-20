@@ -14,7 +14,7 @@ namespace PanicSystem.Patches
     [HarmonyPatch(new Type[] { })]
     public static class ActorMovementSequence_CompleteOrders
     {
-        public static void Postfix(AttackDirector __instance, MessageCenterMessage message, ref AbstractActor __state)
+        public static void Postfix(ActorMovementSequence __instance)
         {
                 TurnDamageTracker.hintAttackComplete("ActorMovementSequence:CompleteOrders");
         }

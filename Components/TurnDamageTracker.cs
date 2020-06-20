@@ -22,27 +22,30 @@ namespace PanicSystem.Components
         internal static void newTurnFor(AbstractActor actor)
         {
             LogReport($"new Turn Activation for {actor.Nickname} - {actor.DisplayName} - {actor.GUID}");
-            attacker = actor;
-            turnExternalHeatAccumulator[actor.GUID]=0;//external heat 0 start of activation
-            if (actor is Mech mech)
+            if (actor != attacker)
             {
-                turnStartStructure[actor.GUID]=mech.RightTorsoStructure + mech.LeftTorsoStructure + mech.CenterTorsoStructure + mech.LeftLegStructure + mech.RightLegStructure + mech.HeadStructure;
+                attacker = actor;
+                turnExternalHeatAccumulator[actor.GUID] = 0;//external heat 0 start of activation
+                if (actor is Mech mech)
+                {
+                    turnStartStructure[actor.GUID] = mech.RightTorsoStructure + mech.LeftTorsoStructure + mech.CenterTorsoStructure + mech.LeftLegStructure + mech.RightLegStructure + mech.HeadStructure;
 
-                turnStartArmor[actor.GUID]= mech.RightTorsoFrontArmor + mech.RightTorsoRearArmor + mech.LeftTorsoFrontArmor + mech.LeftTorsoRearArmor +
-                     mech.CenterTorsoFrontArmor + mech.CenterTorsoRearArmor + mech.LeftLegArmor + mech.RightLegArmor + mech.HeadArmor;
-            }else if (actor is Vehicle v)
-            {
-                turnStartStructure[actor.GUID]=v.LeftSideStructure + v.RightSideStructure + v.FrontStructure + v.RearStructure + v.TurretStructure;
+                    turnStartArmor[actor.GUID] = mech.RightTorsoFrontArmor + mech.RightTorsoRearArmor + mech.LeftTorsoFrontArmor + mech.LeftTorsoRearArmor +
+                         mech.CenterTorsoFrontArmor + mech.CenterTorsoRearArmor + mech.LeftLegArmor + mech.RightLegArmor + mech.HeadArmor;
+                }
+                else if (actor is Vehicle v)
+                {
+                    turnStartStructure[actor.GUID] = v.LeftSideStructure + v.RightSideStructure + v.FrontStructure + v.RearStructure + v.TurretStructure;
 
-                turnStartArmor[actor.GUID]=v.LeftSideArmor+v.RightSideArmor+v.FrontArmor+v.RearArmor+v.TurretArmor;
+                    turnStartArmor[actor.GUID] = v.LeftSideArmor + v.RightSideArmor + v.FrontArmor + v.RearArmor + v.TurretArmor;
+                }
+                else
+                {
+                    LogReport("Not mech or vehicle");
+                    turnStartStructure[actor.GUID] = 0;
+                    turnStartArmor[actor.GUID] = 0;
+                }
             }
-            else
-            {
-                LogReport("Not mech or vehicle");
-                turnStartStructure[actor.GUID] = 0;
-                turnStartArmor[actor.GUID] = 0;
-            }
-
         }
 
         internal static void batchDamageDuringActivation(AbstractActor actor, float damage, float directStructureDamage, int heatdamage)

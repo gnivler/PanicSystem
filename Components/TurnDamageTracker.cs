@@ -16,6 +16,8 @@ namespace PanicSystem.Components
         private static Dictionary<string, float> turnStartStructure = new Dictionary<string, float>();
         private static Dictionary<string, int> turnExternalHeatAccumulator = new Dictionary<string, int>();
         private static List<AbstractActor> activationVictims=new List<AbstractActor>();
+        private static List<string> ejectedActors = new List<string>();
+
         private static AbstractActor attacker=null;
         internal static void newTurnFor(AbstractActor actor)
         {
@@ -75,6 +77,21 @@ namespace PanicSystem.Components
             attacker = null;
         }
 
+
+        internal static void hintAttackComplete( string reason)
+        {
+            if (attacker != null)
+            {
+                LogReport($"attack was completed for {attacker.Nickname} - {attacker.DisplayName} - {attacker.GUID} ({reason})");
+                foreach (AbstractActor actor in activationVictims)
+                {
+                    DamageHandler.ProcessBatchedTurnDamage(actor);
+                }
+                activationVictims.Clear();
+            }
+            attacker = null;
+        }
+
         internal static AbstractActor attackActor()
         {
             return attacker;
@@ -111,6 +128,18 @@ namespace PanicSystem.Components
 
         }
 
+        internal static bool EjectionAlreadyCounted(AbstractActor a)
+        {
+            if (!ejectedActors.Contains(a.GUID))
+            {
+                LogReport($"{a.Nickname} - {a.DisplayName} - {a.GUID} ejection !");
+                ejectedActors.Add(a.GUID);
+                return false;
+            }
+            LogReport($"{a.Nickname} - {a.DisplayName} - {a.GUID} ejection already counted! DUPLICATE CAUGHT!!!");
+            return true;
+        }
+
         internal static void Reset()
         {
             LogReport($"Turn Damage Tracker Reset - new Mission");
@@ -119,6 +148,8 @@ namespace PanicSystem.Components
             turnExternalHeatAccumulator = new Dictionary<string, int>();
             attacker = null;
             activationVictims = new List<AbstractActor>();
+            ejectedActors = new List<string>();
+            DamageHandler.hookPDF();
         }
 
         internal static void DamageDuringTurn(AbstractActor actor,out float armorDamage,out float structureDamage,out float previousArmor,out float previousStructure,out int heatdamage)

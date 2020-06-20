@@ -14,11 +14,20 @@ using static PanicSystem.Components.Controller;
 using static PanicSystem.Helpers;
 using PanicSystem.Patches;
 using Random = UnityEngine.Random;
+using System.Reflection;
 
 namespace PanicSystem.Components
 {
     public static class DamageHandler
     {
+        private static MethodInfo originalPDF =null;
+        private static MethodInfo prefixPDF = null;
+
+        public static void hookPDF()
+        {
+            originalPDF = AccessTools.Method(typeof(BattleTech.VehicleRepresentation), "PlayDeathFloatie");
+            prefixPDF = AccessTools.Method(typeof(BattleTech.VehicleRepresentation), nameof(Patches.VehicleRepresentation.PrefixDeathFloatie));
+        }
         public static void ProcessDamage(AbstractActor actor, float damage, float directStructureDamage, int heatdamage)
         {
             if (ShouldSkipProcessing(actor))
@@ -76,10 +85,10 @@ namespace PanicSystem.Components
             switch (actor)
             {
                 case Vehicle _:
-                    defender = (Vehicle) actor;
+                    defender = (Vehicle)actor;
                     break;
                 case Mech _:
-                    defender = (Mech) actor;
+                    defender = (Mech)actor;
                     break;
             }
 
@@ -94,7 +103,7 @@ namespace PanicSystem.Components
             {
                 return;
             }
-            
+
             var index = GetActorIndex(defender);
 
             if (modSettings.OneChangePerTurn &&
@@ -104,10 +113,10 @@ namespace PanicSystem.Components
                 return;
             }
 
-            float damageIncludingHeatDamage=0;
-            
+            float damageIncludingHeatDamage = 0;
+
             if (!modSettings.AlwaysPanic &&
-                !ShouldPanic(defender, attacker,out heatdamage ,out damageIncludingHeatDamage))
+                !ShouldPanic(defender, attacker, out heatdamage, out damageIncludingHeatDamage))
             {
                 return;
             }
@@ -115,7 +124,7 @@ namespace PanicSystem.Components
             // automatically eject a klutzy pilot on knockdown with an additional roll failing on 13
             if (defender.IsFlaggedForKnockdown)
             {
-                var defendingMech = (Mech) defender;
+                var defendingMech = (Mech)defender;
                 if (defendingMech.pilot.pilotDef.PilotTags.Contains("pilot_klutz"))
                 {
                     if (Random.Range(1, 100) == 13)
@@ -131,7 +140,7 @@ namespace PanicSystem.Components
             // store saving throw
             // check it against panic
             // check it again ejection
-            var savingThrow = SavingThrows.GetSavingThrow(defender, attacker,heatdamage,damageIncludingHeatDamage);
+            var savingThrow = SavingThrows.GetSavingThrow(defender, attacker, heatdamage, damageIncludingHeatDamage);
             // panic saving throw
             if (SavingThrows.SavedVsPanic(defender, savingThrow))
             {
@@ -188,11 +197,9 @@ namespace PanicSystem.Components
                 defender is Vehicle v)
             {
                 // make the regular Pilot Ejected floatie not appear, for this ejection
-                var original = AccessTools.Method(typeof(BattleTech.VehicleRepresentation), "PlayDeathFloatie");
-                var prefix = AccessTools.Method(typeof(BattleTech.VehicleRepresentation), nameof(Patches.VehicleRepresentation.PrefixDeathFloatie));
-                harmony.Patch(original, new HarmonyMethod(prefix));
+                harmony.Patch(originalPDF, new HarmonyMethod(prefixPDF));
                 defender.EjectPilot(defender.GUID, -1, DeathMethod.PilotEjection, true);
-                harmony.Unpatch(original, HarmonyPatchType.Prefix);
+                harmony.Unpatch(originalPDF, HarmonyPatchType.Prefix);
                 CastDef castDef = Coordinator.CreateCast(defender);
                 DialogueContent content = new DialogueContent(
                     "Destroy the tech, let's get outta here!", Color.white, castDef.id, null, null, DialogCameraDistance.Medium, DialogCameraHeight.Default, 0
@@ -213,6 +220,26 @@ namespace PanicSystem.Components
                 return;
             }
 
+            //handle weird cases due to damage from all sources
+            if (attacker.GUID == defender.GUID)
+            {
+                //killed himself - possibly mines or made a building land on his own head ;)
+                LogReport("Self Kill not counting");
+                return;
+            }
+
+            if (attacker.team.GUID == defender.team.GUID)
+            {
+                //killed a friendly
+                LogReport("Friendly Fire, Same Team Kill, not counting");
+                return;
+            }
+
+            if (TurnDamageTracker.EjectionAlreadyCounted(defender))
+            {
+                return;
+            }
+
             try
             {
                 // this seems pretty convoluted
@@ -228,17 +255,19 @@ namespace PanicSystem.Components
                 if (defender is Mech)
                 {
                     // add UI icons.. and pilot history?   ... MechsKilled already incremented??
-                    // TODO count kills recorded on pilot history so it's not applied twice
+                    // TODO count kills recorded on pilot history so it's not applied twice -added a check above should work unless other mods are directly modifying stats
                     statCollection.Set("MechsKilled", attackerPilot.MechsKilled + 1);
                     var stat = statCollection.GetStatistic("MechsEjected");
                     if (stat == null)
                     {
                         statCollection.AddStatistic("MechsEjected", 1);
-                        return;
+                        //return; why is this returning on first eject for a pilot?
                     }
-
-                    var value = stat.Value<int>();
-                    statCollection.Set("MechsEjected", value + 1);
+                    else
+                    {
+                        var value = stat.Value<int>();
+                        statCollection.Set("MechsEjected", value + 1);
+                    }
                 }
 
                 // add achievement kill (more complicated)

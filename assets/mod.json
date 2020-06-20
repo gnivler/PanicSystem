@@ -1,5 +1,6 @@
 {
   "Name": "PanicSystem",
+	"Hidden": true,
   "Enabled": true,
   "Version": "4.0.0",
   "Description": "Simulates MechWarrior and vehicle crew panic, and automatic ejections",
@@ -7,6 +8,7 @@
   "DLL": "PanicSystem.dll",
   "DLLEntryPoint": "PanicSystem.PanicSystem.Init",
 
+  /* ModTek manifest for custom icons */
   "Manifest": [
     {
       "Type": "SVGAsset",
@@ -18,6 +20,7 @@
     "Debug": false,
     "CombatLog": false,
 
+    /* custom strings for floaties */
     "PanicStates": [
       "CONFIDENT",
       "UNSETTLED",
@@ -35,34 +38,42 @@
     "PanicImprovedString": "IMPROVED TO",
     "PanicWorsenedString": "",
     "PanicCritSaveString": "CRIT SAVE!",
-    
+    /* 0 is Confident.  Prevent manual ejection at this threshold status */
     "LimitManualEjection": false,
     "LimitManualEjectionLevel": 0,
-    
+    /* prevent manual ejection with these pilot tags */
     "LimitManualEjectionTags": [
       "pilot_example_tag",
+      "pilot_npc_testpilot"
     ],
-    
+    /* reads phrases.txt file and displays one randomly at eject */
     "EnableEjectPhrases": true,
     "EjectPhraseChance": 100,
 
+    /* greatly increases the visual feedback, like saving throw results */
     "FloatieSpam": false,
 
+    /* Modify floatie appearance? */
     "ColorizeFloaties": true,
 
+    /* Do Ejections count as kills? */
     "CountAsKills": true,
 
+    /* Panic Settings */
     "PlayersCanPanic": true,
     "EnemiesCanPanic": true,
-    "VehiclesCanPanic": false,
-    "ConsiderEjectingWithNoWeaps": false,
+    "VehiclesCanPanic": true,
+    "ConsiderEjectingWithNoWeaps": true,
     "LosingLimbAlwaysPanics": false,
 
+    /* percent of remaining armor that must be destroyed to cause a panic save */
     "MinimumDamagePercentageRequired": 10,
 
+    /* integer number of cumulative structure damage required to cause a panic save */
     "MinimumMechStructureDamageRequired": 5,
-    "MinimumVehicleStructureDamageRequired": 0,
+    "MinimumVehicleStructureDamageRequired": 15,
 
+    /* Effect Modifiers */
     "UnsteadyModifier": 5,
     "PilotHealthMaxModifier": 25,
     "HeadMaxModifier": 25,
@@ -72,46 +83,56 @@
     "WeaponlessModifier": 15,
     "AloneModifier": 5,
     "ResolveMaxModifier": 10,
-    "OverheatedModifier": 0,
-    "ShutdownModifier": 0,
-    "HeatDamageFactor": 0,
+    "OverheatedModifier": 2,
+    "ShutdownModifier": 4,
+    "HeatDamageFactor": 1,
     "VehicleDamageFactor": 50,
-    "ArmorDamageThreshold": 0,
 
-    "MedianResolve": 50,
-    "VehicleResolveFactor": 0,
+    /* AI Resolve goes to 50 */
+    "MedianResolve": 25,
+    "VehicleResolveFactor": 2,
 
+    /* factors that affect only panic saving throws based on existing panic state */
     "UnsettledPanicFactor": 1,
-    "StressedPanicFactor" : 0.66,
-    "PanickedPanicFactor" : 0.50,
+    "StressedPanicFactor" : 0.77,
+    "PanickedPanicFactor" : 0.44,
 
-    "GutsEjectionResistPerPoint": 3,
-    "TacticsEjectionResistPerPoint": 0,
-    "VehicleGutAndTacticsFactor": 0,
+    /* Ejection Bonuses and Limits */
+    "GutsEjectionResistPerPoint": 1,
+    "TacticsEjectionResistPerPoint": 1,
+    "VehicleGutAndTacticsFactor": 1,
 
-    "BaseEjectionResist": 75,
-    "BaseVehicleEjectionResist": 0,
+    /* subtracted from all eject saving throws */
+    "BaseEjectionResist": 60,
+    "BaseVehicleEjectionResist": 60,
 
+    /* ceiling for eject saving throw */
     "MaxEjectChance": 100,
 
+    /* applied after entire calculation */
     "EjectChanceFactor": 1,
 
+    /* Pilot Quirk Effects https://www.nexusmods.com/battletech/mods/282/ */
     "QuirksEnabled": true,
     "BraveModifier": 5,
     "DependableModifier": 5,
-    
+    /* new Mech Quirk effects TBA */
     "DistractingModifier": 5,
 
+    /* to-hit and to-be-hit modifiers, by panic level */
     "UnsettledAimModifier": 1,
     "StressedAimModifier": 1,
     "StressedToHitModifier": -1,
     "PanickedAimModifier": 2,
     "PanickedToHitModifier": -2,
 
+    /* panic crits won't occur below this percentage */
     "MechHealthForCrit": 30,
 
+    /* if you miss your saving throw by this number it's a critical failure */
     "CritOver": 25,
 
-    "OneChangePerTurn" : false
+    /* Misc */
+    "OneChangePerTurn" : true
   }
 }

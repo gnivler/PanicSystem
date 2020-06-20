@@ -21,9 +21,9 @@ namespace PanicSystem.Components
         private static AbstractActor attacker=null;
         internal static void newTurnFor(AbstractActor actor)
         {
-            LogReport($"new Turn Activation for {actor.Nickname} - {actor.DisplayName} - {actor.GUID}");
             if (actor != attacker)
             {
+                LogReport($"new Turn Activation for {actor.Nickname} - {actor.DisplayName} - {actor.GUID}");
                 attacker = actor;
                 turnExternalHeatAccumulator[actor.GUID] = 0;//external heat 0 start of activation
                 if (actor is Mech mech)
@@ -45,6 +45,10 @@ namespace PanicSystem.Components
                     turnStartStructure[actor.GUID] = 0;
                     turnStartArmor[actor.GUID] = 0;
                 }
+            }
+            else
+            {
+                LogReport($"new Turn Re-Activation for {actor.Nickname}");
             }
         }
 

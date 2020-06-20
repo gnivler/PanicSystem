@@ -89,7 +89,6 @@ namespace PanicSystem.Components
                 }
                 activationVictims.Clear();
             }
-            attacker = null;
         }
 
         internal static AbstractActor attackActor()

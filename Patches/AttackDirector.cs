@@ -15,7 +15,7 @@ namespace PanicSystem.Patches
     [HarmonyPatch(new Type[] { typeof(MessageCenterMessage) })]
     public static class AttackDirector_OnAttackCompleteTA
     {
-        public static void Postfix(AttackDirector __instance, MessageCenterMessage message, ref AbstractActor __state)
+        public static void Postfix(AttackDirector __instance, MessageCenterMessage message)
         {
                 TurnDamageTracker.hintAttackComplete("AttackDirector:OnAttackComplete");
         }

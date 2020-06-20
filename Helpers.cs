@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using BattleTech;
-using FluffyUnderware.DevTools;
 using Harmony;
 using PanicSystem.Components;
 using PanicSystem.Patches;
@@ -29,11 +28,73 @@ namespace PanicSystem
         // used in calculations
         internal static float PercentPilot(Pilot pilot) => 1 - (float) pilot.Injuries / pilot.Health;
 
-<<<<<<< HEAD
-	public static float MaxArmorForLocation(Mech mech, int Location)
-=======
-	internal static float PercentForArmorLocation(Mech mech, int Location)
->>>>>>> pr/2
+        public static float MaxArmorForLocation(Mech mech, int Location)
+        {
+            if (mech != null)
+            {
+                Statistic stat = mech.StatCollection.GetStatistic(mech.GetStringForArmorLocation((ArmorLocation)Location));
+                if (stat == null)
+                {
+                    LogDebug($"Can't get armor stat  { mech.DisplayName } location:{ Location.ToString()}");
+                    return 0;
+                }
+                //LogDebug($"armor stat  { mech.DisplayName } location:{ Location.ToString()} :{stat.DefaultValue<float>()}");
+                return stat.DefaultValue<float>();
+            }
+            LogDebug($"Mech null");
+            return 0;
+        }
+        public static float MaxStructureForLocation(Mech mech, int Location)
+        {
+            if (mech != null)
+            {
+                Statistic stat = mech.StatCollection.GetStatistic(mech.GetStringForStructureLocation((ChassisLocations)Location));
+                if (stat == null)
+                {
+                    LogDebug($"Can't get structure stat  { mech.DisplayName } location:{ Location.ToString()}");
+                    return 0;
+                }
+                //LogDebug($"structure stat  { mech.DisplayName } location:{ Location.ToString()}:{stat.DefaultValue<float>()}");
+                return stat.DefaultValue<float>();
+            }
+            LogDebug($"Mech null");
+            return 0;
+        }
+
+        public static float MaxArmorForLocation(Vehicle v, int Location)
+        {
+            if (v != null)
+            {
+                Statistic stat = v.StatCollection.GetStatistic(v.GetStringForArmorLocation((VehicleChassisLocations)Location));
+                if (stat == null)
+                {
+                    LogDebug($"Can't get armor stat  { v.DisplayName } location:{ Location.ToString()}");
+                    return 0;
+                }
+                //LogDebug($"armor stat  { v.DisplayName } location:{ Location.ToString()} :{stat.DefaultValue<float>()}");
+                return stat.DefaultValue<float>();
+            }
+            LogDebug($"Vehicle null");
+            return 0;
+        }
+        public static float MaxStructureForLocation(Vehicle v, int Location)
+        {
+            if (v != null)
+            {
+                Statistic stat = v.StatCollection.GetStatistic(v.GetStringForStructureLocation((VehicleChassisLocations)Location));
+                if (stat == null)
+                {
+                    LogDebug($"Can't get structure stat  { v.DisplayName } location:{ Location.ToString()}");
+                    return 0;
+                }
+                //LogDebug($"structure stat  { mech.DisplayName } location:{ Location.ToString()}:{stat.DefaultValue<float>()}");
+                return stat.DefaultValue<float>();
+            }
+            LogDebug($"Vehicle null");
+            return 0;
+        }
+
+       	internal static float PercentForArmorLocation(Mech mech, int Location)
 	{
 		// Invalid locations are always 100%
 		// This helps makes the functions generic for the missing leg back armor, for example
@@ -44,16 +105,6 @@ namespace PanicSystem
 		{
 			Statistic stat = mech.StatCollection.GetStatistic(mech.GetStringForArmorLocation((ArmorLocation)Location));
 			if(stat == null) {
-<<<<<<< HEAD
-                        LogDebug($"Can't get armor stat  { mech.DisplayName } location:{ Location.ToString()}");
-            			return 0;
-          		}
-                //LogDebug($"armor stat  { mech.DisplayName } location:{ Location.ToString()} :{stat.DefaultValue<float>()}");
-                return stat.DefaultValue<float>();
-		}
-            LogDebug($"Mech null");
-            return 0;
-=======
             			LogDebug($"Can't get armor stat  { mech.DisplayName } location:{ Location}");
             			return 0;
           		}
@@ -152,98 +203,9 @@ namespace PanicSystem
 		}
 		LogDebug($"Mech null");
 		return 0;
->>>>>>> pr/2
 	}
-    public static float MaxStructureForLocation(Mech mech, int Location)
-    {
-        if (mech != null)
-        {
-            Statistic stat = mech.StatCollection.GetStatistic(mech.GetStringForStructureLocation((ChassisLocations) Location));
-            if (stat == null)
-            {
-                LogDebug($"Can't get structure stat  { mech.DisplayName } location:{ Location.ToString()}");
-                return 0;
-            }
-                //LogDebug($"structure stat  { mech.DisplayName } location:{ Location.ToString()}:{stat.DefaultValue<float>()}");
-                return stat.DefaultValue<float>();
-        }
-            LogDebug($"Mech null");
-            return 0;
-    }
-
-        public static float MaxArmorForLocation(Vehicle v, int Location)
-        {
-            if (v != null)
-            {
-                Statistic stat = v.StatCollection.GetStatistic(v.GetStringForArmorLocation((VehicleChassisLocations)Location));
-                if (stat == null)
-                {
-                    LogDebug($"Can't get armor stat  { v.DisplayName } location:{ Location.ToString()}");
-                    return 0;
-                }
-                //LogDebug($"armor stat  { v.DisplayName } location:{ Location.ToString()} :{stat.DefaultValue<float>()}");
-                return stat.DefaultValue<float>();
-            }
-            LogDebug($"Vehicle null");
-            return 0;
-        }
-        public static float MaxStructureForLocation(Vehicle v, int Location)
-        {
-            if (v != null)
-            {
-                Statistic stat = v.StatCollection.GetStatistic(v.GetStringForStructureLocation((VehicleChassisLocations)Location));
-                if (stat == null)
-                {
-                    LogDebug($"Can't get structure stat  { v.DisplayName } location:{ Location.ToString()}");
-                    return 0;
-                }
-                //LogDebug($"structure stat  { mech.DisplayName } location:{ Location.ToString()}:{stat.DefaultValue<float>()}");
-                return stat.DefaultValue<float>();
-            }
-            LogDebug($"Vehicle null");
-            return 0;
-        }
 
         internal static float PercentRightTorso(Mech mech) =>
-<<<<<<< HEAD
-            (mech.RightTorsoStructure +
-             mech.RightTorsoFrontArmor +
-             mech.RightTorsoRearArmor) /
-            (MaxStructureForLocation(mech,(int) ChassisLocations.RightTorso) +
-             MaxArmorForLocation(mech, (int) ArmorLocation.RightTorso) +
-             MaxArmorForLocation(mech, (int) ArmorLocation.RightTorsoRear));
-
-        internal static float PercentLeftTorso(Mech mech) =>
-            (mech.LeftTorsoStructure +
-             mech.LeftTorsoFrontArmor +
-             mech.LeftTorsoRearArmor) /
-            (MaxStructureForLocation(mech,(int) ChassisLocations.LeftTorso) +
-             MaxArmorForLocation(mech, (int) ArmorLocation.LeftTorso) +
-             MaxArmorForLocation(mech, (int) ArmorLocation.LeftTorsoRear));
-
-        internal static float PercentCenterTorso(Mech mech) =>
-            (mech.CenterTorsoStructure +
-             mech.CenterTorsoFrontArmor +
-             mech.CenterTorsoRearArmor) /
-            (MaxStructureForLocation(mech,(int) ChassisLocations.CenterTorso) +
-             MaxArmorForLocation(mech, (int) ArmorLocation.CenterTorso) +
-             MaxArmorForLocation(mech, (int) ArmorLocation.CenterTorsoRear));
-
-        internal static float PercentLeftLeg(Mech mech) =>
-            (mech.LeftLegStructure + mech.LeftLegArmor) /
-            (MaxStructureForLocation(mech, (int) ChassisLocations.LeftLeg) +
-             MaxArmorForLocation(mech, (int) ArmorLocation.LeftLeg));
-
-        internal static float PercentRightLeg(Mech mech) =>
-            (mech.RightLegStructure + mech.RightLegArmor) /
-            (MaxStructureForLocation(mech, (int) ChassisLocations.RightLeg) +
-             MaxArmorForLocation(mech, (int) ArmorLocation.RightLeg));
-
-        internal static float PercentHead(Mech mech) =>
-            (mech.HeadStructure + mech.HeadArmor) /
-            (MaxStructureForLocation(mech, (int) ChassisLocations.Head) +
-             MaxArmorForLocation(mech, (int) ArmorLocation.Head));
-=======
             (PercentForLocation(mech, (int) ArmorLocation.RightTorso, (int) ArmorLocation.RightTorsoRear, 
 			(int) ChassisLocations.RightTorso));
 
@@ -266,7 +228,6 @@ namespace PanicSystem
         internal static float PercentHead(Mech mech) =>
             (PercentForLocation(mech, (int) ArmorLocation.Head, 0, 
 			(int) ChassisLocations.Head));
->>>>>>> pr/2
 
         // check if panic roll is possible
         private static bool CanPanic(AbstractActor actor, AbstractActor attacker)
@@ -277,15 +238,9 @@ namespace PanicSystem
                 return false;
             }
 
-<<<<<<< HEAD
-            if (actor.team.IsLocalPlayer && !modSettings.PlayersCanPanic ||
-                !actor.team.IsLocalPlayer && !modSettings.EnemiesCanPanic)
-=======
-            if (attackSequence == null ||
-                (actor.team.IsLocalPlayer && !modSettings.PlayersCanPanic) ||
+            if ((actor.team.IsLocalPlayer && !modSettings.PlayersCanPanic) ||
                 (!actor.team.IsLocalPlayer && !modSettings.EnemiesCanPanic) ||
                 (actor is Vehicle && !modSettings.VehiclesCanPanic))
->>>>>>> pr/2
             {
                 return false;
             }
@@ -326,16 +281,16 @@ namespace PanicSystem
         }
 
         // true implies a panic condition was met
-        public static bool ShouldPanic(AbstractActor actor, AbstractActor attacker,out int heatdamage, out float damageIncludingHeatDamage)
+        public static bool ShouldPanic(AbstractActor actor, AbstractActor attacker, out int heatdamage, out float damageIncludingHeatDamage)
         {
-            if (!CanPanic(actor,attacker))
+            if (!CanPanic(actor, attacker))
             {
                 damageIncludingHeatDamage = 0;
                 heatdamage = 0;
                 return false;
             }
 
-            return SufficientDamageWasDone(actor, out heatdamage,out damageIncludingHeatDamage);
+            return SufficientDamageWasDone(actor, out heatdamage, out damageIncludingHeatDamage);
         }
 
         public static bool ShouldSkipProcessing(AbstractActor actor)
@@ -366,12 +321,12 @@ namespace PanicSystem
             float previousArmor;
             float previousStructure;
             //don't need the damage numbers as we can check the actor itself.
-            TurnDamageTracker.DamageDuringTurn(actor,out armorDamage,out structureDamage,out previousArmor,out previousStructure,out heatdamage);
-            
-            // used in SavingThrows.cs
-            damageIncludingHeatDamage =armorDamage+structureDamage;
+            TurnDamageTracker.DamageDuringTurn(actor, out armorDamage, out structureDamage, out previousArmor, out previousStructure, out heatdamage);
 
-            if (!(actor is Mech) ||actor.isHasHeat())
+            // used in SavingThrows.cs
+            damageIncludingHeatDamage = armorDamage + structureDamage;
+
+            if (!(actor is Mech) || actor.isHasHeat())
             {//Battle Armor doesn't have heat
                 damageIncludingHeatDamage = damageIncludingHeatDamage + (heatdamage * modSettings.HeatDamageFactor);
             }
@@ -394,19 +349,11 @@ namespace PanicSystem
                 return true;
             }
 
-<<<<<<< HEAD
             if ((actor is Mech &&
                 structureDamage >= modSettings.MinimumMechStructureDamageRequired) ||
                 (modSettings.VehiclesCanPanic &&
                 actor is Vehicle &&
                 structureDamage >= modSettings.MinimumVehicleStructureDamageRequired))
-=======
-            if (attackSequence.chosenTarget is Mech &&
-                attackSequence.GetStructureDamageDealt(id) > modSettings.MinimumMechStructureDamageRequired ||
-                modSettings.VehiclesCanPanic &&
-                attackSequence.chosenTarget is Vehicle &&
-                attackSequence.GetStructureDamageDealt(id) > modSettings.MinimumVehicleStructureDamageRequired)
->>>>>>> pr/2
             {
                 LogReport("Structure damage requires panic save");
                 return true;

@@ -29,12 +29,22 @@ namespace PanicSystem
         // used in calculations
         internal static float PercentPilot(Pilot pilot) => 1 - (float) pilot.Injuries / pilot.Health;
 
+<<<<<<< HEAD
 	public static float MaxArmorForLocation(Mech mech, int Location)
+=======
+	internal static float PercentForArmorLocation(Mech mech, int Location)
+>>>>>>> pr/2
 	{
+		// Invalid locations are always 100%
+		// This helps makes the functions generic for the missing leg back armor, for example
+		if (Location == 0)
+			return 1;
+
 		if (mech != null)
 		{
 			Statistic stat = mech.StatCollection.GetStatistic(mech.GetStringForArmorLocation((ArmorLocation)Location));
 			if(stat == null) {
+<<<<<<< HEAD
                         LogDebug($"Can't get armor stat  { mech.DisplayName } location:{ Location.ToString()}");
             			return 0;
           		}
@@ -43,6 +53,106 @@ namespace PanicSystem
 		}
             LogDebug($"Mech null");
             return 0;
+=======
+            			LogDebug($"Can't get armor stat  { mech.DisplayName } location:{ Location}");
+            			return 0;
+          		}
+
+			LogDebug($"Armor stat  { mech.DisplayName } location:{ Location} cur:{stat.Value<float>()} max:{stat.DefaultValue<float>()}");
+//			if (mech.team.IsLocalPlayer)
+//                  LogReport($"Armor stat  { mech.DisplayName } location:{ Location} cur:{stat.Value<float>()} max:{stat.DefaultValue<float>()}");
+
+                float maxArmor = stat.DefaultValue<float>();
+
+            // Limit the max armor to ArmorDamageThreshold and the percent value to 1 (100%)
+            // This helps reduce panic effects for heavier, well-armored mechs
+            // Losing 30% of your armor isn't as distressing when you have 300 max as when you have 60
+            // Heavily armored mechs should brush this off until they're seriously damaged
+            if (maxArmor > modSettings.ArmorDamageThreshold && modSettings.ArmorDamageThreshold > 0)
+				maxArmor = modSettings.ArmorDamageThreshold;
+
+			float percentArmor = stat.Value<float>() / maxArmor;
+			if (percentArmor > 1)
+				percentArmor = 1;
+
+			return percentArmor;
+		}
+		LogDebug($"Mech null");
+		return 0;
+	}
+
+	internal static float PercentForStructureLocation(Mech mech, int Location)
+	{
+		// Invalid locations are always 100%
+		// This helps makes the functions generic for the missing leg back armor, for example
+		if (Location == 0)
+			return 1;
+
+		if (mech != null)
+		{
+			Statistic stat = mech.StatCollection.GetStatistic(mech.GetStringForStructureLocation((ChassisLocations)Location));
+			if(stat == null)
+			{
+            			LogDebug($"Can't get structure stat  { mech.DisplayName } location:{ Location}");
+            			return 0;
+          		}
+
+			LogDebug($"Structure stat  { mech.DisplayName } location:{ Location} cur:{stat.Value<float>()} max:{stat.DefaultValue<float>()}");
+			return (stat.Value<float>() / stat.DefaultValue<float>());
+		}
+		LogDebug($"Mech null");
+		return 0;
+	}
+
+	internal static float PercentForLocation(Mech mech, int LocationFront, int LocationBack, int LocationStructure)
+	{
+		if (mech != null)
+		{
+			float percentFront = PercentForArmorLocation(mech, LocationFront);
+			float percentBack = PercentForArmorLocation(mech, LocationBack);
+			float percentStructure = PercentForStructureLocation(mech, LocationStructure);
+
+			float percentLocation = percentStructure;
+			float numAdditions = 1;
+
+			// If the structure is damaged, then use that over any armor values
+			// If an armor value is lower than the structure percent, then factor it in too
+			// This emphasizes internal damage from a blow through (back armor gone or tandem weapons)
+			if (percentStructure < 1)
+			{
+				if (percentFront < percentStructure)
+				{
+					percentLocation += percentFront;
+					numAdditions++;
+				}
+
+				if (LocationBack != 0)
+				{
+					if (percentBack < percentStructure)
+					{
+						percentLocation += percentBack;
+						numAdditions++;
+					}
+				}
+			}
+			else
+			{
+				percentLocation += percentFront;
+				numAdditions++;
+
+				if (LocationBack != 0)
+				{
+					percentLocation += percentBack;
+					numAdditions++;
+				}
+			}
+
+			percentLocation /= numAdditions;
+			return percentLocation;
+		}
+		LogDebug($"Mech null");
+		return 0;
+>>>>>>> pr/2
 	}
     public static float MaxStructureForLocation(Mech mech, int Location)
     {
@@ -95,6 +205,7 @@ namespace PanicSystem
         }
 
         internal static float PercentRightTorso(Mech mech) =>
+<<<<<<< HEAD
             (mech.RightTorsoStructure +
              mech.RightTorsoFrontArmor +
              mech.RightTorsoRearArmor) /
@@ -132,6 +243,30 @@ namespace PanicSystem
             (mech.HeadStructure + mech.HeadArmor) /
             (MaxStructureForLocation(mech, (int) ChassisLocations.Head) +
              MaxArmorForLocation(mech, (int) ArmorLocation.Head));
+=======
+            (PercentForLocation(mech, (int) ArmorLocation.RightTorso, (int) ArmorLocation.RightTorsoRear, 
+			(int) ChassisLocations.RightTorso));
+
+        internal static float PercentLeftTorso(Mech mech) =>
+            (PercentForLocation(mech, (int) ArmorLocation.LeftTorso, (int) ArmorLocation.LeftTorsoRear, 
+			(int) ChassisLocations.LeftTorso));
+
+        internal static float PercentCenterTorso(Mech mech) =>
+            (PercentForLocation(mech, (int) ArmorLocation.CenterTorso, (int) ArmorLocation.CenterTorsoRear, 
+			(int) ChassisLocations.CenterTorso));
+
+        internal static float PercentLeftLeg(Mech mech) =>
+            (PercentForLocation(mech, (int) ArmorLocation.LeftLeg, 0, 
+			(int) ChassisLocations.LeftTorso));
+
+        internal static float PercentRightLeg(Mech mech) =>
+            (PercentForLocation(mech, (int) ArmorLocation.RightLeg, 0, 
+			(int) ChassisLocations.RightLeg));
+
+        internal static float PercentHead(Mech mech) =>
+            (PercentForLocation(mech, (int) ArmorLocation.Head, 0, 
+			(int) ChassisLocations.Head));
+>>>>>>> pr/2
 
         // check if panic roll is possible
         private static bool CanPanic(AbstractActor actor, AbstractActor attacker)
@@ -142,8 +277,15 @@ namespace PanicSystem
                 return false;
             }
 
+<<<<<<< HEAD
             if (actor.team.IsLocalPlayer && !modSettings.PlayersCanPanic ||
                 !actor.team.IsLocalPlayer && !modSettings.EnemiesCanPanic)
+=======
+            if (attackSequence == null ||
+                (actor.team.IsLocalPlayer && !modSettings.PlayersCanPanic) ||
+                (!actor.team.IsLocalPlayer && !modSettings.EnemiesCanPanic) ||
+                (actor is Vehicle && !modSettings.VehiclesCanPanic))
+>>>>>>> pr/2
             {
                 return false;
             }
@@ -252,11 +394,19 @@ namespace PanicSystem
                 return true;
             }
 
+<<<<<<< HEAD
             if ((actor is Mech &&
                 structureDamage >= modSettings.MinimumMechStructureDamageRequired) ||
                 (modSettings.VehiclesCanPanic &&
                 actor is Vehicle &&
                 structureDamage >= modSettings.MinimumVehicleStructureDamageRequired))
+=======
+            if (attackSequence.chosenTarget is Mech &&
+                attackSequence.GetStructureDamageDealt(id) > modSettings.MinimumMechStructureDamageRequired ||
+                modSettings.VehiclesCanPanic &&
+                attackSequence.chosenTarget is Vehicle &&
+                attackSequence.GetStructureDamageDealt(id) > modSettings.MinimumVehicleStructureDamageRequired)
+>>>>>>> pr/2
             {
                 LogReport("Structure damage requires panic save");
                 return true;

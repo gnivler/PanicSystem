@@ -61,6 +61,8 @@ namespace PanicSystem
         public float OverheatedModifier;
         public float ShutdownModifier;
         public float HeatDamageFactor;
+        public float VehicleDamageFactor;
+        public float ArmorDamageThreshold;
         public float MechHealthForCrit;
         public float CritOver;
         public float UnsettledPanicFactor;

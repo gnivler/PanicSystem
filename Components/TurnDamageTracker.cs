@@ -149,7 +149,7 @@ namespace PanicSystem.Components
             attacker = null;
             activationVictims = new List<AbstractActor>();
             ejectedActors = new List<string>();
-            DamageHandler.hookPDF();
+            Patches.VehicleRepresentation.hookPDF();
         }
 
         internal static void DamageDuringTurn(AbstractActor actor,out float armorDamage,out float structureDamage,out float previousArmor,out float previousStructure,out int heatdamage)

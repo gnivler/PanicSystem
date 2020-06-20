@@ -20,14 +20,6 @@ namespace PanicSystem.Components
 {
     public static class DamageHandler
     {
-        private static MethodInfo originalPDF =null;
-        private static MethodInfo prefixPDF = null;
-
-        public static void hookPDF()
-        {
-            originalPDF = AccessTools.Method(typeof(BattleTech.VehicleRepresentation), "PlayDeathFloatie");
-            prefixPDF = AccessTools.Method(typeof(BattleTech.VehicleRepresentation), nameof(Patches.VehicleRepresentation.PrefixDeathFloatie));
-        }
         public static void ProcessDamage(AbstractActor actor, float damage, float directStructureDamage, int heatdamage)
         {
             if (ShouldSkipProcessing(actor))
@@ -197,9 +189,8 @@ namespace PanicSystem.Components
                 defender is Vehicle v)
             {
                 // make the regular Pilot Ejected floatie not appear, for this ejection
-                harmony.Patch(originalPDF, new HarmonyMethod(prefixPDF));
+                Patches.VehicleRepresentation.supressDeathFloatieOnce();
                 defender.EjectPilot(defender.GUID, -1, DeathMethod.PilotEjection, true);
-                harmony.Unpatch(originalPDF, HarmonyPatchType.Prefix);
                 CastDef castDef = Coordinator.CreateCast(defender);
                 DialogueContent content = new DialogueContent(
                     "Destroy the tech, let's get outta here!", Color.white, castDef.id, null, null, DialogCameraDistance.Medium, DialogCameraHeight.Default, 0

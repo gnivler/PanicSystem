@@ -92,6 +92,9 @@
     <Compile Include="Logger.cs" />
     <Compile Include="PanicSystem.cs" />
     <Compile Include="Patches\AAR_UnitStatusWidget.cs" />
+    <Compile Include="Patches\MechMeleeSequence.cs" />
+    <Compile Include="Patches\ActorMovementSequence.cs" />
+    <Compile Include="Patches\AttackDirector.cs" />
     <Compile Include="Patches\AbstractActor.cs" />
     <Compile Include="Patches\Vehicle.cs" />
     <Compile Include="Patches\CombatGameState.cs" />

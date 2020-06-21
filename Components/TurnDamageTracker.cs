@@ -59,7 +59,7 @@ namespace PanicSystem.Components
             if (!activationVictims.Contains(actor))
             {
                 activationVictims.Add(actor);
-                LogReport($"{actor.DisplayName}|{actor.Nickname}|{actor.GUID} added to victims");
+                LogReport($"{actor.DisplayName}|{actor.Nickname}|{actor.GUID} added to victims. [{activationVictims.Count}]");
             }
             if (!turnExternalHeatAccumulator.ContainsKey(actor.GUID))
             {//got here without a new turn for defender use max values for struc/armor
@@ -74,7 +74,7 @@ namespace PanicSystem.Components
         {
             if (attacker != null)
             {
-                LogReport($"completed Turn Activation for {instance.Nickname} - {instance.DisplayName} - {instance.GUID}");
+                LogReport($"completed Turn Activation for {instance.Nickname} - {instance.DisplayName} - {instance.GUID} -victims [{activationVictims.Count}]");
                 foreach(AbstractActor actor in activationVictims)
                 {
                     DamageHandler.ProcessBatchedTurnDamage(actor);
@@ -89,7 +89,7 @@ namespace PanicSystem.Components
         {
             if (attacker != null)
             {
-                LogReport($"attack was completed for {attacker.Nickname} - {attacker.DisplayName} - {attacker.GUID} ({reason})");
+                LogReport($"attack was completed for {attacker.Nickname} - {attacker.DisplayName} - {attacker.GUID} ({reason}) -victims [{activationVictims.Count}]");
                 foreach (AbstractActor actor in activationVictims)
                 {
                     DamageHandler.ProcessBatchedTurnDamage(actor);

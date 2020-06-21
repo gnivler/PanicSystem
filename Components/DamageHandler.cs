@@ -52,6 +52,7 @@ namespace PanicSystem.Components
 
             if (defender.IsDead || defender.IsFlaggedForDeath)
             {
+                LogDebug("He's dead Jim.....");
                 return;
             }
             LogReport($"Damage >>> D: {damage:F3} DS: {directStructureDamage:F3} H: {heatdamage}");

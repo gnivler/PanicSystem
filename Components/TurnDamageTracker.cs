@@ -25,26 +25,6 @@ namespace PanicSystem.Components
             {
                 LogReport($"new Turn Activation for {actor.Nickname} - {actor.DisplayName} - {actor.GUID}");
                 attacker = actor;
-                turnExternalHeatAccumulator[actor.GUID] = 0;//external heat 0 start of activation
-                if (actor is Mech mech)
-                {
-                    turnStartStructure[actor.GUID] = mech.RightTorsoStructure + mech.LeftTorsoStructure + mech.CenterTorsoStructure + mech.LeftLegStructure + mech.RightLegStructure + mech.HeadStructure;
-
-                    turnStartArmor[actor.GUID] = mech.RightTorsoFrontArmor + mech.RightTorsoRearArmor + mech.LeftTorsoFrontArmor + mech.LeftTorsoRearArmor +
-                         mech.CenterTorsoFrontArmor + mech.CenterTorsoRearArmor + mech.LeftLegArmor + mech.RightLegArmor + mech.HeadArmor;
-                }
-                else if (actor is Vehicle v)
-                {
-                    turnStartStructure[actor.GUID] = v.LeftSideStructure + v.RightSideStructure + v.FrontStructure + v.RearStructure + v.TurretStructure;
-
-                    turnStartArmor[actor.GUID] = v.LeftSideArmor + v.RightSideArmor + v.FrontArmor + v.RearArmor + v.TurretArmor;
-                }
-                else
-                {
-                    LogReport("Not mech or vehicle");
-                    turnStartStructure[actor.GUID] = 0;
-                    turnStartArmor[actor.GUID] = 0;
-                }
             }
             else
             {
@@ -70,18 +50,40 @@ namespace PanicSystem.Components
             //no need to accumulate armor/structure, we noted values on turn activation start
         }
 
-        internal static void completedTurnFor(AbstractActor instance)
+        internal static void completedTurnFor(AbstractActor actor)
         {
             if (attacker != null)
             {
-                LogReport($"completed Turn Activation for {instance.Nickname} - {instance.DisplayName} - {instance.GUID} -victims [{activationVictims.Count}]");
-                foreach(AbstractActor actor in activationVictims)
+                LogReport($"completed Turn Activation for {actor.Nickname} - {actor.DisplayName} - {actor.GUID} -victims [{activationVictims.Count}]");
+                foreach(AbstractActor v in activationVictims)
                 {
-                    DamageHandler.ProcessBatchedTurnDamage(actor);
+                    DamageHandler.ProcessBatchedTurnDamage(v);
                 }
                 activationVictims.Clear();
             }
             attacker = null;
+
+            turnExternalHeatAccumulator[actor.GUID] = 0;//external heat 0 start of activation
+            if (actor is Mech mech)
+            {
+                turnStartStructure[actor.GUID] = mech.RightTorsoStructure + mech.LeftTorsoStructure + mech.CenterTorsoStructure + mech.LeftLegStructure + mech.RightLegStructure + mech.HeadStructure;
+
+                turnStartArmor[actor.GUID] = mech.RightTorsoFrontArmor + mech.RightTorsoRearArmor + mech.LeftTorsoFrontArmor + mech.LeftTorsoRearArmor +
+                     mech.CenterTorsoFrontArmor + mech.CenterTorsoRearArmor + mech.LeftLegArmor + mech.RightLegArmor + mech.HeadArmor;
+            }
+            else if (actor is Vehicle v)
+            {
+                turnStartStructure[actor.GUID] = v.LeftSideStructure + v.RightSideStructure + v.FrontStructure + v.RearStructure + v.TurretStructure;
+
+                turnStartArmor[actor.GUID] = v.LeftSideArmor + v.RightSideArmor + v.FrontArmor + v.RearArmor + v.TurretArmor;
+            }
+            else
+            {
+                LogReport("Not mech or vehicle");
+                turnStartStructure[actor.GUID] = 0;
+                turnStartArmor[actor.GUID] = 0;
+            }
+
         }
 
 

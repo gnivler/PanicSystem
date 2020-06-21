@@ -25,6 +25,8 @@ namespace PanicSystem.Patches
         {
             try
             {
+                mechEjections = 0;
+                vehicleEjections = 0;
                 // get the total and decrement it globally
                 var MechsEjected = ___UnitData.pilot.StatCollection.GetStatistic("MechsEjected");
                 if (MechsEjected != null)
@@ -110,7 +112,7 @@ namespace PanicSystem.Patches
                 // weird loop
                 for (var x = 0; x < mechEjections; x++)
                 {
-                    LogDebug($"{___UnitData.pilot.Callsign} mechsEjections {vehicleEjections}");
+                    LogDebug($"{___UnitData.pilot.Callsign} mechsEjections {x}/{mechEjections}");
                     AARIcons.AddEjectedMech(___KillGridParent);
                 }
 

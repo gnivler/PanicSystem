@@ -93,6 +93,7 @@ namespace PanicSystem.Components
 
             if (defender.IsDead || defender.IsFlaggedForDeath)
             {
+                LogDebug("He's dead Jim.....");
                 return;
             }
 

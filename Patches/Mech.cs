@@ -20,11 +20,11 @@ namespace PanicSystem.Patches
         {
             if (__instance == null)
             {
-                LogDebug("No mech\n");
+                LogDebug("No mech");
                 return;
             }
-            LogReport($"{new string('?', 46)}\n");
-            LogReport($"{__instance.DisplayName} :{__instance.GUID } took {amt} Heat Damage from {reason ?? "null"}\n");
+            LogReport($"\n{new string('^', 46)}");
+            LogReport($"{__instance.DisplayName} :{__instance.GUID } took {amt} Heat Damage from {reason ?? "null"}");
             DamageHandler.ProcessDamage(__instance, 0, 0, amt);
 
         }
@@ -40,12 +40,12 @@ namespace PanicSystem.Patches
         {
             if (__instance == null)
             {
-                LogDebug("No mech\n");
+                LogDebug("No mech");
                 return;
             }
-            LogReport($"{new string('?', 46)}\n");
+            LogReport($"\n{new string('^', 46)}");
             string wname = (weapon != null) ? (weapon.Name ?? "null") : "null";
-            LogReport($"{__instance.DisplayName} :{__instance.GUID } took Damage from {wname} - {damageType.ToString()}\n");
+            LogReport($"{__instance.DisplayName} :{__instance.GUID } took Damage from {wname} - {damageType.ToString()}");
             DamageHandler.ProcessDamage(__instance, damageAmount, directStructureDamage, 0);
         }
     }

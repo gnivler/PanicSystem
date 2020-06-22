@@ -103,39 +103,17 @@ namespace PanicSystem
 			float percentStructure = PercentForStructureLocation(mech, LocationStructure);
 
 			float percentLocation = percentStructure;
-			float numAdditions = 1;
+			float numAdditions = 2;
 
-			// If the structure is damaged, then use that over any armor values
-			// If an armor value is lower than the structure percent, then factor it in too
+			// Use the minimum percentage between structure and armor
 			// This emphasizes internal damage from a blow through (back armor gone or tandem weapons)
-			if (percentStructure < 1)
-			{
-				if (percentFront < percentStructure)
-				{
-					percentLocation += percentFront;
-					numAdditions++;
-				}
+			percentLocation += Math.Min(percentFront, percentStructure);
 
-				if (LocationBack != 0)
-				{
-					if (percentBack < percentStructure)
-					{
-						percentLocation += percentBack;
-						numAdditions++;
-					}
-				}
-			}
-			else
+			if (LocationBack != 0)
 			{
-				percentLocation += percentFront;
-				numAdditions++;
-
-				if (LocationBack != 0)
-				{
-					percentLocation += percentBack;
-					numAdditions++;
-				}
-			}
+                percentLocation += Math.Min(percentBack, percentStructure);
+                numAdditions++;
+ 			}
 
 			percentLocation /= numAdditions;
 			return percentLocation;

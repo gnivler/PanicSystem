@@ -149,7 +149,7 @@ namespace PanicSystem.Components
 
             // eject saving throw
             if (!modSettings.AlwaysPanic &&
-                SavingThrows.SavedVsEject(defender, savingThrow, heatdamage, damageIncludingHeatDamage))
+                SavingThrows.SavedVsEject(defender, savingThrow))
             {
                 return;
             }

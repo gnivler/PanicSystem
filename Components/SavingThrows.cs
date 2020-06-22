@@ -267,18 +267,37 @@ namespace PanicSystem.Components
             if (modSettings.VehiclesCanPanic &&
                 defender is Vehicle defendingVehicle)
             {
-                float percentArmor = (defendingVehicle.SummaryArmorCurrent / defendingVehicle.SummaryArmorMax);
-                float percentStructure = (defendingVehicle.SummaryStructureCurrent / defendingVehicle.SummaryStructureMax);
-                float percentCur = percentStructure;
-
-                if (percentStructure > percentArmor)
+                
+                float percentTurret = PercentTurret(defendingVehicle);
+                if (percentTurret < 1)
                 {
-                    percentCur += percentArmor;
-                    percentCur /= 2;
+                    totalMultiplier += modSettings.VehicleDamageFactor * (1 - percentTurret);
+                    LogReport($"{"T",-20} | {modSettings.VehicleDamageFactor * (1 - percentTurret),10:F3} | {totalMultiplier,10:F3}");
                 }
-
-                totalMultiplier += ((1 - percentCur) * modSettings.VehicleDamageFactor);
-                LogReport($"{"Vehicle percents",-20} | {percentArmor * 100,10} | {percentStructure * 100,10:F3}");
+                float percentLeft = PercentLeft(defendingVehicle);
+                if (percentLeft < 1)
+                {
+                    totalMultiplier += modSettings.VehicleDamageFactor * (1 - percentLeft);
+                    LogReport($"{"L",-20} | {modSettings.VehicleDamageFactor * (1 - percentLeft),10:F3} | {totalMultiplier,10:F3}");
+                }
+                float percentRight = PercentRight(defendingVehicle);
+                if (percentRight < 1)
+                {
+                    totalMultiplier += modSettings.VehicleDamageFactor * (1 - percentRight);
+                    LogReport($"{"R",-20} | {modSettings.VehicleDamageFactor * (1 - percentRight),10:F3} | {totalMultiplier,10:F3}");
+                }
+                float percentFront = PercentFront(defendingVehicle);
+                if (percentFront < 1)
+                {
+                    totalMultiplier += modSettings.VehicleDamageFactor * (1 - percentFront);
+                    LogReport($"{"F",-20} | {modSettings.VehicleDamageFactor * (1 - percentFront),10:F3} | {totalMultiplier,10:F3}");
+                }
+                float percentRear = PercentRear(defendingVehicle);
+                if (percentRear < 1)
+                {
+                    totalMultiplier += modSettings.VehicleDamageFactor * (1 - percentRear);
+                    LogReport($"{"B",-20} | {modSettings.VehicleDamageFactor * (1 - percentRear),10:F3} | {totalMultiplier,10:F3}");
+                }
                 LogReport($"{"Vehicle state",-20} | {modSettings.VehicleDamageFactor,10} | {totalMultiplier,10:F3}");
             }
 
@@ -307,7 +326,7 @@ namespace PanicSystem.Components
         }
 
         // false is punchin' out
-        public static bool SavedVsEject(AbstractActor actor, float savingThrow,int heatDamage,float damageIncludingHeatDamage)
+        public static bool SavedVsEject(AbstractActor actor, float savingThrow)
         {
             LogReport("Panic save failure requires eject save");
 

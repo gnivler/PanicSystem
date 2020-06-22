@@ -199,11 +199,79 @@ namespace PanicSystem
 			}
 
 			percentLocation /= numAdditions;
-			return percentLocation;
+            LogReport($"{((ChassisLocations)LocationStructure).ToString(),-20} | A:{percentFront * 100,10:F3}% [{percentBack * 100,10:F3}%] | S:{percentStructure * 100,10:F3}%");
+            return percentLocation;
 		}
 		LogDebug($"Mech null");
 		return 0;
 	}
+
+        private static float PercentForLocation(Vehicle v, VehicleChassisLocations location)
+        {
+            if (v != null)
+            {
+                var maxs=MaxStructureForLocation(v,(int)location);
+                var maxa = MaxArmorForLocation(v, (int)location);
+                var cs = maxs;
+                var ca = maxa;
+                switch (location)
+                {
+                    case VehicleChassisLocations.Turret:
+                        cs = v.TurretStructure;
+                        ca = v.TurretArmor;
+                    break;
+                    case VehicleChassisLocations.Left:
+                        cs = v.LeftSideStructure;
+                        ca = v.LeftSideArmor;
+                        break;
+                    case VehicleChassisLocations.Right:
+                        cs = v.RightSideStructure;
+                        ca = v.RightSideArmor;
+                        break;
+                    case VehicleChassisLocations.Front:
+                        cs = v.FrontStructure;
+                        ca = v.FrontArmor;
+                        break;
+                    case VehicleChassisLocations.Rear:
+                        cs = v.RearStructure;
+                        ca = v.RearArmor;
+                        break;
+                    default:
+                        LogDebug($"Invalid location {location}");
+                        break;
+                }
+
+                float percentArmor = ca/maxa;
+                float percentStructure = cs/maxs;
+
+                float percentLocation = percentStructure;
+                float numAdditions = 1;
+
+                // If the structure is damaged, then use that over any armor values
+                // If an armor value is lower than the structure percent, then factor it in too
+                // This emphasizes internal damage from a blow through (back armor gone or tandem weapons)
+                if (percentStructure < 1)
+                {
+                    if (percentArmor < percentStructure)
+                    {
+                        percentLocation += percentArmor;
+                        numAdditions++;
+                    }
+
+                }
+                else
+                {
+                    percentLocation += percentArmor;
+                    numAdditions++;
+                }
+
+                percentLocation /= numAdditions;
+                LogReport($"{location.ToString(),-20} | A:{ca:F3}/{maxa:F3}={percentArmor * 100,10}% | S:{cs:F3}/{maxs:F3}={percentStructure * 100,10:F3}%");
+                return percentLocation;
+            }
+            LogDebug($"Vehicle null");
+            return 0;
+        }
 
         internal static float PercentRightTorso(Mech mech) =>
             (PercentForLocation(mech, (int) ArmorLocation.RightTorso, (int) ArmorLocation.RightTorsoRear, 
@@ -228,6 +296,20 @@ namespace PanicSystem
         internal static float PercentHead(Mech mech) =>
             (PercentForLocation(mech, (int) ArmorLocation.Head, 0, 
 			(int) ChassisLocations.Head));
+
+        internal static float PercentTurret(Vehicle v) =>
+            (PercentForLocation(v, VehicleChassisLocations.Turret));
+
+        internal static float PercentLeft(Vehicle v) =>
+            (PercentForLocation(v, VehicleChassisLocations.Left));
+        internal static float PercentRight(Vehicle v) =>
+            (PercentForLocation(v, VehicleChassisLocations.Right));
+
+        internal static float PercentFront(Vehicle v) =>
+            (PercentForLocation(v, VehicleChassisLocations.Front));
+
+        internal static float PercentRear(Vehicle v) =>
+            (PercentForLocation(v, VehicleChassisLocations.Rear));
 
         // check if panic roll is possible
         private static bool CanPanic(AbstractActor actor, AbstractActor attacker)

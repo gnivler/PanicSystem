@@ -196,6 +196,12 @@ namespace PanicSystem
                 var maxa = MaxArmorForLocation(v, (int)location);
                 var cs = maxs;
                 var ca = maxa;
+                if (maxs == 0 || maxa == 0)
+                {
+                    LogDebug($"Invalid location in vehicle {location.ToString()}");
+                    return 1;
+                }
+
                 switch (location)
                 {
                     case VehicleChassisLocations.Turret:

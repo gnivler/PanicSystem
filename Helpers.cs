@@ -199,8 +199,12 @@ namespace PanicSystem
 			}
 
 			percentLocation /= numAdditions;
-            LogReport($"{((ChassisLocations)LocationStructure).ToString(),-20} | A:{percentFront * 100,10:F3}% [{percentBack * 100,10:F3}%] | S:{percentStructure * 100,10:F3}%");
-            return percentLocation;
+            LogReport($"{((ChassisLocations)LocationStructure).ToString(),-20} | A:{percentFront * 100,10:F3}% | S:{percentStructure * 100,10:F3}%");
+            if (LocationBack != 0)
+            {
+                LogReport($"{" ",-20} |  [{percentBack * 100,10:F3}%] | ");
+            }
+                return percentLocation;
 		}
 		LogDebug($"Mech null");
 		return 0;
@@ -266,7 +270,7 @@ namespace PanicSystem
                 }
 
                 percentLocation /= numAdditions;
-                LogReport($"{location.ToString(),-20} | A:{ca:F3}/{maxa:F3}={percentArmor * 100,10}% | S:{cs:F3}/{maxs:F3}={percentStructure * 100,10:F3}%");
+                LogReport($"{location.ToString(),-20} | A:{ca:F3}/{maxa:F3} = {percentArmor * 100,10}% , S:{cs:F3}/{maxs:F3} = {percentStructure * 100,10:F3}%");
                 return percentLocation;
             }
             LogDebug($"Vehicle null");
@@ -287,7 +291,7 @@ namespace PanicSystem
 
         internal static float PercentLeftLeg(Mech mech) =>
             (PercentForLocation(mech, (int) ArmorLocation.LeftLeg, 0, 
-			(int) ChassisLocations.LeftTorso));
+			(int) ChassisLocations.LeftLeg));
 
         internal static float PercentRightLeg(Mech mech) =>
             (PercentForLocation(mech, (int) ArmorLocation.RightLeg, 0, 

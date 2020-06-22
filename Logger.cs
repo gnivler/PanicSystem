@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using Harmony;
 using static PanicSystem.PanicSystem;
 
@@ -25,10 +26,14 @@ namespace PanicSystem
         {
             /*if (modSettings.CombatLog)
             {
-                using (var writer = new StreamWriter(LogFilePath, true))
+                try
                 {
-                    writer.WriteLine($" {input ?? "null"}");
+                    using (var writer = new StreamWriter(LogFilePath, true))
+                    {
+                        writer.WriteLine($" {input ?? "null"}");
+                    }
                 }
+                catch (Exception e) { }
             }*/
 
             if (modSettings.Debug)

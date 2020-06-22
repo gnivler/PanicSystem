@@ -199,10 +199,10 @@ namespace PanicSystem
 			}
 
 			percentLocation /= numAdditions;
-            LogReport($"{((ChassisLocations)LocationStructure).ToString(),-20} | A:{percentFront * 100,10:F3}% | S:{percentStructure * 100,10:F3}%");
+            LogReport($"{((ChassisLocations)LocationStructure).ToString(),-20} | A:{percentFront * 100,7:F3}% | S:{percentStructure * 100,7:F3}%");
             if (LocationBack != 0)
             {
-                LogReport($"{" ",-20} |  [{percentBack * 100,10:F3}%] | ");
+                LogReport($"{" ",-20} | [{percentBack * 100,7:F3}%] | ");
             }
                 return percentLocation;
 		}

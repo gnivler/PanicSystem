@@ -5,12 +5,13 @@ using System.Linq;
 using BattleTech;
 using Harmony;
 using PanicSystem.Components;
-using PanicSystem.Patches;
 using static PanicSystem.Logger;
 using static PanicSystem.PanicSystem;
 using Random = UnityEngine.Random;
+#if NO_CAC
+#else
 using CustomAmmoCategoriesPatches;
-using UnityEngine;
+#endif
 
 // ReSharper disable ClassNeverInstantiated.Global
 // ReSharper disable InconsistentNaming
@@ -380,9 +381,12 @@ namespace PanicSystem
 
             // used in SavingThrows.cs
             damageIncludingHeatDamage = armorDamage + structureDamage;
+#if NO_CAC
+            if(true){
+#else
+            if (!(actor is Mech) || actor.isHasHeat()){//Battle Armor doesn't have heat
+#endif
 
-            if (!(actor is Mech) || actor.isHasHeat())
-            {//Battle Armor doesn't have heat
                 damageIncludingHeatDamage = damageIncludingHeatDamage + (heatdamage * modSettings.HeatDamageFactor);
             }
 

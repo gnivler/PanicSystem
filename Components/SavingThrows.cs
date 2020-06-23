@@ -7,7 +7,10 @@ using static PanicSystem.Logger;
 using static PanicSystem.Components.Controller;
 using static PanicSystem.Helpers;
 using Random = UnityEngine.Random;
+#if NO_CAC
+#else
 using CustomAmmoCategoriesPatches;
+#endif
 
 // ReSharper disable ClassNeverInstantiated.Global
 
@@ -151,9 +154,11 @@ namespace PanicSystem.Components
                         totalMultiplier += modSettings.DistractingModifier;
                         LogReport($"{"Distracting mech",-20} | {modSettings.DistractingModifier,10:F3} | {totalMultiplier,10:F3}");
                     }
-
-                    if (modSettings.HeatDamageFactor > 0 && defender.isHasHeat())
-                    {
+#if NO_CAC
+                    if (modSettings.HeatDamageFactor > 0){
+#else
+                    if (modSettings.HeatDamageFactor > 0 && defender.isHasHeat()) { 
+#endif
                         totalMultiplier += modSettings.HeatDamageFactor * heatDamage;
                         LogReport($"{$"Heat damage {heatDamage}",-20} | {modSettings.HeatDamageFactor * heatDamage,10:F3} | {totalMultiplier,10:F3}");
                     }

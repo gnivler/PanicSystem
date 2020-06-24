@@ -22,9 +22,45 @@ namespace PanicSystem
     {
 
         // used in strings
-        internal static float ActorHealth(AbstractActor actor) =>
-            (actor.SummaryArmorCurrent + actor.SummaryStructureCurrent) /
-            (actor.SummaryArmorMax + actor.SummaryStructureMax) * 100;
+        internal static float ActorHealth(AbstractActor actor)
+        {
+            //This is probably bugged for bonus/armor structure components.
+            //return
+            //(actor.SummaryArmorCurrent + actor.SummaryStructureCurrent) /
+            //(actor.SummaryArmorMax + actor.SummaryStructureMax) * 100;
+            float ah = 100;
+            if (actor is Mech mech)
+            {
+                ah=((mech.RightTorsoStructure + mech.LeftTorsoStructure + mech.CenterTorsoStructure + mech.LeftLegStructure + mech.RightLegStructure + mech.HeadStructure) +
+                    (mech.RightTorsoFrontArmor + mech.RightTorsoRearArmor + mech.LeftTorsoFrontArmor + mech.LeftTorsoRearArmor +
+                     mech.CenterTorsoFrontArmor + mech.CenterTorsoRearArmor + mech.LeftLegArmor + mech.RightLegArmor + mech.HeadArmor)) /
+                     ((MaxStructureForLocation(mech, (int)ChassisLocations.RightTorso) + MaxStructureForLocation(mech, (int)ChassisLocations.LeftTorso) + MaxStructureForLocation(mech, (int)ChassisLocations.CenterTorso)
+                    + MaxStructureForLocation(mech, (int)ChassisLocations.LeftLeg) + MaxStructureForLocation(mech, (int)ChassisLocations.RightLeg) + MaxStructureForLocation(mech, (int)ChassisLocations.Head)) +
+                    (MaxArmorForLocation(mech, (int)ArmorLocation.RightTorso) + MaxArmorForLocation(mech, (int)ArmorLocation.RightTorsoRear)
+             + MaxArmorForLocation(mech, (int)ArmorLocation.LeftTorso) + MaxArmorForLocation(mech, (int)ArmorLocation.LeftTorsoRear)
+             + MaxArmorForLocation(mech, (int)ArmorLocation.CenterTorso) + MaxArmorForLocation(mech, (int)ArmorLocation.CenterTorsoRear)
+             + MaxArmorForLocation(mech, (int)ArmorLocation.LeftLeg) + MaxArmorForLocation(mech, (int)ArmorLocation.RightLeg)
+             + MaxArmorForLocation(mech, (int)ArmorLocation.Head) ))
+                     *100;
+            }
+            else if (actor is Vehicle v)
+            {
+                ah=((v.LeftSideStructure + v.RightSideStructure + v.FrontStructure + v.RearStructure + v.TurretStructure) + 
+                    (v.LeftSideArmor + v.RightSideArmor + v.FrontArmor + v.RearArmor + v.TurretArmor)) / 
+                    ((MaxStructureForLocation(v, (int)VehicleChassisLocations.Left) + MaxStructureForLocation(v, (int)VehicleChassisLocations.Right) + MaxStructureForLocation(v, (int)VehicleChassisLocations.Front) + MaxStructureForLocation(v, (int)VehicleChassisLocations.Rear) + MaxStructureForLocation(v, (int)VehicleChassisLocations.Turret)) +
+                     (MaxArmorForLocation(v, (int)VehicleChassisLocations.Left) + MaxArmorForLocation(v, (int)VehicleChassisLocations.Right) + MaxArmorForLocation(v, (int)VehicleChassisLocations.Front) + MaxArmorForLocation(v, (int)VehicleChassisLocations.Rear) + MaxArmorForLocation(v, (int)VehicleChassisLocations.Turret))
+                    )*100;
+
+            }
+            else
+            {
+                LogReport("Not mech or vehicle");
+                return ah;
+            }
+            LogReport($"ActorHealth {actor.Nickname} - {actor.DisplayName} - {actor.GUID} -{ah:F3}");
+            return ah;
+        }
+
 
         // used in calculations
         internal static float PercentPilot(Pilot pilot) => 1 - (float) pilot.Injuries / pilot.Health;

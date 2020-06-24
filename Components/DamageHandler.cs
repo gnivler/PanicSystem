@@ -141,7 +141,12 @@ namespace PanicSystem.Components
                 return;
             }
 
-            // stop if pilot isn't Panicked
+            if (!modSettings.OneChangePerTurn)
+            {
+                TurnDamageTracker.resetDamageTrackerFor(defender);
+            }
+
+             // stop if pilot isn't Panicked
             if (TrackedActors[index].PanicStatus != PanicStatus.Panicked)
             {
                 return;

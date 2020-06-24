@@ -24,7 +24,7 @@ namespace PanicSystem
 
         internal static void LogDebug(object input)
         {
-            /*if (modSettings.CombatLog)
+            if (modSettings.CombatLog)
             {
                 try
                 {
@@ -33,8 +33,8 @@ namespace PanicSystem
                         writer.WriteLine($" {input ?? "null"}");
                     }
                 }
-                catch (Exception e) { }
-            }*/
+                catch (Exception ) { }
+            }
 
             if (modSettings.Debug)
             {

@@ -55,13 +55,22 @@ namespace PanicSystem.Components
             if (attacker != null)
             {
                 LogReport($"completed Turn Activation for {actor.Nickname} - {actor.DisplayName} - {actor.GUID} -victims [{activationVictims.Count}]");
-                foreach(AbstractActor v in activationVictims)
+                foreach (AbstractActor v in activationVictims)
                 {
                     DamageHandler.ProcessBatchedTurnDamage(v);
                 }
                 activationVictims.Clear();
             }
             attacker = null;
+
+            if(modSettings.OneChangePerTurn)
+                resetDamageTrackerFor(actor);
+        }
+
+        internal static void resetDamageTrackerFor(AbstractActor actor)
+        {
+            if(actor==null)
+                return;
 
             turnExternalHeatAccumulator[actor.GUID] = 0;//external heat 0 start of activation
             if (actor is Mech mech)
@@ -83,6 +92,8 @@ namespace PanicSystem.Components
                 turnStartStructure[actor.GUID] = 0;
                 turnStartArmor[actor.GUID] = 0;
             }
+
+            LogReport($"Damage Levels reset for {actor.Nickname} - {actor.DisplayName} - {actor.GUID} -H:{turnExternalHeatAccumulator[actor.GUID]} A:{turnStartArmor[actor.GUID]} S:{turnStartStructure[actor.GUID]}");
 
         }
 

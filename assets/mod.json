@@ -93,7 +93,7 @@
 
         /* AI Resolve goes to 50 */
         "MedianResolve": 25,
-        "VehicleResolveFactor": 2,
+        "VehicleResolveFactor": 1,
 
         /* factors that affect only panic saving throws based on existing panic state */
         "UnsettledPanicFactor": 1,
@@ -136,6 +136,6 @@
         "CritOver": 25,
 
         /* Misc */
-        "OneChangePerTurn": true
+        "OneChangePerTurn": false
     }
 }

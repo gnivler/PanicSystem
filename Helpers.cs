@@ -57,7 +57,7 @@ namespace PanicSystem
                 LogReport("Not mech or vehicle");
                 return ah;
             }
-            LogReport($"ActorHealth {actor.Nickname} - {actor.DisplayName} - {actor.GUID} -{ah:F3}");
+            LogReport($"ActorHealth {actor.Nickname} - {actor.DisplayName} - {actor.GUID} -{ah:F3}%");
             return ah;
         }
 

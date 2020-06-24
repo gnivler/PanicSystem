@@ -24,7 +24,7 @@ namespace PanicSystem
 
         internal static void LogDebug(object input)
         {
-            if (modSettings.CombatLog)
+            /*if (modSettings.CombatLog)
             {
                 try
                 {
@@ -34,7 +34,7 @@ namespace PanicSystem
                     }
                 }
                 catch (Exception ) { }
-            }
+            }*/
 
             if (modSettings.Debug)
             {

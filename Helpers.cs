@@ -269,7 +269,9 @@ namespace PanicSystem
                 float percentArmor = ca/maxa;
                 float percentStructure = cs/maxs;
 
-                float percentLocation = percentStructure;
+                //since its easy to kill vehicles once past armor use the armor instead of structure unless structure is damaged.
+                //this is reverse of mechs.
+                float percentLocation = percentArmor;
                 float numAdditions = 2;
 
                 // Use the minimum percentage between structure and armor

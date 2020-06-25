@@ -246,6 +246,13 @@ namespace PanicSystem.Components
 
                         totalMultiplier += modSettings.AloneModifier;
                         LogReport($"{"Alone",-20} | {modSettings.AloneModifier,10} | {totalMultiplier,10:F3}");
+                    }else
+                    {
+                        int alliesdead = defendingMech.Combat.GetAllAlliesOf(defendingMech).Where(m => m.IsDead).Count();
+                        int alliestotal = defendingMech.Combat.GetAllAlliesOf(defendingMech).Count();
+
+                        totalMultiplier += modSettings.AloneModifier*alliesdead/alliestotal;
+                        LogReport($"Alone {alliesdead/alliestotal*100:F3,-13}% | {modSettings.AloneModifier,10} | {totalMultiplier,10:F3}");
                     }
                 }
                 catch (Exception ex)

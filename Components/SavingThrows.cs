@@ -246,13 +246,13 @@ namespace PanicSystem.Components
 
                         totalMultiplier += modSettings.AloneModifier;
                         LogReport($"{"Alone",-20} | {modSettings.AloneModifier,10} | {totalMultiplier,10:F3}");
-                    }else
+                    }else if(defendingMech.Combat.GetAllAlliesOf(defendingMech).Count()>0)
                     {
                         int alliesdead = defendingMech.Combat.GetAllAlliesOf(defendingMech).Where(m => m.IsDead).Count();
                         int alliestotal = defendingMech.Combat.GetAllAlliesOf(defendingMech).Count();
 
                         totalMultiplier += modSettings.AloneModifier*alliesdead/alliestotal;
-                        LogReport($"Alone {alliesdead/alliestotal*100,-13:F3}% | {modSettings.AloneModifier * alliesdead / alliestotal,10:F3} | {totalMultiplier,10:F3}");
+                        LogReport($"{$"Alone {alliesdead}/{alliestotal}",-20} | {modSettings.AloneModifier * alliesdead / alliestotal,10:F3} | {totalMultiplier,10:F3}");
                     }
                 }
                 catch (Exception ex)
@@ -311,6 +311,26 @@ namespace PanicSystem.Components
                     LogReport($"{"B",-20} | {modSettings.VehicleDamageFactor * (1 - percentRear),10:F3} | {totalMultiplier,10:F3}");
                 }
                 LogReport($"{"Vehicle state",-20} | {modSettings.VehicleDamageFactor,10} | {totalMultiplier,10:F3}");
+
+                // alone
+                if (defendingVehicle.Combat.GetAllAlliesOf(defendingVehicle).TrueForAll(m => m.IsDead || m == defendingVehicle))
+                {
+                    if (Random.Range(1, 5) == 0) // 20% chance of appearing
+                    {
+                        SaySpamFloatie(defendingVehicle, $"{modSettings.PanicSpamAloneString}");
+                    }
+
+                    totalMultiplier += modSettings.AloneModifier;
+                    LogReport($"{"Alone",-20} | {modSettings.AloneModifier,10} | {totalMultiplier,10:F3}");
+                }
+                else if (defendingVehicle.Combat.GetAllAlliesOf(defendingVehicle).Count() > 0)
+                {
+                    int alliesdead = defendingVehicle.Combat.GetAllAlliesOf(defendingVehicle).Where(m => m.IsDead).Count();
+                    int alliestotal = defendingVehicle.Combat.GetAllAlliesOf(defendingVehicle).Count();
+
+                    totalMultiplier += modSettings.AloneModifier * alliesdead / alliestotal;
+                    LogReport($"{$"Alone {alliesdead}/{alliestotal}",-20} | {modSettings.AloneModifier * alliesdead / alliestotal,10:F3} | {totalMultiplier,10:F3}");
+                }
             }
 
             var resolveModifier = modSettings.ResolveMaxModifier *

@@ -271,6 +271,7 @@ namespace PanicSystem
 
                 //since its easy to kill vehicles once past armor use the armor instead of structure unless structure is damaged.
                 //this is reverse of mechs.
+                //Remember the vehicle pilot motto - in armor we trust , structure is for the dead and defeated.
                 float percentLocation = percentArmor;
                 float numAdditions = 2;
 

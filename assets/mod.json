@@ -84,15 +84,15 @@
         "SideTorsoMaxModifier": 25,
         "LeggedMaxModifier": 15,
         "WeaponlessModifier": 15,
-        "AloneModifier": 5,
+        "AloneModifier": 10,
         "ResolveMaxModifier": 10,
         "OverheatedModifier": 2,
         "ShutdownModifier": 4,
         "HeatDamageFactor": 1,
         "VehicleDamageFactor": 50,
 
-        /* AI Resolve goes to 50 */
-        "MedianResolve": 25,
+        /* AI Resolve goes to 150 */
+        "MedianResolve": 75,
         "VehicleResolveFactor": 1,
 
         /* factors that affect only panic saving throws based on existing panic state */

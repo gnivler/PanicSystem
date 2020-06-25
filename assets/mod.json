@@ -22,6 +22,8 @@
     "Settings": {
         "Debug": false,
         "CombatLog": false,
+        //save mod state to file during combat; Set to false in mods like Rt that don't support in mission saves
+        "CombatSaves": false,
 
         /* custom strings for floaties */
         "PanicStates": [

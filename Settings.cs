@@ -9,7 +9,6 @@ namespace PanicSystem
         public bool AlwaysPanic = false;
         public bool Debug;
         public bool CombatLog;
-        public bool CombatSaves;
         public bool EnableEjectPhrases;
         public bool FloatieSpam;
         public float EjectPhraseChance;

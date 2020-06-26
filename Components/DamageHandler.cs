@@ -255,6 +255,7 @@ namespace PanicSystem.Components
                     // add UI icons.. and pilot history?   ... MechsKilled already incremented??
                     // TODO count kills recorded on pilot history so it's not applied twice -added a check above should work unless other mods are directly modifying stats
                     statCollection.Set("MechsKilled", attackerPilot.MechsKilled + 1);
+                    statCollection.Set("UnitsKilled", attackerPilot.UnitsKilled + 1);
                     var stat = statCollection.GetStatistic("MechsEjected");
                     if (stat == null)
                     {
@@ -268,6 +269,8 @@ namespace PanicSystem.Components
                 }else if (modSettings.VehiclesCanPanic &&
                          defender is Vehicle)
                 {
+                    statCollection.Set("OthersKilled", attackerPilot.OthersKilled + 1);
+                    statCollection.Set("UnitsKilled", attackerPilot.UnitsKilled + 1);
                     var stat = statCollection.GetStatistic("VehiclesEjected");
                     if (stat == null)
                     {
@@ -287,7 +290,7 @@ namespace PanicSystem.Components
                 var combatProcessor = combatProcessors.FirstOrDefault(x => x.GetType() == AccessTools.TypeByName("BattleTech.Achievements.CombatProcessor"));
 
                 // field is of type Dictionary<string, CombatProcessor.MechCombatStats>
-                var playerMechStats = Traverse.Create(combatProcessor).Field("playerMechStats").GetValue<IDictionary>();
+               var playerMechStats = Traverse.Create(combatProcessor).Field("playerMechStats").GetValue<IDictionary>();
                 if (playerMechStats != null)
                 {
                     foreach (DictionaryEntry kvp in playerMechStats)

@@ -255,7 +255,6 @@ namespace PanicSystem.Components
                     // add UI icons.. and pilot history?   ... MechsKilled already incremented??
                     // TODO count kills recorded on pilot history so it's not applied twice -added a check above should work unless other mods are directly modifying stats
                     statCollection.Set("MechsKilled", attackerPilot.MechsKilled + 1);
-                    statCollection.Set("UnitsKilled", attackerPilot.UnitsKilled + 1);
                     var stat = statCollection.GetStatistic("MechsEjected");
                     if (stat == null)
                     {
@@ -270,7 +269,6 @@ namespace PanicSystem.Components
                          defender is Vehicle)
                 {
                     statCollection.Set("OthersKilled", attackerPilot.OthersKilled + 1);
-                    statCollection.Set("UnitsKilled", attackerPilot.UnitsKilled + 1);
                     var stat = statCollection.GetStatistic("VehiclesEjected");
                     if (stat == null)
                     {

@@ -76,7 +76,7 @@
 
         /* integer number of cumulative structure damage required to cause a panic save */
         "MinimumMechStructureDamageRequired": 5,
-        "MinimumVehicleStructureDamageRequired": 15,
+        "MinimumVehicleStructureDamageRequired": 5,
 
         /* Effect Modifiers */
         "UnsteadyModifier": 5,
@@ -86,7 +86,7 @@
         "SideTorsoMaxModifier": 25,
         "LeggedMaxModifier": 15,
         "WeaponlessModifier": 15,
-        "AloneModifier": 10,
+        "AloneModifier": 20,
         "ResolveMaxModifier": 10,
         "OverheatedModifier": 2,
         "ShutdownModifier": 4,

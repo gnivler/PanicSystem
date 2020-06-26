@@ -259,12 +259,26 @@ namespace PanicSystem.Components
                     if (stat == null)
                     {
                         statCollection.AddStatistic("MechsEjected", 1);
-                        //return; why is this returning on first eject for a pilot?
                     }
                     else
                     {
                         var value = stat.Value<int>();
                         statCollection.Set("MechsEjected", value + 1);
+                    }
+                }else if (modSettings.VehiclesCanPanic &&
+                         defender is Vehicle)
+                {
+                    var stat = statCollection.GetStatistic("VehiclesEjected");
+                    if (stat == null)
+                    {
+                        statCollection.AddStatistic("VehiclesEjected", 1);
+                        //return;
+                    }
+                    else
+                    {
+
+                        var value = stat.Value<int>();
+                        statCollection.Set("VehiclesEjected", value + 1);
                     }
                 }
 
@@ -285,19 +299,15 @@ namespace PanicSystem.Components
                     }
                 }
 
-                else if (modSettings.VehiclesCanPanic &&
-                         defender is Vehicle)
-                {
-                    var stat = statCollection.GetStatistic("VehiclesEjected");
-                    if (stat == null)
-                    {
-                        statCollection.AddStatistic("VehiclesEjected", 1);
-                        return;
-                    }
+                var r = attackerPilot.StatCollection.GetStatistic("MechsEjected") == null
+                        ? 0
+                        : attackerPilot.StatCollection.GetStatistic("MechsEjected").Value<int>();
+                                    LogDebug($"{attackerPilot.Callsign} SetMechEjectionCount {r}");
 
-                    var value = stat.Value<int>();
-                    statCollection.Set("VehiclesEjected", value + 1);
-                }
+                r = attackerPilot.StatCollection.GetStatistic("VehiclesEjected") == null
+                    ? 0
+                    : attackerPilot.StatCollection.GetStatistic("VehiclesEjected").Value<int>();
+                LogDebug($"{attackerPilot.Callsign} SetVehicleEjectionCount {r}");
             }
             catch (Exception ex)
             {

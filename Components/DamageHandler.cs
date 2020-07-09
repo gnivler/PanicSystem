@@ -28,10 +28,11 @@ namespace PanicSystem.Components
             }
 
             AbstractActor attacker = TurnDamageTracker.attackActor();//just for logging
-            if (attacker != null)
-            {
+
                 //LogReport(new string('═', 46));
                 LogReport($"Damage to {actor.DisplayName}/{actor.Nickname}/{actor.GUID}");
+            if (attacker != null)
+            {
                 LogReport($"Damage by {attacker.DisplayName}/{attacker.Nickname}/{attacker.GUID}");
             }
 

@@ -37,6 +37,7 @@ namespace PanicSystem.Components
                 }
 
                 TrackedActors = new List<PilotTracker>();
+                TurnDamageTracker.Reset();
             }
             catch (Exception ex)
             {
@@ -112,6 +113,8 @@ namespace PanicSystem.Components
         // ReSharper disable once InconsistentNaming
         public static void SerializeStorageJson(string GUID, DateTime dateTime)
         {
+            if(!modSettings.CombatSaves)
+                return;
             if (metaTrackers == null)
             {
                 metaTrackers = new List<PilotTracker.MetaTracker>();
@@ -153,6 +156,8 @@ namespace PanicSystem.Components
         //fired when we're close to using the json data
         private static void DeserializeStorageJson()
         {
+            if (!modSettings.CombatSaves)
+                return;
             List<PilotTracker.MetaTracker> trackers = null;
             try
             {
@@ -176,6 +181,8 @@ namespace PanicSystem.Components
 
         public static void SaveTrackedPilots()
         {
+            if (!modSettings.CombatSaves)
+                return;
             try
             {
                 if (TrackedActors != null)
@@ -192,6 +199,7 @@ namespace PanicSystem.Components
 
         private static void DeserializeActiveJson()
         {
+
             // we only need to deserialize if we have nothing here: this way resets should work properly
             if (TrackedActors != null)
             {
@@ -201,8 +209,11 @@ namespace PanicSystem.Components
             List<PilotTracker> panicTrackers = null;
             try
             {
-                // read all text, then deserialize into an object
-                panicTrackers = JsonConvert.DeserializeObject<List<PilotTracker>>(File.ReadAllText(activeJsonPath));
+                if (modSettings.CombatSaves)
+                {
+                    // read all text, then deserialize into an object
+                    panicTrackers = JsonConvert.DeserializeObject<List<PilotTracker>>(File.ReadAllText(activeJsonPath));
+                }
             }
             catch (Exception ex)
             {

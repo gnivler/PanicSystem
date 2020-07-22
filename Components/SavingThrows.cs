@@ -7,6 +7,10 @@ using static PanicSystem.Logger;
 using static PanicSystem.Components.Controller;
 using static PanicSystem.Helpers;
 using Random = UnityEngine.Random;
+#if NO_CAC
+#else
+using CustomAmmoCategoriesPatches;
+#endif
 
 // ReSharper disable ClassNeverInstantiated.Global
 
@@ -128,7 +132,7 @@ namespace PanicSystem.Components
             return false;
         }
 
-        public static float GetSavingThrow(AbstractActor defender, AbstractActor attacker)
+        public static float GetSavingThrow(AbstractActor defender, AbstractActor attacker,int heatDamage,float damageIncludingHeatDamage)
         {
             var pilot = defender.GetPilot();
             var weapons = defender.Weapons;
@@ -143,18 +147,20 @@ namespace PanicSystem.Components
             {
                 try
                 {
-                    if (modSettings.QuirksEnabled &&
+                    if (modSettings.QuirksEnabled && attacker!=null &&
                         attacker is Mech mech &&
                         mech.MechDef.Chassis.ChassisTags.Contains("mech_quirk_distracting"))
                     {
                         totalMultiplier += modSettings.DistractingModifier;
                         LogReport($"{"Distracting mech",-20} | {modSettings.DistractingModifier,10:F3} | {totalMultiplier,10:F3}");
                     }
-
-                    if (modSettings.HeatDamageFactor > 0)
-                    {
-                        totalMultiplier += modSettings.HeatDamageFactor * Mech_AddExternalHeat_Patch.heatDamage;
-                        LogReport($"{$"Heat damage {Mech_AddExternalHeat_Patch.heatDamage}",-20} | {modSettings.HeatDamageFactor * Mech_AddExternalHeat_Patch.heatDamage,10:F3} | {totalMultiplier,10:F3}");
+#if NO_CAC
+                    if (modSettings.HeatDamageFactor > 0){
+#else
+                    if (modSettings.HeatDamageFactor > 0 && defender.isHasHeat()) { 
+#endif
+                        totalMultiplier += modSettings.HeatDamageFactor * heatDamage;
+                        LogReport($"{$"Heat damage {heatDamage}",-20} | {modSettings.HeatDamageFactor * heatDamage,10:F3} | {totalMultiplier,10:F3}");
                     }
 
                     float percentPilot = PercentPilot(pilot);
@@ -240,6 +246,13 @@ namespace PanicSystem.Components
 
                         totalMultiplier += modSettings.AloneModifier;
                         LogReport($"{"Alone",-20} | {modSettings.AloneModifier,10} | {totalMultiplier,10:F3}");
+                    }else if(defendingMech.Combat.GetAllAlliesOf(defendingMech).Count()>0)
+                    {
+                        int alliesdead = defendingMech.Combat.GetAllAlliesOf(defendingMech).Where(m => m.IsDead).Count();
+                        int alliestotal = defendingMech.Combat.GetAllAlliesOf(defendingMech).Count();
+
+                        totalMultiplier += modSettings.AloneModifier*alliesdead/alliestotal;
+                        LogReport($"{$"Alone {alliesdead}/{alliestotal}",-20} | {modSettings.AloneModifier * alliesdead / alliestotal,10:F3} | {totalMultiplier,10:F3}");
                     }
                 }
                 catch (Exception ex)
@@ -266,18 +279,58 @@ namespace PanicSystem.Components
             if (modSettings.VehiclesCanPanic &&
                 defender is Vehicle defendingVehicle)
             {
-                float percentArmor = (defendingVehicle.SummaryArmorCurrent / defendingVehicle.SummaryArmorMax);
-                float percentStructure = (defendingVehicle.SummaryStructureCurrent / defendingVehicle.SummaryStructureMax);
-                float percentCur = percentStructure;
-
-                if (percentStructure > percentArmor)
+                
+                float percentTurret = PercentTurret(defendingVehicle);
+                if (percentTurret < 1)
                 {
-                    percentCur += percentArmor;
-                    percentCur /= 2;
+                    totalMultiplier += modSettings.VehicleDamageFactor * (1 - percentTurret);
+                    LogReport($"{"T",-20} | {modSettings.VehicleDamageFactor * (1 - percentTurret),10:F3} | {totalMultiplier,10:F3}");
                 }
+                float percentLeft = PercentLeft(defendingVehicle);
+                if (percentLeft < 1)
+                {
+                    totalMultiplier += modSettings.VehicleDamageFactor * (1 - percentLeft);
+                    LogReport($"{"L",-20} | {modSettings.VehicleDamageFactor * (1 - percentLeft),10:F3} | {totalMultiplier,10:F3}");
+                }
+                float percentRight = PercentRight(defendingVehicle);
+                if (percentRight < 1)
+                {
+                    totalMultiplier += modSettings.VehicleDamageFactor * (1 - percentRight);
+                    LogReport($"{"R",-20} | {modSettings.VehicleDamageFactor * (1 - percentRight),10:F3} | {totalMultiplier,10:F3}");
+                }
+                float percentFront = PercentFront(defendingVehicle);
+                if (percentFront < 1)
+                {
+                    totalMultiplier += modSettings.VehicleDamageFactor * (1 - percentFront);
+                    LogReport($"{"F",-20} | {modSettings.VehicleDamageFactor * (1 - percentFront),10:F3} | {totalMultiplier,10:F3}");
+                }
+                float percentRear = PercentRear(defendingVehicle);
+                if (percentRear < 1)
+                {
+                    totalMultiplier += modSettings.VehicleDamageFactor * (1 - percentRear);
+                    LogReport($"{"B",-20} | {modSettings.VehicleDamageFactor * (1 - percentRear),10:F3} | {totalMultiplier,10:F3}");
+                }
+                LogReport($"{"Vehicle state",-20} | {modSettings.VehicleDamageFactor,10} | {totalMultiplier,10:F3}");
 
-                totalMultiplier += (percentCur * modSettings.VehicleDamageFactor);
-                LogReport($"{"Vehicle base panic",-20} | { defendingVehicle.DisplayName } | {modSettings.VehicleDamageFactor,10} | {totalMultiplier,10:F3}");
+                // alone
+                if (defendingVehicle.Combat.GetAllAlliesOf(defendingVehicle).TrueForAll(m => m.IsDead || m == defendingVehicle))
+                {
+                    if (Random.Range(1, 5) == 0) // 20% chance of appearing
+                    {
+                        SaySpamFloatie(defendingVehicle, $"{modSettings.PanicSpamAloneString}");
+                    }
+
+                    totalMultiplier += modSettings.AloneModifier;
+                    LogReport($"{"Alone",-20} | {modSettings.AloneModifier,10} | {totalMultiplier,10:F3}");
+                }
+                else if (defendingVehicle.Combat.GetAllAlliesOf(defendingVehicle).Count() > 0)
+                {
+                    int alliesdead = defendingVehicle.Combat.GetAllAlliesOf(defendingVehicle).Where(m => m.IsDead).Count();
+                    int alliestotal = defendingVehicle.Combat.GetAllAlliesOf(defendingVehicle).Count();
+
+                    totalMultiplier += modSettings.AloneModifier * alliesdead / alliestotal;
+                    LogReport($"{$"Alone {alliesdead}/{alliestotal}",-20} | {modSettings.AloneModifier * alliesdead / alliestotal,10:F3} | {totalMultiplier,10:F3}");
+                }
             }
 
             var resolveModifier = modSettings.ResolveMaxModifier *

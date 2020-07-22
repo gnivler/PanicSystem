@@ -8,15 +8,15 @@ using static PanicSystem.Components.Controller;
 
 namespace PanicSystem.Patches
 {
-    [HarmonyPatch(typeof(MechMeleeSequence))]
+    [HarmonyPatch(typeof(ActorMovementSequence))]
     [HarmonyPatch("CompleteOrders")]
     [HarmonyPatch(MethodType.Normal)]
     [HarmonyPatch(new Type[] { })]
-    public static class MechMeleeSequence_CompleteOrders
+    public static class ActorMovementSequence_CompleteOrders
     {
-        public static void Postfix(MechMeleeSequence __instance)
+        public static void Postfix(ActorMovementSequence __instance)
         {
-            TurnDamageTracker.hintAttackComplete("MechMeleeSequence:CompleteOrders");
+                TurnDamageTracker.hintAttackComplete("ActorMovementSequence:CompleteOrders");
         }
     }
 }

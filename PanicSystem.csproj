@@ -37,9 +37,34 @@
     <Prefer32Bit>false</Prefer32Bit>
     <LangVersion>7.0</LangVersion>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug NO_CAC|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\Debug NO_CAC\</OutputPath>
+    <DefineConstants>TRACE;DEBUG;NO_CAC</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DebugType>full</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <LangVersion>7.0</LangVersion>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release NO_CAC|AnyCPU'">
+    <OutputPath>bin\Release NO_CAC\</OutputPath>
+    <DefineConstants>TRACE;NO_CAC</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <LangVersion>7.0</LangVersion>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="0Harmony, Version=1.2.0.1, Culture=neutral, PublicKeyToken=null">
       <HintPath>..\..\..\..\..\..\Steam\steamapps\common\BATTLETECH\Mods\ModTek\0Harmony.dll</HintPath>
+    </Reference>
+    <Reference Include="CustomAmmoCategories">
+      <HintPath>..\..\..\..\..\..\Steam\steamapps\common\BATTLETECH\Mods\CustomAmmoCategories\CustomAmmoCategories.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
       <HintPath>..\..\..\..\..\..\Steam\steamapps\common\BATTLETECH\BattleTech_Data\Managed\Assembly-CSharp.dll</HintPath>
@@ -72,6 +97,8 @@
   <ItemGroup>
     <Compile Include="Components\AARIcons.cs" />
     <Compile Include="Components\ColorFloaties.cs" />
+    <Compile Include="Components\DamageHandler.cs" />
+    <Compile Include="Components\TurnDamageTracker.cs" />
     <Compile Include="Components\Controller.cs" />
     <Compile Include="Components\IRBTModUtilsCustomDialog\Coordinator.cs" />
     <Compile Include="Components\IRBTModUtilsCustomDialog\PanicSystemDialogMessage.cs" />
@@ -87,14 +114,16 @@
     <Compile Include="Logger.cs" />
     <Compile Include="PanicSystem.cs" />
     <Compile Include="Patches\AAR_UnitStatusWidget.cs" />
+    <Compile Include="Patches\MechMeleeSequence.cs" />
+    <Compile Include="Patches\ActorMovementSequence.cs" />
+    <Compile Include="Patches\AttackDirector.cs" />
     <Compile Include="Patches\AbstractActor.cs" />
-    <Compile Include="Patches\AttackStackSequence.cs" />
+    <Compile Include="Patches\Vehicle.cs" />
     <Compile Include="Patches\CombatGameState.cs" />
     <Compile Include="Patches\CombatHUDFloatieStack.cs" />
     <Compile Include="Patches\GameInstance.cs" />
     <Compile Include="Patches\GameInstanceSave.cs" />
     <Compile Include="Patches\Mech.cs" />
-    <Compile Include="Patches\MechMeleeSequence.cs" />
     <Compile Include="Patches\SimGameState.cs" />
     <Compile Include="Patches\VehicleRepresentation.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

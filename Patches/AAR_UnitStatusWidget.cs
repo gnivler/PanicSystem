@@ -25,19 +25,21 @@ namespace PanicSystem.Patches
         {
             try
             {
+                mechEjections = 0;
+                vehicleEjections = 0;
                 // get the total and decrement it globally
                 var MechsEjected = ___UnitData.pilot.StatCollection.GetStatistic("MechsEjected");
                 if (MechsEjected != null)
                 {
                     mechEjections = MechsEjected.Value<int>();
-                    //LogDebug($"{___UnitData.pilot.Callsign} MechsEjected {mechEjections}");
+                    LogDebug($"{___UnitData.pilot.Callsign} MechsEjected {mechEjections}");
                 }
 
                 var VehiclesEjected = ___UnitData.pilot.StatCollection.GetStatistic("VehiclesEjected");
                 if (VehiclesEjected != null)
                 {
                     vehicleEjections = VehiclesEjected.Value<int>();
-                    //LogDebug($"{___UnitData.pilot.Callsign} vehicleEjections {vehicleEjections}");
+                    LogDebug($"{___UnitData.pilot.Callsign} vehicleEjections {vehicleEjections}");
                 }
             }
             catch (Exception ex)
@@ -100,6 +102,7 @@ namespace PanicSystem.Patches
                 {
                     for (var x = 0; x < vehicleEjections; x++)
                     {
+                        LogDebug($"{___UnitData.pilot.Callsign} vehicleEjections {x}/{vehicleEjections}");
                         AARIcons.AddEjectedVehicle(___KillGridParent);
                     }
 
@@ -109,6 +112,7 @@ namespace PanicSystem.Patches
                 // weird loop
                 for (var x = 0; x < mechEjections; x++)
                 {
+                    LogDebug($"{___UnitData.pilot.Callsign} mechsEjections {x}/{mechEjections}");
                     AARIcons.AddEjectedMech(___KillGridParent);
                 }
 

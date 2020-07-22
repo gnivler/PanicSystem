@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using Harmony;
 using static PanicSystem.PanicSystem;
 
@@ -23,6 +24,18 @@ namespace PanicSystem
 
         internal static void LogDebug(object input)
         {
+            /*if (modSettings.CombatLog)
+            {
+                try
+                {
+                    using (var writer = new StreamWriter(LogFilePath, true))
+                    {
+                        writer.WriteLine($" {input ?? "null"}");
+                    }
+                }
+                catch (Exception ) { }
+            }*/
+
             if (modSettings.Debug)
             {
                 FileLog.Log($"[PanicSystem] {input ?? "null"}");

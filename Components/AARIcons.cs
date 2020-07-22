@@ -15,16 +15,20 @@ namespace PanicSystem.Components
     {
         internal static int GetMechEjectionCount(UnitResult unitResult)
         {
-            return unitResult.pilot.StatCollection.GetStatistic("MechsEjected") == null
+            var r= unitResult.pilot.StatCollection.GetStatistic("MechsEjected") == null
                 ? 0
                 : unitResult.pilot.StatCollection.GetStatistic("MechsEjected").Value<int>();
+            LogDebug($"{unitResult.pilot.Callsign} GetMechEjectionCount {r}");
+            return r;
         }
 
         internal static int GetVehicleEjectionCount(UnitResult unitResult)
         {
-            return unitResult.pilot.StatCollection.GetStatistic("VehiclesEjected") == null
+            var r= unitResult.pilot.StatCollection.GetStatistic("VehiclesEjected") == null
                 ? 0
                 : unitResult.pilot.StatCollection.GetStatistic("VehiclesEjected").Value<int>();
+            LogDebug($"{unitResult.pilot.Callsign} GetVehicleEjectionCount {r}");
+            return r;
         }
 
         // adapted from AddKilledMech()
